@@ -9,6 +9,7 @@ const pool = require('./config/db');
 
 // Import routes
 const authRoutes = require('./routes/auth');
+const duesRoutes = require('./routes/dues');
 
 // Initialize Express app
 const app = express();
@@ -28,6 +29,7 @@ app.use(limiter);
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/dues', duesRoutes);
 
 // Test route
 app.get('/', (req, res) => {

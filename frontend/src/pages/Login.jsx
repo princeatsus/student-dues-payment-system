@@ -2,13 +2,24 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { login } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
+import logo from '../assets/logo.png'; // Change to your logo path
 
 const Login = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+  const [showPassword, setShowPassword] = useState(false); // 👈 NEW
   const { loginUser } = useAuth();
   const navigate = useNavigate();
+
+  // Dynamic greeting based on time of day
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good Morning';
+    if (hour < 17) return 'Good Afternoon';
+    return 'Good Evening';
+  };
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -39,9 +50,10 @@ const Login = () => {
       {/* Left Panel */}
       <div style={styles.leftPanel}>
         <div style={styles.leftContent}>
-          <div style={styles.logoCircle}>HTU</div>
+          <img src={logo} alt="School Logo" style={styles.logoImage} />
           <h1 style={styles.leftTitle}>Ho Technical University</h1>
-          <h2 style={styles.leftSubtitle}>Electrical Department</h2>
+          <h2 style={styles.leftSubtitle}>Computer Science Department</h2>
+          <p style={styles.tagline}>— Excellence in Technology & Innovation —</p>
           <div style={styles.divider} />
           <p style={styles.leftDesc}>
             Departmental Dues Payment & Management System
@@ -52,17 +64,23 @@ const Login = () => {
             <div style={styles.feature}>✅ Download Clearance Certificate</div>
             <div style={styles.feature}>✅ Track Payment History</div>
           </div>
+          <div style={styles.trustBadge}>
+            🔒 Secure · Encrypted · University-Grade
+          </div>
         </div>
-        <p style={styles.leftFooter}>HTU Electrical Department © 2026</p>
+        <div style={styles.leftFooterGroup}>
+          <p style={styles.leftFooter}>Computer Science Department © 2026</p>
+          <p style={styles.poweredBy}>⚡ Powered by React · Node.js · Supabase</p>
+        </div>
       </div>
 
       {/* Right Panel */}
       <div style={styles.rightPanel}>
         <div style={styles.card}>
           <div style={styles.cardHeader}>
-            <div style={styles.cardIcon}>🎓</div>
-            <h2 style={styles.cardTitle}>Welcome Back</h2>
-            <p style={styles.cardSubtitle}>Sign in to your account to continue</p>
+            <div style={styles.cardIcon}>💻</div>
+            <h2 style={styles.cardTitle}>{getGreeting()}, Developer 👋</h2>
+            <p style={styles.cardSubtitle}>Sign in with your departmental email address</p>
           </div>
 
           {error && (
@@ -93,7 +111,7 @@ const Login = () => {
               <div style={styles.inputWrapper}>
                 <span style={styles.inputIcon}>🔒</span>
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'} // 👈 DYNAMIC TYPE
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
@@ -101,12 +119,31 @@ const Login = () => {
                   style={styles.input}
                   required
                 />
+                {/* 👇 NEW EYE ICON */}
+                <span
+                  style={styles.eyeIcon}
+                  onClick={() => setShowPassword(!showPassword)}
+                  role="button"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? '🙈' : '👁️'}
+                </span>
               </div>
+            </div>
+
+            <div style={styles.forgotRow}>
+              <a href="#" style={styles.forgotLink}>Forgot password?</a>
             </div>
 
             <button
               type="submit"
-              style={loading ? { ...styles.button, opacity: 0.7 } : styles.button}
+              style={{
+                ...styles.button,
+                ...(loading && styles.buttonLoading),
+                ...(isHovered && !loading && styles.buttonHover),
+              }}
+              onMouseEnter={() => setIsHovered(true)}
+              onMouseLeave={() => setIsHovered(false)}
               disabled={loading}
             >
               {loading ? '⏳ Signing in...' : 'Sign In →'}
@@ -122,6 +159,11 @@ const Login = () => {
               <span style={styles.badge}>HOD</span>
             </div>
           </div>
+
+          <p style={styles.support}>
+            💬 Need help? <a href="#" style={styles.supportLink}>Contact IT Support</a>
+            <span style={styles.supportPhone}>| 📞 +233 XX XXX XXXX</span>
+          </p>
         </div>
       </div>
     </div>
@@ -132,7 +174,8 @@ const styles = {
   page: {
     display: 'flex',
     minHeight: '100vh',
-    fontFamily: "'Segoe UI', sans-serif",
+    fontFamily: "'Segoe UI', -apple-system, sans-serif",
+    backgroundColor: '#f0f4ff',
   },
   leftPanel: {
     flex: 1,
@@ -141,67 +184,101 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'space-between',
-    padding: '60px 50px',
+    padding: '40px 30px',
+    position: 'relative',
+    overflow: 'hidden',
   },
   leftContent: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '16px',
+    gap: '12px',
+    position: 'relative',
+    zIndex: 1,
   },
-  logoCircle: {
-    width: '80px',
-    height: '80px',
+  logoImage: {
+    width: '60px',
+    height: '60px',
+    objectFit: 'cover',
     borderRadius: '50%',
     backgroundColor: '#fff',
-    color: '#003087',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontSize: '24px',
-    fontWeight: 'bold',
+    padding: '4px',
     marginBottom: '8px',
+    boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
   },
   leftTitle: {
-    fontSize: '32px',
+    fontSize: '26px',
     fontWeight: 'bold',
     margin: 0,
   },
   leftSubtitle: {
-    fontSize: '20px',
+    fontSize: '18px',
     fontWeight: '400',
     margin: 0,
     opacity: 0.9,
   },
+  tagline: {
+    fontSize: '12px',
+    fontWeight: '300',
+    opacity: 0.7,
+    margin: '-4px 0 0 0',
+    letterSpacing: '0.5px',
+    fontStyle: 'italic',
+  },
   divider: {
-    width: '60px',
+    width: '50px',
     height: '3px',
     backgroundColor: '#fff',
     opacity: 0.5,
-    margin: '8px 0',
+    margin: '6px 0',
   },
   leftDesc: {
-    fontSize: '16px',
+    fontSize: '14px',
     opacity: 0.85,
     margin: 0,
-    lineHeight: '1.6',
+    lineHeight: '1.5',
   },
   featureList: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '12px',
-    marginTop: '16px',
+    gap: '8px',
+    marginTop: '10px',
   },
   feature: {
-    fontSize: '15px',
+    fontSize: '13px',
     opacity: 0.9,
     backgroundColor: 'rgba(255,255,255,0.1)',
-    padding: '10px 16px',
-    borderRadius: '8px',
+    padding: '8px 14px',
+    borderRadius: '6px',
+    transition: 'background 0.2s',
+  },
+  trustBadge: {
+    fontSize: '11px',
+    opacity: 0.6,
+    marginTop: '12px',
+    padding: '6px 12px',
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderRadius: '20px',
+    display: 'inline-block',
+    width: 'fit-content',
+    letterSpacing: '0.3px',
+  },
+  leftFooterGroup: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '4px',
+    position: 'relative',
+    zIndex: 1,
   },
   leftFooter: {
-    fontSize: '13px',
+    fontSize: '12px',
     opacity: 0.6,
     margin: 0,
+  },
+  poweredBy: {
+    fontSize: '11px',
+    opacity: 0.5,
+    margin: 0,
+    letterSpacing: '0.3px',
   },
   rightPanel: {
     flex: 1,
@@ -210,31 +287,34 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     padding: '40px 30px',
+    backgroundImage: `
+      radial-gradient(circle at 80% 20%, rgba(0,48,135,0.03) 0%, transparent 50%),
+      radial-gradient(circle at 20% 80%, rgba(0,48,135,0.03) 0%, transparent 50%)
+    `,
   },
   card: {
-    backgroundColor: '#fff',
-    borderRadius: '16px',
-    padding: '48px 40px',
+    backgroundColor: 'transparent',
+    padding: '0',
     width: '100%',
-    maxWidth: '420px',
-    boxShadow: '0 8px 32px rgba(0,48,135,0.12)',
+    maxWidth: '400px',
+    animation: 'fadeIn 0.4s ease',
   },
   cardHeader: {
     textAlign: 'center',
-    marginBottom: '32px',
+    marginBottom: '28px',
   },
   cardIcon: {
-    fontSize: '48px',
-    marginBottom: '12px',
+    fontSize: '40px',
+    marginBottom: '8px',
   },
   cardTitle: {
-    fontSize: '26px',
+    fontSize: '22px',
     fontWeight: 'bold',
     color: '#003087',
-    margin: '0 0 8px 0',
+    margin: '0 0 4px 0',
   },
   cardSubtitle: {
-    fontSize: '14px',
+    fontSize: '13px',
     color: '#718096',
     margin: 0,
   },
@@ -242,23 +322,23 @@ const styles = {
     backgroundColor: '#fff5f5',
     border: '1px solid #fed7d7',
     color: '#c53030',
-    padding: '12px 16px',
+    padding: '10px 14px',
     borderRadius: '8px',
-    marginBottom: '20px',
-    fontSize: '14px',
+    marginBottom: '16px',
+    fontSize: '13px',
   },
   form: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '20px',
+    gap: '16px',
   },
   inputGroup: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '8px',
+    gap: '6px',
   },
   label: {
-    fontSize: '14px',
+    fontSize: '13px',
     fontWeight: '600',
     color: '#2d3748',
   },
@@ -266,13 +346,16 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     border: '1.5px solid #e2e8f0',
-    borderRadius: '8px',
+    borderRadius: '10px',
     overflow: 'hidden',
-    backgroundColor: '#f8faff',
+    backgroundColor: '#ffffff',
+    transition: 'border-color 0.2s, box-shadow 0.2s',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
   },
   inputIcon: {
     padding: '0 12px',
-    fontSize: '16px',
+    fontSize: '14px',
+    opacity: 0.6,
   },
   input: {
     flex: 1,
@@ -283,30 +366,68 @@ const styles = {
     backgroundColor: 'transparent',
     color: '#2d3748',
   },
+  // 👇 NEW EYE ICON STYLE
+  eyeIcon: {
+    padding: '0 12px',
+    cursor: 'pointer',
+    fontSize: '16px',
+    opacity: 0.5,
+    userSelect: 'none',
+    transition: 'opacity 0.2s, transform 0.2s',
+    ':hover': {
+      opacity: 1,
+      transform: 'scale(1.1)',
+    },
+  },
+  forgotRow: {
+    textAlign: 'right',
+    marginTop: '-4px',
+  },
+  forgotLink: {
+    fontSize: '12px',
+    color: '#003087',
+    textDecoration: 'none',
+    fontWeight: '500',
+    transition: 'color 0.2s',
+  },
   button: {
     background: 'linear-gradient(135deg, #003087, #0051d4)',
     color: '#fff',
     padding: '14px',
-    borderRadius: '8px',
+    borderRadius: '10px',
     border: 'none',
-    fontSize: '16px',
+    fontSize: '15px',
     fontWeight: '600',
     cursor: 'pointer',
-    marginTop: '8px',
+    marginTop: '4px',
     letterSpacing: '0.5px',
+    transition: 'all 0.25s ease',
+    position: 'relative',
+  },
+  buttonHover: {
+    transform: 'scale(1.02)',
+    boxShadow: '0 6px 24px rgba(0,48,135,0.35)',
+  },
+  buttonLoading: {
+    opacity: 0.7,
+    cursor: 'not-allowed',
   },
   rolesInfo: {
-    marginTop: '28px',
-    padding: '16px',
-    backgroundColor: '#f0f4ff',
-    borderRadius: '8px',
+    marginTop: '24px',
+    padding: '14px',
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    backdropFilter: 'blur(4px)',
+    borderRadius: '10px',
     textAlign: 'center',
+    border: '1px solid rgba(0,48,135,0.06)',
   },
   rolesTitle: {
-    fontSize: '12px',
+    fontSize: '11px',
     color: '#718096',
-    margin: '0 0 10px 0',
+    margin: '0 0 8px 0',
     fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
   },
   rolesBadges: {
     display: 'flex',
@@ -317,11 +438,38 @@ const styles = {
   badge: {
     backgroundColor: '#003087',
     color: '#fff',
-    padding: '4px 12px',
-    borderRadius: '12px',
+    padding: '4px 14px',
+    borderRadius: '20px',
     fontSize: '11px',
-    fontWeight: '600',
+    fontWeight: '500',
+    letterSpacing: '0.3px',
+    transition: 'transform 0.2s',
+  },
+  support: {
+    textAlign: 'center',
+    fontSize: '12px',
+    color: '#a0aec0',
+    margin: '16px 0 0 0',
+  },
+  supportLink: {
+    color: '#003087',
+    textDecoration: 'none',
+    fontWeight: '500',
+  },
+  supportPhone: {
+    color: '#a0aec0',
+    fontSize: '11px',
   },
 };
+
+// Inject animation
+const styleSheet = document.createElement('style');
+styleSheet.textContent = `
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+`;
+document.head.appendChild(styleSheet);
 
 export default Login;

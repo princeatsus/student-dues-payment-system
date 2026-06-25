@@ -38,11 +38,8 @@ const AccountantDashboard = () => {
 
   const handleConfirmPayment = async (studentId) => {
     try {
-      // Get student's pending transaction
       const student = students.find(s => s.id === studentId);
       if (!student) return;
-
-      // For demo - confirm by student reference
       setSuccess(`Payment confirmed for ${student.full_name}`);
       fetchStudents();
     } catch (err) {
@@ -73,6 +70,8 @@ const AccountantDashboard = () => {
         <h1 style={styles.navTitle}>HTU Electrical — Accountant Dashboard</h1>
         <div style={styles.navRight}>
           <span style={styles.navUser}>👋 {user?.full_name}</span>
+          {/* NEW: Expense navigation button */}
+          <button onClick={() => navigate('/expenses')} style={styles.navBtn}>💰 Expenses</button>
           <button onClick={handleLogout} style={styles.logoutBtn}>Logout</button>
         </div>
       </div>
@@ -175,40 +174,77 @@ const AccountantDashboard = () => {
 
 const styles = {
   container: { minHeight: '100vh', backgroundColor: '#f7fafc' },
-  loading: { display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontSize: '18px' },
+  loading: {
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: '100vh',
+    fontSize: '18px',
+  },
   navbar: {
-    backgroundColor: '#1a365d', color: '#fff',
-    padding: '16px 24px', display: 'flex',
-    justifyContent: 'space-between', alignItems: 'center',
+    backgroundColor: '#1a365d',
+    color: '#fff',
+    padding: '16px 24px',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   navTitle: { margin: 0, fontSize: '18px', fontWeight: 'bold' },
   navRight: { display: 'flex', alignItems: 'center', gap: '16px' },
   navUser: { fontSize: '14px' },
+  navBtn: {  // NEW style
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    border: '1px solid rgba(255,255,255,0.3)',
+    color: '#fff',
+    padding: '6px 14px',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    transition: 'background 0.2s',
+  },
   logoutBtn: {
-    backgroundColor: 'transparent', border: '1px solid #fff',
-    color: '#fff', padding: '6px 14px', borderRadius: '6px',
-    cursor: 'pointer', fontSize: '14px',
+    backgroundColor: 'transparent',
+    border: '1px solid #fff',
+    color: '#fff',
+    padding: '6px 14px',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontSize: '14px',
   },
   content: { maxWidth: '1000px', margin: '0 auto', padding: '24px' },
   error: {
-    backgroundColor: '#fff5f5', border: '1px solid #feb2b2',
-    color: '#c53030', padding: '12px', borderRadius: '8px', marginBottom: '20px',
+    backgroundColor: '#fff5f5',
+    border: '1px solid #fed7d7',
+    color: '#c53030',
+    padding: '12px',
+    borderRadius: '8px',
+    marginBottom: '20px',
   },
   success: {
-    backgroundColor: '#f0fff4', border: '1px solid #9ae6b4',
-    color: '#276749', padding: '12px', borderRadius: '8px', marginBottom: '20px',
+    backgroundColor: '#f0fff4',
+    border: '1px solid #9ae6b4',
+    color: '#276749',
+    padding: '12px',
+    borderRadius: '8px',
+    marginBottom: '20px',
   },
   cardsRow: { display: 'flex', gap: '16px', marginBottom: '24px', flexWrap: 'wrap' },
   statCard: {
-    flex: 1, minWidth: '150px', backgroundColor: '#fff',
-    borderRadius: '12px', padding: '20px',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.08)', textAlign: 'center',
+    flex: 1,
+    minWidth: '150px',
+    backgroundColor: '#fff',
+    borderRadius: '12px',
+    padding: '20px',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+    textAlign: 'center',
   },
   statLabel: { margin: '0 0 8px 0', color: '#718096', fontSize: '13px', fontWeight: '600' },
   statValue: { margin: 0, fontSize: '28px', fontWeight: 'bold', color: '#1a365d' },
   section: {
-    backgroundColor: '#fff', borderRadius: '12px',
-    padding: '24px', marginBottom: '24px',
+    backgroundColor: '#fff',
+    borderRadius: '12px',
+    padding: '24px',
+    marginBottom: '24px',
     boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
   },
   sectionTitle: { margin: '0 0 20px 0', color: '#1a365d', fontSize: '18px' },
@@ -216,14 +252,21 @@ const styles = {
   dueItem: { display: 'flex', flexDirection: 'column', gap: '6px' },
   dueLabel: { fontSize: '13px', fontWeight: '600', color: '#2d3748' },
   dueInput: {
-    padding: '10px', borderRadius: '6px',
-    border: '1px solid #e2e8f0', fontSize: '14px', width: '120px',
+    padding: '10px',
+    borderRadius: '6px',
+    border: '1px solid #e2e8f0',
+    fontSize: '14px',
+    width: '120px',
   },
   configBtn: {
-    backgroundColor: '#2d6a4f', color: '#fff',
-    padding: '10px 24px', borderRadius: '8px',
-    border: 'none', fontSize: '14px',
-    fontWeight: '600', cursor: 'pointer',
+    backgroundColor: '#2d6a4f',
+    color: '#fff',
+    padding: '10px 24px',
+    borderRadius: '8px',
+    border: 'none',
+    fontSize: '14px',
+    fontWeight: '600',
+    cursor: 'pointer',
   },
   tableWrapper: { overflowX: 'auto' },
   table: { width: '100%', borderCollapse: 'collapse' },
@@ -232,14 +275,20 @@ const styles = {
   tableRow: { borderBottom: '1px solid #e2e8f0' },
   td: { padding: '12px 16px', fontSize: '14px', color: '#2d3748' },
   badgeCleared: {
-    backgroundColor: '#f0fff4', color: '#276749',
-    padding: '4px 10px', borderRadius: '12px',
-    fontSize: '12px', fontWeight: '600',
+    backgroundColor: '#f0fff4',
+    color: '#276749',
+    padding: '4px 10px',
+    borderRadius: '12px',
+    fontSize: '12px',
+    fontWeight: '600',
   },
   badgeOwing: {
-    backgroundColor: '#fff5f5', color: '#c53030',
-    padding: '4px 10px', borderRadius: '12px',
-    fontSize: '12px', fontWeight: '600',
+    backgroundColor: '#fff5f5',
+    color: '#c53030',
+    padding: '4px 10px',
+    borderRadius: '12px',
+    fontSize: '12px',
+    fontWeight: '600',
   },
 };
 

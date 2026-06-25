@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getBalance, generatePaymentReference } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 const StudentDashboard = () => {
   const [balance, setBalance] = useState(null);
@@ -9,8 +11,10 @@ const StudentDashboard = () => {
   const [payLoading, setPayLoading] = useState(false);
   const [reference, setReference] = useState(null);
   const [error, setError] = useState('');
+  const [certLoading, setCertLoading] = useState(false);
   const { user, logoutUser } = useAuth();
   const navigate = useNavigate();
+  const certificateRef = useRef();
 
   useEffect(() => {
     fetchBalance();
@@ -44,6 +48,116 @@ const StudentDashboard = () => {
     navigate('/');
   };
 
+  // Generate Certificate PDF
+  const generateCertificate = async () => {
+    setCertLoading(true);
+    try {
+      // Check if user is cleared
+      if (balance?.balance?.status !== 'CLEARED') {
+        setError('You must clear all dues before downloading a certificate.');
+        setCertLoading(false);
+        return;
+      }
+
+      // Create a temporary div for the certificate
+      const certDiv = document.createElement('div');
+      certDiv.style.cssText = `
+        position: absolute;
+        left: -9999px;
+        top: 0;
+        width: 800px;
+        padding: 40px;
+        background: white;
+        font-family: 'Times New Roman', serif;
+        border: 2px solid #003087;
+        border-radius: 8px;
+      `;
+      
+      // Generate verification code
+      const verCode = `HTU-COMP-${new Date().getFullYear()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+      
+      certDiv.innerHTML = `
+        <div style="text-align:center; border-bottom: 3px double #003087; padding-bottom: 20px; margin-bottom: 20px;">
+          <h1 style="color: #003087; font-size: 28px; margin: 0;">HO TECHNICAL UNIVERSITY</h1>
+          <h2 style="color: #0051d4; font-size: 20px; margin: 5px 0;">COMPUTER SCIENCE DEPARTMENT</h2>
+          <p style="font-size: 14px; color: #666; margin: 5px 0;">P.O. Box HP 217, Ho, Volta Region, Ghana</p>
+        </div>
+        
+        <div style="text-align:center; margin: 30px 0;">
+          <h2 style="font-size: 24px; text-transform: uppercase; letter-spacing: 4px; color: #003087;">DEPARTMENTAL CLEARANCE CERTIFICATE</h2>
+          <p style="font-size: 14px; color: #666;">This certifies that the following student has cleared all departmental dues</p>
+        </div>
+
+        <div style="background: #f0f4ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <table style="width: 100%; font-size: 16px; border-collapse: collapse;">
+            <tr><td style="padding: 8px; font-weight: bold; width: 40%;">Full Name:</td>
+                <td style="padding: 8px;">${balance?.student?.full_name || 'N/A'}</td></tr>
+            <tr><td style="padding: 8px; font-weight: bold;">Index Number:</td>
+                <td style="padding: 8px;">${balance?.student?.index_number || 'N/A'}</td></tr>
+            <tr><td style="padding: 8px; font-weight: bold;">Current Level:</td>
+                <td style="padding: 8px;">${balance?.student?.level || 'N/A'}</td></tr>
+            <tr><td style="padding: 8px; font-weight: bold;">Academic Year:</td>
+                <td style="padding: 8px;">${balance?.session?.academic_year || 'N/A'}</td></tr>
+            <tr><td style="padding: 8px; font-weight: bold;">Semester:</td>
+                <td style="padding: 8px;">Semester ${balance?.session?.semester || 'N/A'}</td></tr>
+            <tr><td style="padding: 8px; font-weight: bold;">Status:</td>
+                <td style="padding: 8px; color: #276749; font-weight: bold; font-size: 18px;">✅ CLEARED</td></tr>
+          </table>
+        </div>
+
+        <div style="text-align:center; margin: 20px 0; padding: 15px; background: #f0fff4; border-radius: 8px; border: 1px solid #9ae6b4;">
+          <p style="font-size: 14px; margin: 0; color: #276749;">This student has no financial holds with the department and is eligible for:</p>
+          <p style="font-size: 14px; margin: 5px 0; color: #276749;">📚 Registration • 📝 Examinations • 🎓 Graduation • 💼 Internships</p>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+          <div style="text-align: center; flex: 1;">
+            <div style="border-top: 1px solid #000; padding-top: 8px; margin-top: 40px; width: 200px; display: inline-block;">
+              <p style="margin: 0; font-size: 12px;">Head of Department</p>
+              <p style="margin: 0; font-size: 12px; color: #666;">Computer Science Department</p>
+            </div>
+          </div>
+          <div style="text-align: center; flex: 1;">
+            <div style="border-top: 1px solid #000; padding-top: 8px; margin-top: 40px; width: 200px; display: inline-block;">
+              <p style="margin: 0; font-size: 12px;">Date Issued</p>
+              <p style="margin: 0; font-size: 12px; color: #666;">${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+            </div>
+          </div>
+        </div>
+
+        <div style="text-align:center; margin-top: 30px; padding-top: 15px; border-top: 2px double #003087;">
+          <p style="font-size: 12px; color: #666; margin: 0;">Verification Code: <strong style="color: #003087;">${verCode}</strong></p>
+          <p style="font-size: 12px; color: #666; margin: 5px 0;">Verify at: https://htu.edu.gh/verify</p>
+          <p style="font-size: 11px; color: #a0aec0; margin: 5px 0;">This certificate is electronically generated and does not require a signature</p>
+        </div>
+      `;
+      
+      document.body.appendChild(certDiv);
+
+      // Convert to canvas and then to PDF
+      const canvas = await html2canvas(certDiv, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+      });
+      
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`Clearance_Certificate_${balance?.student?.index_number || 'Student'}.pdf`);
+      
+      document.body.removeChild(certDiv);
+      setCertLoading(false);
+    } catch (err) {
+      console.error('Certificate generation error:', err);
+      setError('Failed to generate certificate. Please try again.');
+      setCertLoading(false);
+    }
+  };
+
   if (loading) return <div style={styles.loading}>Loading your dashboard...</div>;
 
   return (
@@ -51,7 +165,7 @@ const StudentDashboard = () => {
       {/* Navbar */}
       <div style={styles.navbar}>
         <div>
-          <h1 style={styles.navTitle}>HTU Electrical Dues</h1>
+          <h1 style={styles.navTitle}>HTU Computer Science — Student Dues</h1>
         </div>
         <div style={styles.navRight}>
           <span style={styles.navUser}>👋 {user?.full_name}</span>
@@ -104,6 +218,20 @@ const StudentDashboard = () => {
             >
               {payLoading ? 'Generating...' : '💳 Pay Dues Now'}
             </button>
+          </div>
+        )}
+
+        {/* NEW: Download Certificate Button */}
+        {balance?.balance?.status === 'CLEARED' && (
+          <div style={styles.certSection}>
+            <button
+              onClick={generateCertificate}
+              style={certLoading ? { ...styles.certBtn, opacity: 0.7 } : styles.certBtn}
+              disabled={certLoading}
+            >
+              {certLoading ? '⏳ Generating Certificate...' : '📄 Download Clearance Certificate'}
+            </button>
+            <p style={styles.certNote}>PDF certificate with official department letterhead</p>
           </div>
         )}
 
@@ -179,6 +307,18 @@ const styles = {
     padding: '14px 40px', borderRadius: '8px',
     border: 'none', fontSize: '16px',
     fontWeight: 'bold', cursor: 'pointer',
+  },
+  certSection: { textAlign: 'center', marginBottom: '24px' },
+  certBtn: {
+    backgroundColor: '#003087', color: '#fff',
+    padding: '14px 40px', borderRadius: '8px',
+    border: 'none', fontSize: '16px',
+    fontWeight: 'bold', cursor: 'pointer',
+    boxShadow: '0 4px 12px rgba(0,48,135,0.3)',
+  },
+  certNote: {
+    fontSize: '12px', color: '#718096',
+    marginTop: '8px',
   },
   referenceCard: {
     backgroundColor: '#ebf8ff', border: '1px solid #90cdf4',

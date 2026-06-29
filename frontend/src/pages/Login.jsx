@@ -41,12 +41,26 @@ const PRESETS = [
 
 const Login = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-  const [isDeveloperMode, setIsDeveloperMode] = useState(true); // Active by default for Hackathon demo
+  const [isDeveloperMode, setIsDeveloperMode] = useState(false); // Default to secure Google Auth mode
+  const [isMockUnlocked, setIsMockUnlocked] = useState(false);
+  const [passcode, setPasscode] = useState('');
+  const [passcodeError, setPasscodeError] = useState('');
+
   const [mockEmail, setMockEmail] = useState(PRESETS[0].email);
   const [mockName, setMockName] = useState(PRESETS[0].name);
   const [mockRole, setMockRole] = useState(PRESETS[0].role);
   const [mockLevel, setMockLevel] = useState(PRESETS[0].level);
   const [mockClassGroup, setMockClassGroup] = useState(PRESETS[0].classGroup);
+
+  const handleVerifyPasscode = (e) => {
+    e.preventDefault();
+    if (passcode === 'htu2026') {
+      setIsMockUnlocked(true);
+      setPasscodeError('');
+    } else {
+      setPasscodeError('Invalid passcode. Access Denied.');
+    }
+  };
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -243,6 +257,40 @@ const Login = () => {
                 Only domains ending in <code>indexnumber.htu.edu.gh</code> or <code>htu.edu.gh</code> will be authorized.
               </div>
             </div>
+          ) : !isMockUnlocked ? (
+            <form onSubmit={handleVerifyPasscode} style={styles.form}>
+              <p style={styles.mockHelpText}>
+                🔑 <strong>Developer Mode Locked</strong>
+              </p>
+              <p style={{ ...styles.oauthNote, fontSize: '13px', margin: '4px 0 16px 0' }}>
+                Please enter the Developer Passcode to unlock the demo presets for this submission:
+              </p>
+              
+              <div style={styles.inputGroup}>
+                <label style={styles.label}>Developer Passcode</label>
+                <input
+                  type="password"
+                  placeholder="Enter passcode"
+                  value={passcode}
+                  onChange={(e) => setPasscode(e.target.value)}
+                  style={styles.input}
+                  required
+                />
+              </div>
+
+              {passcodeError && (
+                <p style={{ color: '#e53e3e', fontSize: '12px', margin: '0' }}>
+                  ❌ {passcodeError}
+                </p>
+              )}
+
+              <button
+                type="submit"
+                style={styles.submitBtn}
+              >
+                Unlock Demo Presets →
+              </button>
+            </form>
           ) : (
             <form onSubmit={handleMockLoginSubmit} style={styles.form}>
               <p style={styles.mockHelpText}>

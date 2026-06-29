@@ -40,6 +40,7 @@ const PRESETS = [
 ];
 
 const Login = () => {
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [isDeveloperMode, setIsDeveloperMode] = useState(true); // Active by default for Hackathon demo
   const [mockEmail, setMockEmail] = useState(PRESETS[0].email);
   const [mockName, setMockName] = useState(PRESETS[0].name);
@@ -52,6 +53,13 @@ const Login = () => {
   const [googleScriptLoaded, setGoogleScriptLoaded] = useState(false);
   const { loginUser } = useAuth();
   const navigate = useNavigate();
+
+  // Handle window resize for mobile check
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Load Google Identity Services script
   useEffect(() => {
@@ -159,40 +167,42 @@ const Login = () => {
   };
 
   return (
-    <div style={styles.page}>
+    <div style={{ ...styles.page, flexDirection: isMobile ? 'column' : 'row' }}>
       {/* Left Panel */}
-      <div style={styles.leftPanel}>
-        <div style={styles.leftContent}>
-          <div style={styles.badgeRow}>
-            <span style={styles.deptBadge}>🎓 COMPSSA · HTU</span>
-          </div>
-          <h1 style={styles.leftTitle}>Ho Technical University</h1>
-          <h2 style={styles.leftSubtitle}>Department of Computer Science</h2>
-          <p style={styles.tagline}>— Excellence in Technology & Innovation —</p>
-          <div style={styles.divider} />
-          <p style={styles.leftDesc}>
-            Secured Student Dues Payment & Expense Management System
-          </p>
-          
-          <div style={styles.featureList}>
-            <div style={styles.feature}>🔒 Restricted to @indexnumber.htu.edu.gh domains</div>
-            <div style={styles.feature}>📊 Real-time class dues collections & audits</div>
-            <div style={styles.feature}>💳 Simulated MoMo prompt and reference generator</div>
-            <div style={styles.feature}>📄 Secure watermarked departmental clearance slips</div>
-          </div>
+      {!isMobile && (
+        <div style={styles.leftPanel}>
+          <div style={styles.leftContent}>
+            <div style={styles.badgeRow}>
+              <span style={styles.deptBadge}>🎓 COMPSSA · HTU</span>
+            </div>
+            <h1 style={styles.leftTitle}>Ho Technical University</h1>
+            <h2 style={styles.leftSubtitle}>Department of Computer Science</h2>
+            <p style={styles.tagline}>— Excellence in Technology & Innovation —</p>
+            <div style={styles.divider} />
+            <p style={styles.leftDesc}>
+              Secured Student Dues Payment & Expense Management System
+            </p>
+            
+            <div style={styles.featureList}>
+              <div style={styles.feature}>🔒 Restricted to @indexnumber.htu.edu.gh domains</div>
+              <div style={styles.feature}>📊 Real-time class dues collections & audits</div>
+              <div style={styles.feature}>💳 Simulated MoMo prompt and reference generator</div>
+              <div style={styles.feature}>📄 Secure watermarked departmental clearance slips</div>
+            </div>
 
-          <div style={styles.hackathonBadge}>
-            ⚡ COMPSSA Hackathon 2026 Submission
+            <div style={styles.hackathonBadge}>
+              ⚡ COMPSSA Hackathon 2026 Submission
+            </div>
+          </div>
+          <div style={styles.leftFooterGroup}>
+            <p style={styles.leftFooter}>Computer Science Dept © 2026</p>
           </div>
         </div>
-        <div style={styles.leftFooterGroup}>
-          <p style={styles.leftFooter}>Computer Science Dept © 2026</p>
-        </div>
-      </div>
+      )}
 
       {/* Right Panel */}
-      <div style={styles.rightPanel}>
-        <div style={styles.card}>
+      <div style={{ ...styles.rightPanel, padding: isMobile ? '16px' : '40px' }}>
+        <div style={{ ...styles.card, padding: isMobile ? '24px 16px' : '40px' }}>
           <div style={styles.cardHeader}>
             <div style={styles.cardIcon}>🛡️</div>
             <h2 style={styles.cardTitle}>Secured Portal Login</h2>

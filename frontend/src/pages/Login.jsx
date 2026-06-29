@@ -40,6 +40,7 @@ const PRESETS = [
 ];
 
 const Login = () => {
+  const showDemoSwitcher = new URLSearchParams(window.location.search).get('demo') === 'true';
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [isDeveloperMode, setIsDeveloperMode] = useState(false); // Default to secure Google Auth mode
   const [isMockUnlocked, setIsMockUnlocked] = useState(false);
@@ -230,20 +231,22 @@ const Login = () => {
           )}
 
           {/* Mode Switcher */}
-          <div style={styles.modeTabs}>
-            <button 
-              style={{ ...styles.tab, ...(isDeveloperMode ? {} : styles.activeTab) }}
-              onClick={() => { setIsDeveloperMode(false); setError(''); }}
-            >
-              Google Auth
-            </button>
-            <button 
-              style={{ ...styles.tab, ...(isDeveloperMode ? styles.activeTab : {}) }}
-              onClick={() => { setIsDeveloperMode(true); setError(''); }}
-            >
-              🔧 Demo Mock Mode
-            </button>
-          </div>
+          {showDemoSwitcher && (
+            <div style={styles.modeTabs}>
+              <button 
+                style={{ ...styles.tab, ...(isDeveloperMode ? {} : styles.activeTab) }}
+                onClick={() => { setIsDeveloperMode(false); setError(''); }}
+              >
+                Google Auth
+              </button>
+              <button 
+                style={{ ...styles.tab, ...(isDeveloperMode ? styles.activeTab : {}) }}
+                onClick={() => { setIsDeveloperMode(true); setError(''); }}
+              >
+                🔧 Demo Mock Mode
+              </button>
+            </div>
+          )}
 
           {!isDeveloperMode ? (
             <div style={styles.oauthContainer}>

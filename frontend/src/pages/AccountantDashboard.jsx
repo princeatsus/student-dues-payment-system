@@ -71,6 +71,7 @@ const AccountantDashboard = () => {
         <div style={styles.navRight}>
           <span style={styles.navUser}>👋 {user?.full_name}</span>
           {/* NEW: Expense navigation button */}
+          <button onClick={() => navigate('/reconcile')} style={styles.navBtn}>🔄 MoMo Reconciliation</button>
           <button onClick={() => navigate('/expenses')} style={styles.navBtn}>💰 Expenses</button>
           <button onClick={handleLogout} style={styles.logoutBtn}>Logout</button>
         </div>

@@ -131,4 +131,66 @@ const getAllStudents = async (req, res) => {
   }
 };
 
-module.exports = { getAllTransactions, confirmPayment, getAllStudents };
+// POST /api/accountant/reconcile/manual-assign - Manually assign a payment to a student (FR-PAY-04 / US-3.1.4)
+const manualAssignPayment = async (req, res) => {
+  try {
+    const { student_id, amount, payment_method, notes } = req.body;
+    const accountantId = req.user.id;
+
+    if (!student_id || !amount) {
+      return res.status(400).json({ message: 'Student ID and amount are required' });
+    }
+
+    // Get active session
+    const sessionResult = await pool.query(
+      'SELECT * FROM academic_sessions WHERE is_active = TRUE LIMIT 1'
+    );
+    if (sessionResult.rows.length === 0) {
+      return res.status(404).json({ message: 'No active academic session found' });
+    }
+    const session = sessionResult.rows[0];
+
+    // Generate unique reference for manual ledger entry
+    const randomPart = Math.random().toString(36).substring(2, 6).toUpperCase();
+    const shortYear = new Date().getFullYear().toString().slice(-2);
+    const reference = `HTU-MAN-${shortYear}-${randomPart}`;
+
+    // Create reconciled transaction
+    const txResult = await pool.query(
+      `INSERT INTO transactions (student_id, session_id, amount, payment_reference, status, payment_method, reconciled_by, reconciled_at, notes)
+       VALUES ($1, $2, $3, $4, 'RECONCILED', $5, $6, CURRENT_TIMESTAMP, $7)
+       RETURNING *`,
+      [student_id, session.id, amount, reference, payment_method || 'CASH', accountantId, notes || 'Manual Payment Entry']
+    );
+
+    // Log action in append-only audit logs (NFR-SEC-02 Compliance)
+    await pool.query(
+      `INSERT INTO audit_logs (actor_id, action, target_type, target_id, new_value)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [
+        accountantId, 
+        'MANUAL_PAYMENT_ENTRY', 
+        'TRANSACTION', 
+        txResult.rows[0].id, 
+        JSON.stringify({ 
+          student_id, 
+          reference, 
+          amount, 
+          payment_method, 
+          notes 
+        })
+      ]
+    );
+
+    res.status(201).json({
+      message: 'Payment recorded and reconciled successfully',
+      transaction: txResult.rows[0]
+    });
+
+  } catch (error) {
+    console.error('Manual assign payment error:', error.message);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+module.exports = { getAllTransactions, confirmPayment, getAllStudents, manualAssignPayment };

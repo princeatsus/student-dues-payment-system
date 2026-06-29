@@ -12,4 +12,7 @@ router.post('/override', protect, authorize('HOD', 'ADMIN'), hodController.grant
 // View all overrides
 router.get('/overrides', protect, authorize('HOD', 'ADMIN', 'ACCOUNTANT'), hodController.getAllOverrides);
 
+// Get executive dashboard stats
+router.get('/stats', protect, authorize('HOD', 'ADMIN'), hodController.getHODStats);
+
 module.exports = router;

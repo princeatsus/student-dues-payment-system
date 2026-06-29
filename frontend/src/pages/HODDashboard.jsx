@@ -1,11 +1,22 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getDefaulters, grantOverride, getAllOverrides } from '../utils/api';
+import { getDefaulters, grantOverride, getAllOverrides, getHODStats } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 
 const HODDashboard = () => {
   const [defaulters, setDefaulters] = useState([]);
   const [overrides, setOverrides] = useState([]);
+  const [stats, setStats] = useState({
+    total_students: 0,
+    paid_students: 0,
+    owing_students: 0,
+    collection_efficiency: 0,
+    total_collected: 0,
+    total_disbursed: 0,
+    total_pending: 0,
+    remaining_budget: 0,
+    spend_ratio: 0
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -22,12 +33,16 @@ const HODDashboard = () => {
 
   const fetchData = async () => {
     try {
-      const [defRes, ovRes] = await Promise.all([
+      const [defRes, ovRes, statsRes] = await Promise.all([
         getDefaulters(),
         getAllOverrides(),
+        getHODStats(),
       ]);
       setDefaulters(defRes.data.defaulters || []);
       setOverrides(ovRes.data.overrides || []);
+      if (statsRes.data.stats) {
+        setStats(statsRes.data.stats);
+      }
     } catch (err) {
       setError('Failed to load data. Please refresh.');
     } finally {
@@ -63,6 +78,29 @@ const HODDashboard = () => {
     }
   };
 
+  const handleExportDefaulters = () => {
+    if (defaulters.length === 0) return;
+    const headers = ['Index Number', 'Full Name', 'Level', 'Class Group', 'Outstanding Dues (GHS)'];
+    const rows = defaulters.map(student => [
+      student.index_number,
+      student.full_name,
+      student.current_level,
+      student.class_group || '—',
+      parseFloat(student.outstanding || 0).toFixed(2)
+    ]);
+
+    const csvContent = 'data:text/csv;charset=utf-8,' 
+      + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `Defaulters_List_HTU_Electrical.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const handleLogout = () => {
     logoutUser();
     navigate('/');
@@ -87,21 +125,124 @@ const HODDashboard = () => {
         {error && <div style={styles.error}>{error}</div>}
         {success && <div style={styles.success}>{success}</div>}
 
-        {/* Stats Row */}
-        <div style={styles.cardsRow}>
-          <div style={styles.statCard}>
-            <p style={styles.statLabel}>Total Defaulters</p>
-            <p style={styles.statValue}>{defaulters.length}</p>
+        {/* Executive Dashboard Summary */}
+        <div style={styles.dashboardSection}>
+          <div style={styles.metricGrid}>
+            <div style={styles.metricCard}>
+              <div style={styles.metricHeader}>
+                <span style={{ ...styles.metricIcon, backgroundColor: '#ffebe9', color: '#e53e3e' }}>📋</span>
+                <p style={styles.metricLabel}>Total Defaulters</p>
+              </div>
+              <p style={{ ...styles.metricValue, color: '#e53e3e' }}>{defaulters.length}</p>
+            </div>
+            
+            <div style={styles.metricCard}>
+              <div style={styles.metricHeader}>
+                <span style={{ ...styles.metricIcon, backgroundColor: '#e6fffa', color: '#2d6a4f' }}>🛡️</span>
+                <p style={styles.metricLabel}>Active Overrides</p>
+              </div>
+              <p style={{ ...styles.metricValue, color: '#2d6a4f' }}>{overrides.length}</p>
+            </div>
+
+            <div style={styles.metricCard}>
+              <div style={styles.metricHeader}>
+                <span style={{ ...styles.metricIcon, backgroundColor: '#ebf8ff', color: '#2b6cb0' }}>👥</span>
+                <p style={styles.metricLabel}>Total Enrollment</p>
+              </div>
+              <p style={{ ...styles.metricValue, color: '#2b6cb0' }}>{stats.total_students}</p>
+            </div>
           </div>
-          <div style={styles.statCard}>
-            <p style={styles.statLabel}>Active Overrides</p>
-            <p style={{ ...styles.statValue, color: '#38a169' }}>{overrides.length}</p>
+
+          <div style={styles.chartsRow}>
+            {/* Collection Efficiency Card */}
+            <div style={styles.chartCard}>
+              <h3 style={styles.chartCardTitle}>📊 Dues Collection Efficiency</h3>
+              <div style={styles.chartCardBody}>
+                <div style={styles.progressRingContainer}>
+                  <svg width="100" height="100">
+                    <circle cx="50" cy="50" r="35" stroke="#edf2f7" strokeWidth="8" fill="transparent" />
+                    <circle 
+                      cx="50" 
+                      cy="50" 
+                      r="35" 
+                      stroke="#003087" 
+                      strokeWidth="8" 
+                      fill="transparent" 
+                      strokeDasharray={2 * Math.PI * 35}
+                      strokeDashoffset={(2 * Math.PI * 35) - (stats.collection_efficiency / 100) * (2 * Math.PI * 35)}
+                      strokeLinecap="round"
+                      transform="rotate(-90 50 50)"
+                    />
+                  </svg>
+                  <div style={styles.progressRingText}>{stats.collection_efficiency}%</div>
+                </div>
+                <div style={styles.chartStatsList}>
+                  <div style={styles.chartStatItem}>
+                    <span style={styles.chartStatDot} />
+                    <div style={styles.chartStatContent}>
+                      <span style={styles.chartStatLabel}>Paid in Full</span>
+                      <span style={styles.chartStatVal}>{stats.paid_students} students</span>
+                    </div>
+                  </div>
+                  <div style={styles.chartStatItem}>
+                    <span style={{ ...styles.chartStatDot, backgroundColor: '#e53e3e' }} />
+                    <div style={styles.chartStatContent}>
+                      <span style={styles.chartStatLabel}>Owing Dues</span>
+                      <span style={styles.chartStatVal}>{stats.owing_students} students</span>
+                    </div>
+                  </div>
+                  <div style={styles.chartStatDivider} />
+                  <div style={styles.chartStatContent}>
+                    <span style={styles.chartStatLabel}>Total Dues Collected</span>
+                    <span style={{ ...styles.chartStatVal, fontSize: '15px', color: '#003087', fontWeight: 'bold' }}>₵{stats.total_collected.toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Class Budget Spend Card */}
+            <div style={styles.chartCard}>
+              <h3 style={styles.chartCardTitle}>💸 Class Budget Spend Ratio</h3>
+              <div style={styles.chartCardBody}>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '14px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                    <div>
+                      <span style={styles.chartStatLabel}>Approved & Disbursed</span>
+                      <p style={{ margin: '4px 0 0 0', fontSize: '18px', fontWeight: 'bold', color: '#e53e3e' }}>₵{stats.total_disbursed.toFixed(2)}</p>
+                    </div>
+                    <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#718096' }}>{stats.spend_ratio}% Spent</span>
+                  </div>
+
+                  <div style={styles.linearProgressBarBg}>
+                    <div style={{ ...styles.linearProgressBarFill, width: `${Math.min(100, stats.spend_ratio)}%` }} />
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginTop: '4px' }}>
+                    <div>
+                      <span style={styles.chartStatLabel}>Pending HOD/Finance</span>
+                      <p style={{ margin: '2px 0 0 0', fontWeight: 'bold', color: '#dd6b20' }}>₵{stats.total_pending.toFixed(2)}</p>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <span style={styles.chartStatLabel}>Net Remaining Balance</span>
+                      <p style={{ margin: '2px 0 0 0', fontWeight: 'bold', color: '#2d6a4f' }}>₵{stats.remaining_budget.toFixed(2)}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Defaulters Table */}
         <div style={styles.section}>
-          <h2 style={styles.sectionTitle}>📋 Defaulters List</h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <h2 style={{ ...styles.sectionTitle, margin: 0 }}>📋 Defaulters List</h2>
+            {defaulters.length > 0 && (
+              <button onClick={handleExportDefaulters} style={styles.exportBtn}>
+                📥 Export Defaulters to Excel (CSV)
+              </button>
+            )}
+          </div>
           {defaulters.length === 0 ? (
             <p style={styles.empty}>✅ No defaulters — all students are cleared!</p>
           ) : (
@@ -269,18 +410,138 @@ const styles = {
     borderRadius: '8px',
     marginBottom: '20px',
   },
-  cardsRow: { display: 'flex', gap: '16px', marginBottom: '24px', flexWrap: 'wrap' },
-  statCard: {
-    flex: 1,
-    minWidth: '150px',
+  dashboardSection: {
+    marginBottom: '28px',
+  },
+  metricGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+    gap: '16px',
+    marginBottom: '20px',
+  },
+  metricCard: {
+    backgroundColor: '#fff',
+    borderRadius: '12px',
+    padding: '16px 20px',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+  },
+  metricHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    marginBottom: '8px',
+  },
+  metricIcon: {
+    width: '32px',
+    height: '32px',
+    borderRadius: '50%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '16px',
+  },
+  metricLabel: {
+    margin: 0,
+    color: '#718096',
+    fontSize: '13px',
+    fontWeight: '600',
+  },
+  metricValue: {
+    margin: '0 0 0 42px',
+    fontSize: '24px',
+    fontWeight: 'bold',
+    color: '#1a202c',
+  },
+  chartsRow: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+    gap: '16px',
+  },
+  chartCard: {
     backgroundColor: '#fff',
     borderRadius: '12px',
     padding: '20px',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-    textAlign: 'center',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
   },
-  statLabel: { margin: '0 0 8px 0', color: '#718096', fontSize: '13px', fontWeight: '600' },
-  statValue: { margin: 0, fontSize: '28px', fontWeight: 'bold', color: '#1a365d' },
+  chartCardTitle: {
+    margin: '0 0 16px 0',
+    fontSize: '15px',
+    color: '#1a365d',
+    fontWeight: '600',
+  },
+  chartCardBody: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '24px',
+    minHeight: '120px',
+  },
+  progressRingContainer: {
+    position: 'relative',
+    width: '100px',
+    height: '100px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  progressRingText: {
+    position: 'absolute',
+    fontSize: '18px',
+    fontWeight: 'bold',
+    color: '#003087',
+  },
+  chartStatsList: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '10px',
+  },
+  chartStatItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+  },
+  chartStatDot: {
+    width: '8px',
+    height: '8px',
+    borderRadius: '50%',
+    backgroundColor: '#003087',
+  },
+  chartStatContent: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    width: '100%',
+    alignItems: 'center',
+    fontSize: '13px',
+  },
+  chartStatLabel: {
+    color: '#718096',
+    fontWeight: '500',
+  },
+  chartStatVal: {
+    color: '#2d3748',
+    fontWeight: '600',
+  },
+  chartStatDivider: {
+    height: '1px',
+    backgroundColor: '#edf2f7',
+    margin: '4px 0',
+  },
+  linearProgressBarBg: {
+    width: '100%',
+    height: '12px',
+    backgroundColor: '#edf2f7',
+    borderRadius: '6px',
+    overflow: 'hidden',
+  },
+  linearProgressBarFill: {
+    height: '100%',
+    backgroundColor: '#e53e3e',
+    borderRadius: '6px',
+    transition: 'width 0.3s ease',
+  },
   section: {
     backgroundColor: '#fff',
     borderRadius: '12px',
@@ -355,6 +616,16 @@ const styles = {
     borderRadius: '6px',
     cursor: 'pointer',
     fontSize: '14px',
+  },
+  exportBtn: {
+    backgroundColor: '#003087',
+    color: '#fff',
+    border: 'none',
+    padding: '8px 16px',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontSize: '12px',
+    fontWeight: 'bold',
   },
 };
 

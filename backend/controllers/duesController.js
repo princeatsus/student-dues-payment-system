@@ -1,9 +1,8 @@
 const pool = require('../config/db');
-const { v4: uuidv4 } = require('uuid');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
-// GET /api/dues/balance - Student views their balance
+// GET /api/dues/balance - Student views their balance (includes carryover calculations)
 const getBalance = async (req, res) => {
   try {
     const studentId = req.user.id;
@@ -21,50 +20,94 @@ const getBalance = async (req, res) => {
 
     // Get student info
     const studentResult = await pool.query(
-      'SELECT * FROM users WHERE id = $1',
+      'SELECT * FROM students WHERE id = $1',
       [studentId]
     );
 
+    if (studentResult.rows.length === 0) {
+      return res.status(404).json({ message: 'Student record not found' });
+    }
+
     const student = studentResult.rows[0];
 
-    // Get dues amount for student's level
-    const duesResult = await pool.query(
+    // 1. Current Semester Dues Configuration
+    const currentDuesResult = await pool.query(
       'SELECT * FROM dues_configuration WHERE session_id = $1 AND student_level = $2',
       [session.id, student.current_level]
     );
 
-    if (duesResult.rows.length === 0) {
-      return res.status(404).json({ message: 'Dues not configured for your level yet' });
-    }
+    const currentDuesAmount = currentDuesResult.rows.length > 0 
+      ? parseFloat(currentDuesResult.rows[0].amount) 
+      : 0;
 
-    const duesAmount = parseFloat(duesResult.rows[0].amount);
-
-    // Get total amount paid
-    const paidResult = await pool.query(
+    // 2. Current Semester Paid
+    const currentPaidResult = await pool.query(
       `SELECT COALESCE(SUM(amount), 0) as total_paid 
        FROM transactions 
        WHERE student_id = $1 AND session_id = $2 AND status IN ('PAID', 'RECONCILED')`,
       [studentId, session.id]
     );
+    const currentPaidAmount = parseFloat(currentPaidResult.rows[0].total_paid);
 
-    const totalPaid = parseFloat(paidResult.rows[0].total_paid);
-    const outstanding = duesAmount - totalPaid;
+    // 3. Past Semesters Carryover Balance
+    // Sum of dues configured for past semesters/levels where this student was enrolled
+    const pastDuesConfigResult = await pool.query(
+      `SELECT COALESCE(SUM(dc.amount), 0) as total_past_dues
+       FROM dues_configuration dc
+       JOIN academic_sessions as2 ON dc.session_id = as2.id
+       WHERE dc.session_id != $1 AND dc.student_level <= $2`,
+      [session.id, student.current_level]
+    );
+    const totalPastDues = parseFloat(pastDuesConfigResult.rows[0].total_past_dues);
+
+    // Sum of payments in past semesters
+    const pastPaidResult = await pool.query(
+      `SELECT COALESCE(SUM(amount), 0) as total_past_paid 
+       FROM transactions 
+       WHERE student_id = $1 AND session_id != $2 AND status IN ('PAID', 'RECONCILED')`,
+      [studentId, session.id]
+    );
+    const totalPastPaid = parseFloat(pastPaidResult.rows[0].total_past_paid);
+
+    // Calculate carryover (unpaid previous balance)
+    const carryoverBalance = Math.max(0, totalPastDues - totalPastPaid);
+
+    // 4. Totals calculations
+    const currentOutstanding = Math.max(0, currentDuesAmount - currentPaidAmount);
+    const totalOutstanding = currentOutstanding + carryoverBalance;
+    const totalPaid = currentPaidAmount + totalPastPaid;
+
+    // Check if HOD Exam Clearance Override is active for this semester (NFR-REP-03 / AC 1.2.4)
+    const overrideResult = await pool.query(
+      'SELECT id, reason FROM exam_clearance_overrides WHERE student_id = $1 AND session_id = $2 AND is_active = TRUE',
+      [studentId, session.id]
+    );
+    const hasOverride = overrideResult.rows.length > 0;
+    const overrideReason = hasOverride ? overrideResult.rows[0].reason : null;
 
     res.status(200).json({
       student: {
+        id: student.id,
         full_name: student.full_name,
         index_number: student.index_number,
-        level: student.current_level
+        level: student.current_level,
+        class_group: student.class_group
       },
       session: {
+        id: session.id,
         academic_year: session.academic_year,
         semester: session.semester
       },
       balance: {
-        total_dues: `₵${duesAmount.toFixed(2)}`,
+        current_dues: `₵${currentDuesAmount.toFixed(2)}`,
+        current_paid: `₵${currentPaidAmount.toFixed(2)}`,
+        current_outstanding: `₵${currentOutstanding.toFixed(2)}`,
+        previous_balance: `₵${carryoverBalance.toFixed(2)}`,
+        total_outstanding: `₵${totalOutstanding.toFixed(2)}`,
         total_paid: `₵${totalPaid.toFixed(2)}`,
-        outstanding: `₵${outstanding.toFixed(2)}`,
-        status: outstanding <= 0 ? 'CLEARED' : 'OWING'
+        status: totalOutstanding <= 0 ? 'CLEARED' : 'OWING',
+        has_override: hasOverride,
+        override_reason: overrideReason
       }
     });
 
@@ -83,9 +126,7 @@ const getDuesConfig = async (req, res) => {
        JOIN academic_sessions as2 ON dc.session_id = as2.id
        WHERE as2.is_active = TRUE`
     );
-
     res.status(200).json({ dues: result.rows });
-
   } catch (error) {
     console.error('Get dues config error:', error.message);
     res.status(500).json({ message: 'Server error' });
@@ -96,7 +137,9 @@ const getDuesConfig = async (req, res) => {
 const setDuesConfig = async (req, res) => {
   try {
     const { academic_year, semester, dues } = req.body;
-    // dues = [{ level: 100, amount: 100 }, { level: 200, amount: 150 }...]
+
+    // Deactivate other sessions if we are creating/activating a new one
+    await pool.query('UPDATE academic_sessions SET is_active = FALSE');
 
     // Create or get session
     let sessionResult = await pool.query(
@@ -109,11 +152,16 @@ const setDuesConfig = async (req, res) => {
         'INSERT INTO academic_sessions (academic_year, semester, is_active) VALUES ($1, $2, TRUE) RETURNING *',
         [academic_year, semester]
       );
+    } else {
+      await pool.query(
+        'UPDATE academic_sessions SET is_active = TRUE WHERE id = $1',
+        [sessionResult.rows[0].id]
+      );
     }
 
     const sessionId = sessionResult.rows[0].id;
 
-    // Insert dues for each level
+    // Insert/update dues for each level
     for (const due of dues) {
       await pool.query(
         `INSERT INTO dues_configuration (session_id, student_level, amount)
@@ -123,11 +171,17 @@ const setDuesConfig = async (req, res) => {
       );
     }
 
-    // Log action
+    // Log action in append-only log
     await pool.query(
-      `INSERT INTO audit_logs (actor_id, action, target_type, new_value)
-       VALUES ($1, $2, $3, $4)`,
-      [req.user.id, 'DUES_CONFIGURED', 'ACADEMIC_SESSION', JSON.stringify({ academic_year, semester, dues })]
+      `INSERT INTO audit_logs (actor_id, action, target_type, target_id, new_value)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [
+        req.user.id, 
+        'DUES_CONFIGURED', 
+        'ACADEMIC_SESSION', 
+        null,
+        JSON.stringify({ academic_year, semester, dues })
+      ]
     );
 
     res.status(201).json({ message: 'Dues configured successfully' });
@@ -138,7 +192,7 @@ const setDuesConfig = async (req, res) => {
   }
 };
 
-// POST /api/dues/pay - Generate payment reference
+// POST /api/dues/pay - Generate 12-character unique Momo reference (AC 1.1.2)
 const generatePaymentReference = async (req, res) => {
   try {
     const studentId = req.user.id;
@@ -156,13 +210,32 @@ const generatePaymentReference = async (req, res) => {
 
     // Get student info
     const studentResult = await pool.query(
-      'SELECT * FROM users WHERE id = $1',
+      'SELECT * FROM students WHERE id = $1',
       [studentId]
     );
 
     const student = studentResult.rows[0];
 
-    // Get dues amount
+    // Check if there is already a PENDING transaction for this student this semester
+    const pendingTxResult = await pool.query(
+      `SELECT * FROM transactions 
+       WHERE student_id = $1 AND session_id = $2 AND status = 'PENDING' 
+       ORDER BY created_at DESC LIMIT 1`,
+      [studentId, session.id]
+    );
+
+    if (pendingTxResult.rows.length > 0) {
+      const existingTx = pendingTxResult.rows[0];
+      return res.status(200).json({
+        message: 'Active payment reference found',
+        reference: existingTx.payment_reference,
+        amount: `₵${parseFloat(existingTx.amount).toFixed(2)}`,
+        instructions: `Dial *170# → Send Money → Enter reference: ${existingTx.payment_reference}`,
+        transaction: existingTx
+      });
+    }
+
+    // Get dues amount configuration
     const duesResult = await pool.query(
       'SELECT * FROM dues_configuration WHERE session_id = $1 AND student_level = $2',
       [session.id, student.current_level]
@@ -174,16 +247,29 @@ const generatePaymentReference = async (req, res) => {
 
     const amount = duesResult.rows[0].amount;
 
-    // Generate unique reference like HTU-ELE-26-AB12
+    // Generate unique 12-character alphanumeric reference code (HTU-ELE-24-AB12 style)
     const randomPart = Math.random().toString(36).substring(2, 6).toUpperCase();
-    const year = new Date().getFullYear().toString().slice(-2);
-    const reference = `HTU-ELE-${year}-${randomPart}`;
+    const shortYear = new Date().getFullYear().toString().slice(-2);
+    const reference = `HTU-ELE-${shortYear}-${randomPart}`;
 
     // Save as pending transaction
     const transaction = await pool.query(
       `INSERT INTO transactions (student_id, session_id, amount, payment_reference, status, payment_method)
        VALUES ($1, $2, $3, $4, 'PENDING', 'MOMO_MTN') RETURNING *`,
       [studentId, session.id, amount, reference]
+    );
+
+    // Log action
+    await pool.query(
+      `INSERT INTO audit_logs (actor_id, action, target_type, target_id, new_value)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [
+        studentId, 
+        'PAYMENT_REF_GENERATED', 
+        'TRANSACTION', 
+        transaction.rows[0].id, 
+        JSON.stringify({ reference, amount })
+      ]
     );
 
     res.status(201).json({

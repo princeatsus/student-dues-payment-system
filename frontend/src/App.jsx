@@ -4,7 +4,11 @@ import Login from './pages/Login';
 import StudentDashboard from './pages/StudentDashboard';
 import AccountantDashboard from './pages/AccountantDashboard';
 import HODDashboard from './pages/HODDashboard';
-import ExpenseDashboard from './pages/ExpenseDashboard'; // <-- ADD
+import ExpenseDashboard from './pages/ExpenseDashboard';
+import ClassRoster from './pages/ClassRoster';
+import Reconciliation from './pages/Reconciliation';
+import Verify from './pages/Verify';
+import IoTGate from './pages/IoTGate';
 
 const ProtectedRoute = ({ children, roles }) => {
   const { user, loading } = useAuth();
@@ -28,6 +32,11 @@ function App() {
           <AccountantDashboard />
         </ProtectedRoute>
       } />
+      <Route path="/reconcile" element={
+        <ProtectedRoute roles={['ACCOUNTANT', 'ADMIN']}>
+          <Reconciliation />
+        </ProtectedRoute>
+      } />
       <Route path="/hod" element={
         <ProtectedRoute roles={['HOD']}>
           <HODDashboard />
@@ -38,6 +47,13 @@ function App() {
           <ExpenseDashboard />
         </ProtectedRoute>
       } />
+      <Route path="/roster" element={
+        <ProtectedRoute roles={['COURSE_REP', 'ADMIN']}>
+          <ClassRoster />
+        </ProtectedRoute>
+      } />
+      <Route path="/verify" element={<Verify />} />
+      <Route path="/iot-gate" element={<IoTGate />} />
     </Routes>
   );
 }

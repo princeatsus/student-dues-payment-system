@@ -13,6 +13,9 @@ const duesRoutes = require('./routes/dues');
 const accountantRoutes = require('./routes/accountant');
 const hodRoutes = require('./routes/hod');
 const expenseRoutes = require('./routes/expense');
+const studentRoutes = require('./routes/student');
+const repRoutes = require('./routes/rep');
+const publicRoutes = require('./routes/public');
 
 // Initialize Express app
 const app = express();
@@ -36,6 +39,9 @@ app.use('/api/dues', duesRoutes);
 app.use('/api/accountant', accountantRoutes);
 app.use('/api/hod', hodRoutes);
 app.use('/api/expenses', expenseRoutes);
+app.use('/api/student', studentRoutes);
+app.use('/api/rep', repRoutes);
+app.use('/api/public', publicRoutes);
 
 // Test route
 app.get('/', (req, res) => {

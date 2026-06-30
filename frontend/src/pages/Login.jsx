@@ -384,11 +384,11 @@ const styles = {
   },
   card: {
     backgroundColor: '#fff',
-    padding: '20px 24px',
+    padding: '35px 40px',
     width: '100%',
-    maxWidth: '380px',
+    maxWidth: '440px',
     borderRadius: '0',
-    boxShadow: 'none',
+    boxShadow: '0 15px 35px rgba(0,0,0,0.2)',
     zIndex: 2,
     boxSizing: 'border-box',
     display: 'flex',
@@ -400,7 +400,7 @@ const styles = {
   },
   logoImage: {
     width: '100%',
-    maxWidth: '300px',
+    maxWidth: '350px',
     height: 'auto',
     marginBottom: '8px',
   },

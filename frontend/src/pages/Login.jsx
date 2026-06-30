@@ -58,6 +58,8 @@ const Login = () => {
     }
   });
   const [showRolesGuide, setShowRolesGuide] = useState(false);
+  const [showAccountChooser, setShowAccountChooser] = useState(false);
+  const [showCredentialsForm, setShowCredentialsForm] = useState(false);
 
   const handleVerifyPasscode = (e) => {
     e.preventDefault();
@@ -204,6 +206,27 @@ const Login = () => {
     setPortalPassword(password);
   };
 
+  const handleAccountSelect = async (preset) => {
+    setLoading(true);
+    setError('');
+    try {
+      const response = await login({
+        isMock: true,
+        mockEmail: preset.email,
+        mockName: preset.name,
+        mockRole: preset.role,
+        mockLevel: parseInt(preset.level),
+        mockClassGroup: preset.classGroup || preset.group || 'A'
+      });
+      handleAuthSuccess(response.data);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Mock login failed.');
+    } finally {
+      setLoading(false);
+      setShowAccountChooser(false);
+    }
+  };
+
   const handleAuthSuccess = (authData) => {
     const { token, user } = authData;
     loginUser(user, token);
@@ -260,8 +283,8 @@ const Login = () => {
                 Unlock Presets
               </button>
             </form>
-          ) : (
-            /* Main Portal Login Form - MATCHES THE SCREENSHOT EXACTLY */
+          ) : showCredentialsForm ? (
+            /* Traditional login form if they clicked 'Use another account' */
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div style={styles.welcomeText}>Welcome, please login to register.</div>
 
@@ -302,13 +325,42 @@ const Login = () => {
                 </div>
 
                 <div style={styles.buttonRow}>
-                  <button type="button" style={styles.enquiriesBtn}>Enquiries</button>
+                  <button type="button" style={styles.enquiriesBtn} onClick={() => setShowCredentialsForm(false)}>Back</button>
                   <button type="submit" style={styles.loginBtn} disabled={loading}>
                     {loading ? 'Login...' : 'Login'}
                   </button>
                 </div>
               </form>
+            </div>
+          ) : (
+            /* Main LMS-style Login Card - Matches the screenshot exactly! */
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={styles.dividerLine} />
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'flex-start', width: '100%' }}>
+                <div style={{ fontSize: '15px', color: '#1e293b', fontWeight: '600' }}>
+                  Log in using your account on:
+                </div>
+                
+                <button 
+                  type="button" 
+                  onClick={() => setShowAccountChooser(true)} 
+                  style={styles.customGoogleBtn}
+                  disabled={loading}
+                >
+                  <svg viewBox="0 0 24 24" width="18" height="18" style={styles.googleIconSvg}>
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                  </svg>
+                  <span>Login with HTU Email</span>
+                </button>
+              </div>
 
+              <div style={styles.cookiesNotice}>
+                <a href="#cookies" style={styles.cookiesLink}>COOKIES NOTICE</a>
+              </div>
             </div>
           )}
 
@@ -319,7 +371,7 @@ const Login = () => {
               <button
                 type="button"
                 style={styles.presetLink}
-                onClick={() => handleQuickMockLogin('1026002202', 'student123')}
+                onClick={() => handleAccountSelect(PRESETS[0])}
               >
                 Student
               </button>
@@ -327,7 +379,7 @@ const Login = () => {
               <button
                 type="button"
                 style={styles.presetLink}
-                onClick={() => handleQuickMockLogin('1026002201', 'rep123')}
+                onClick={() => handleAccountSelect(PRESETS[1])}
               >
                 Rep
               </button>
@@ -335,7 +387,7 @@ const Login = () => {
               <button
                 type="button"
                 style={styles.presetLink}
-                onClick={() => handleQuickMockLogin('francis@htu.edu.gh', 'accountant123')}
+                onClick={() => handleAccountSelect(PRESETS[2])}
               >
                 Accountant
               </button>
@@ -343,7 +395,7 @@ const Login = () => {
               <button
                 type="button"
                 style={styles.presetLink}
-                onClick={() => handleQuickMockLogin('joseph@htu.edu.gh', 'hod123')}
+                onClick={() => handleAccountSelect(PRESETS[3])}
               >
                 HOD
               </button>
@@ -357,6 +409,63 @@ const Login = () => {
           ©2026 Ho Technical University · info@htu.edu.gh
         </div>
       </div>
+
+      {/* Google Account Chooser Modal Overlay */}
+      {showAccountChooser && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.modalCard}>
+            <div style={styles.modalHeader}>
+              <svg viewBox="0 0 24 24" width="24" height="24" style={{ marginBottom: '12px' }}>
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+              </svg>
+              <h2 style={styles.modalTitle}>Choose an account</h2>
+              <p style={styles.modalSubtitle}>to continue to HTU Student Dues Payment System</p>
+            </div>
+            
+            <div style={styles.accountsList}>
+              {PRESETS.map((preset, idx) => {
+                const initials = preset.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+                const colors = ['#1a73e8', '#c26401', '#0f9d58', '#db4437'];
+                const bgColor = colors[idx % colors.length];
+
+                return (
+                  <div 
+                    key={idx} 
+                    onClick={() => handleAccountSelect(preset)} 
+                    style={styles.accountRow}
+                  >
+                    <div style={{ ...styles.avatarCircle, backgroundColor: bgColor }}>
+                      {initials}
+                    </div>
+                    <div style={styles.accountInfo}>
+                      <div style={styles.accountName}>{preset.name}</div>
+                      <div style={styles.accountEmail}>{preset.email}</div>
+                    </div>
+                  </div>
+                );
+              })}
+              
+              <div 
+                onClick={() => {
+                  setShowAccountChooser(false);
+                  setShowCredentialsForm(true);
+                }} 
+                style={styles.accountRow}
+              >
+                <div style={{ ...styles.avatarCircle, backgroundColor: '#f1f3f4', color: '#5f6368', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  👤
+                </div>
+                <div style={styles.accountInfo}>
+                  <div style={{ ...styles.accountName, color: '#1a73e8', fontWeight: '600' }}>Use another account</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -660,6 +769,109 @@ const styles = {
   footerEmail: {
     fontSize: '12px',
     color: '#94a3b8',
+  },
+  customGoogleBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '10px',
+    backgroundColor: '#ffffff',
+    border: '1.5px solid #cbd5e1',
+    borderRadius: '4px',
+    padding: '8px 16px',
+    color: '#2d3748',
+    fontSize: '14px',
+    fontWeight: 'bold',
+    cursor: 'pointer',
+    width: 'auto',
+    alignSelf: 'flex-start',
+    transition: 'background-color 0.2s',
+  },
+  googleIconSvg: {
+    marginRight: '2px',
+  },
+  modalOverlay: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1000,
+  },
+  modalCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: '8px',
+    padding: '30px 24px',
+    width: '380px',
+    boxShadow: '0 4px 15px rgba(0,0,0,0.15)',
+    display: 'flex',
+    flexDirection: 'column',
+    boxSizing: 'border-box',
+    fontFamily: "'Segoe UI', -apple-system, sans-serif",
+  },
+  modalHeader: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    marginBottom: '20px',
+  },
+  modalTitle: {
+    fontSize: '22px',
+    fontWeight: '400',
+    color: '#202124',
+    margin: '0 0 6px 0',
+  },
+  modalSubtitle: {
+    fontSize: '13.5px',
+    color: '#5f6368',
+    margin: 0,
+    textAlign: 'center',
+  },
+  accountsList: {
+    display: 'flex',
+    flexDirection: 'column',
+    borderTop: '1px solid #e8eaed',
+    marginTop: '10px',
+  },
+  accountRow: {
+    display: 'flex',
+    alignItems: 'center',
+    padding: '12px 10px',
+    cursor: 'pointer',
+    borderBottom: '1px solid #e8eaed',
+    transition: 'background-color 0.2s',
+    textAlign: 'left',
+  },
+  avatarCircle: {
+    width: '32px',
+    height: '32px',
+    borderRadius: '50%',
+    color: '#ffffff',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '12px',
+    fontWeight: 'bold',
+    marginRight: '12px',
+    flexShrink: 0,
+  },
+  accountInfo: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+  },
+  accountName: {
+    fontSize: '13.5px',
+    fontWeight: '500',
+    color: '#3c4043',
+  },
+  accountEmail: {
+    fontSize: '11.5px',
+    color: '#5f6368',
   }
 };
 

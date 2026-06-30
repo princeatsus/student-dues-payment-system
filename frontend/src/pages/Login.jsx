@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { login } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
-import htuLogo from '../assets/logo.png';
+import htuLogo from '../assets/sdms_logo.png';
 import htuCampus from '../assets/htu_campus.png';
 
 // We can define pre-configured presets to make live hackathon demos seamless
@@ -424,7 +424,7 @@ const styles = {
     marginBottom: '10px',
   },
   logoImage: {
-    maxWidth: '120px',
+    maxWidth: '220px',
     height: 'auto',
     marginBottom: '8px',
   },

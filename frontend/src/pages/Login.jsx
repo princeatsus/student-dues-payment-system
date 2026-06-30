@@ -221,7 +221,6 @@ const Login = () => {
       <div style={styles.card}>
         <div style={styles.cardHeader}>
           <img src={htuLogo} alt="HTU Logo" style={styles.logoImage} />
-          <p style={styles.cardSubtitle}>COMPSSA Student Dues & Expense Portal</p>
         </div>
 
         {error && (
@@ -233,15 +232,11 @@ const Login = () => {
         {/* If showDemoSwitcher is active and Developer mode is locked, show passcode lock */}
         {showDemoSwitcher && !isMockUnlocked ? (
           <form onSubmit={handleVerifyPasscode} style={styles.form}>
-            <p style={styles.mockHelpText}>
-              🔑 <strong>Developer Mode Locked</strong>
-            </p>
-            <p style={{ ...styles.oauthNote, fontSize: '13px', margin: '4px 0 16px 0' }}>
-              Please enter the Developer Passcode to unlock the demo presets for this submission:
+            <p style={{ ...styles.oauthNote, fontSize: '13px', margin: '4px 0 12px 0', textAlign: 'center' }}>
+              🔑 Enter Developer Passcode to unlock presets:
             </p>
             
             <div style={styles.inputGroup}>
-              <label style={styles.label}>Developer Passcode</label>
               <input
                 type="password"
                 placeholder="Enter passcode"
@@ -253,7 +248,7 @@ const Login = () => {
             </div>
 
             {passcodeError && (
-              <p style={{ color: '#e53e3e', fontSize: '12px', margin: '0' }}>
+              <p style={{ color: '#e53e3e', fontSize: '12px', margin: '0', textAlign: 'center' }}>
                 ❌ {passcodeError}
               </p>
             )}
@@ -264,15 +259,14 @@ const Login = () => {
           </form>
         ) : (
           /* Main Portal Login Form */
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <form onSubmit={handlePortalLoginSubmit} style={styles.form}>
               <div style={styles.inputGroup}>
-                <label style={styles.label}>Enter Index Number or Email</label>
                 <div style={styles.inputWrapper}>
                   <span style={styles.inputIcon}>✏️</span>
                   <input
                     type="text"
-                    placeholder="Enter Index Number / Email"
+                    placeholder="Enter Index Number"
                     value={portalEmail}
                     onChange={(e) => setPortalEmail(e.target.value)}
                     style={styles.portalInput}
@@ -282,7 +276,6 @@ const Login = () => {
               </div>
 
               <div style={styles.inputGroup}>
-                <label style={styles.label}>Enter Password</label>
                 <div style={styles.inputWrapper}>
                   <span style={styles.inputIcon}>🔒</span>
                   <input
@@ -321,26 +314,22 @@ const Login = () => {
             <div style={{ display: 'flex', justifyContent: 'center' }}>
               <div id="google-signin-btn" style={styles.googleBtn}></div>
             </div>
-            
-            <div style={styles.domainWarning}>
-              Only domains ending in <code>indexnumber.htu.edu.gh</code> or <code>htu.edu.gh</code> will be authorized.
-            </div>
           </div>
         )}
 
         {/* Pitch Auto-Fill Helpers - ONLY if showDemoSwitcher is true AND unlocked! */}
         {showDemoSwitcher && isMockUnlocked && (
           <div style={{
-            marginTop: '16px',
-            padding: '12px',
+            marginTop: '12px',
+            padding: '10px',
             backgroundColor: '#f8fafc',
-            borderRadius: '8px',
+            borderRadius: '6px',
             border: '1px dashed #cbd5e1'
           }}>
-            <h5 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#475569', fontWeight: '600' }}>
-              🔑 Pitch Presets (Click to Auto-fill):
-            </h5>
-            <div style={styles.presetsGrid}>
+            <h6 style={{ margin: '0 0 6px 0', fontSize: '11px', color: '#475569', fontWeight: '600', textAlign: 'center' }}>
+              🔑 Quick Demo Presets (Click to Auto-fill):
+            </h6>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', justifyContent: 'center' }}>
               <button
                 type="button"
                 style={styles.presetBtn}
@@ -349,7 +338,7 @@ const Login = () => {
                   setPortalPassword('student123');
                 }}
               >
-                🎓 Student (Maxwell)
+                🎓 Student
               </button>
               <button
                 type="button"
@@ -359,7 +348,7 @@ const Login = () => {
                   setPortalPassword('rep123');
                 }}
               >
-                📢 Course Rep (Kojo)
+                📢 Rep
               </button>
               <button
                 type="button"
@@ -369,7 +358,7 @@ const Login = () => {
                   setPortalPassword('accountant123');
                 }}
               >
-                💼 Accountant (Francis)
+                💼 Accountant
               </button>
               <button
                 type="button"
@@ -379,7 +368,7 @@ const Login = () => {
                   setPortalPassword('hod123');
                 }}
               >
-                🏛️ HOD (Joseph)
+                🏛️ HOD
               </button>
             </div>
           </div>
@@ -431,14 +420,19 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: '100vh',
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     width: '100vw',
+    height: '100vh',
     backgroundImage: `url(${htuCampus})`,
     backgroundSize: 'cover',
     backgroundPosition: 'center',
     backgroundRepeat: 'no-repeat',
     fontFamily: "'Segoe UI', -apple-system, sans-serif",
-    position: 'relative',
+    overflowY: 'auto',
     padding: '20px',
     boxSizing: 'border-box',
   },

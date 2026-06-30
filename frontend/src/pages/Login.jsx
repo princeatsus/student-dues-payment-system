@@ -309,18 +309,6 @@ const Login = () => {
                 </div>
               </form>
 
-              <div style={styles.orDivider}>
-                <span style={styles.orText}>OR</span>
-              </div>
-
-              {/* Google Sign In Button */}
-              <div style={{ display: 'flex', justifyContent: 'center' }}>
-                <div id="google-signin-btn" style={styles.googleBtn}></div>
-              </div>
-
-              <div style={styles.chatContainer}>
-                <a href="#chat" style={styles.chatLink}>Need help? Chat now!</a>
-              </div>
             </div>
           )}
 
@@ -362,14 +350,6 @@ const Login = () => {
             </div>
           )}
 
-          <div style={styles.footerContainer}>
-            <div style={styles.footerLineRow}>
-              <span style={styles.footerLine} />
-              <span style={styles.footerCopyright}>©2026 HTU</span>
-              <span style={styles.footerLine} />
-            </div>
-            <div style={styles.footerEmail}>E-mail: info@htu.edu.gh</div>
-          </div>
         </div>
 
         {/* Footer Note Outside Card */}

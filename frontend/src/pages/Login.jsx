@@ -425,7 +425,7 @@ const styles = {
   },
   logoImage: {
     width: '100%',
-    maxWidth: '290px',
+    maxWidth: '330px',
     height: 'auto',
     marginBottom: '8px',
   },

@@ -48,8 +48,8 @@ const Login = () => {
   const [isMockUnlocked, setIsMockUnlocked] = useState(false);
   const [passcode, setPasscode] = useState('');
   const [passcodeError, setPasscodeError] = useState('');
-
-
+  const [portalEmail, setPortalEmail] = useState('');
+  const [portalPassword, setPortalPassword] = useState('');
   const [customUsers, setCustomUsers] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem('mock_users') || '[]');
@@ -146,7 +146,8 @@ const Login = () => {
     }
   };
 
-  const handleQuickMockLogin = async (email, password) => {
+  const handlePortalLoginSubmit = async (e) => {
+    if (e) e.preventDefault();
     setLoading(true);
     setError('');
 
@@ -157,25 +158,50 @@ const Login = () => {
       'kojo@indexnumber.htu.edu.gh': { email: 'kojo@indexnumber.htu.edu.gh', password: 'rep123', name: 'Kojo Mensah', role: 'COURSE_REP', level: 200, group: 'B' },
       'francis@htu.edu.gh': { email: 'francis@htu.edu.gh', password: 'accountant123', name: 'Francis Dogbey', role: 'ACCOUNTANT', level: 100, group: 'A' },
       'joseph@htu.edu.gh': { email: 'joseph@htu.edu.gh', password: 'hod123', name: 'Dr. Joseph Darko', role: 'HOD', level: 100, group: 'A' },
+      'joseph': { email: 'joseph@htu.edu.gh', password: 'hod123', name: 'Dr. Joseph Darko', role: 'HOD', level: 100, group: 'A' },
+      'francis': { email: 'francis@htu.edu.gh', password: 'accountant123', name: 'Francis Dogbey', role: 'ACCOUNTANT', level: 100, group: 'A' },
     };
 
-    const presetUser = presets[email];
-    if (presetUser) {
-      try {
-        const response = await login({
-          isMock: true,
-          mockEmail: presetUser.email,
-          mockName: presetUser.name,
-          mockRole: presetUser.role,
-          mockLevel: parseInt(presetUser.level),
-          mockClassGroup: presetUser.group
-        });
-        handleAuthSuccess(response.data);
-      } catch (err) {
-        setError(err.response?.data?.message || 'Mock login failed.');
-        setLoading(false);
+    const inputKey = portalEmail.toLowerCase().trim();
+
+    if (showDemoSwitcher && isMockUnlocked) {
+      let matchedUser = null;
+      if (presets[inputKey] && presets[inputKey].password === portalPassword) {
+        matchedUser = presets[inputKey];
+      } else {
+        const found = customUsers.find(u => (u.email.toLowerCase().trim() === inputKey || u.indexNumber === inputKey) && u.password === portalPassword);
+        if (found) {
+          matchedUser = found;
+        }
+      }
+
+      if (matchedUser) {
+        try {
+          const response = await login({
+            isMock: true,
+            mockEmail: matchedUser.email,
+            mockName: matchedUser.name,
+            mockRole: matchedUser.role,
+            mockLevel: parseInt(matchedUser.level),
+            mockClassGroup: matchedUser.group
+          });
+          handleAuthSuccess(response.data);
+          return;
+        } catch (err) {
+          setError(err.response?.data?.message || 'Mock login failed.');
+          setLoading(false);
+          return;
+        }
       }
     }
+
+    setError('Traditional Index Number / Password login is restricted in production. Please use the "Google" login button below to authenticate with your official HTU email address.');
+    setLoading(false);
+  };
+
+  const handleQuickMockLogin = (email, password) => {
+    setPortalEmail(email);
+    setPortalPassword(password);
   };
 
   const handleAuthSuccess = (authData) => {
@@ -194,13 +220,11 @@ const Login = () => {
       <div style={styles.overlay} />
       
       {/* Centered Login Card Container */}
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 2, width: '100%', maxWidth: '440px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 2, width: '100%', maxWidth: '460px' }}>
         <div style={styles.card}>
           <div style={styles.cardHeader}>
             <img src={htuLogo} alt="HTU Logo" style={styles.logoImage} />
           </div>
-
-          <div style={styles.dividerLine} />
 
           {error && (
             <div style={styles.errorBox}>
@@ -238,12 +262,64 @@ const Login = () => {
             </form>
           ) : (
             /* Main Portal Login Form - MATCHES THE SCREENSHOT EXACTLY */
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', padding: '10px 0' }}>
-              <div style={styles.lmsTitle}>Log in using your account on:</div>
-              
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div style={styles.welcomeText}>Welcome, please login to register.</div>
+
+              <form onSubmit={handlePortalLoginSubmit} style={styles.form}>
+                <div style={styles.inputGroup}>
+                  <div style={styles.inputWrapper}>
+                    <span style={styles.inputIcon}>✏️</span>
+                    <input
+                      type="text"
+                      placeholder="Enter Index Number"
+                      value={portalEmail}
+                      onChange={(e) => setPortalEmail(e.target.value)}
+                      style={styles.portalInput}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div style={styles.inputGroup}>
+                  <div style={styles.inputWrapper}>
+                    <span style={styles.inputIcon}>🔒</span>
+                    <input
+                      type="password"
+                      placeholder="Enter Password"
+                      value={portalPassword}
+                      onChange={(e) => setPortalPassword(e.target.value)}
+                      style={styles.portalInput}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div style={styles.rememberRow}>
+                  <label style={styles.checkboxLabel}>
+                    <input type="checkbox" style={{ marginRight: '6px' }} /> Remember me
+                  </label>
+                  <a href="#forgot" style={styles.forgotLink}>Forgot Details</a>
+                </div>
+
+                <div style={styles.buttonRow}>
+                  <button type="button" style={styles.enquiriesBtn}>Enquiries</button>
+                  <button type="submit" style={styles.loginBtn} disabled={loading}>
+                    {loading ? 'Login...' : 'Login'}
+                  </button>
+                </div>
+              </form>
+
+              <div style={styles.orDivider}>
+                <span style={styles.orText}>OR</span>
+              </div>
+
               {/* Google Sign In Button */}
-              <div style={styles.googleBtnWrapper}>
+              <div style={{ display: 'flex', justifyContent: 'center' }}>
                 <div id="google-signin-btn" style={styles.googleBtn}></div>
+              </div>
+
+              <div style={styles.chatContainer}>
+                <a href="#chat" style={styles.chatLink}>Need help? Chat now!</a>
               </div>
             </div>
           )}
@@ -286,10 +362,13 @@ const Login = () => {
             </div>
           )}
 
-          <div style={styles.dividerLine} />
-
-          <div style={styles.cookiesNotice}>
-            <a href="#cookies" style={styles.cookiesLink}>COOKIES NOTICE</a>
+          <div style={styles.footerContainer}>
+            <div style={styles.footerLineRow}>
+              <span style={styles.footerLine} />
+              <span style={styles.footerCopyright}>©2026 HTU</span>
+              <span style={styles.footerLine} />
+            </div>
+            <div style={styles.footerEmail}>E-mail: info@htu.edu.gh</div>
           </div>
         </div>
 
@@ -337,7 +416,7 @@ const styles = {
     padding: '35px 40px',
     width: '100%',
     maxWidth: '460px',
-    borderRadius: '0',
+    borderRadius: '8px',
     boxShadow: '0 15px 35px rgba(0,0,0,0.2)',
     zIndex: 2,
     boxSizing: 'border-box',
@@ -371,7 +450,7 @@ const styles = {
     border: '1px solid #fed7d7',
     color: '#c53030',
     padding: '12px 14px',
-    borderRadius: '0',
+    borderRadius: '8px',
     marginBottom: '20px',
     fontSize: '13px',
     lineHeight: '1.5',
@@ -396,7 +475,7 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     border: '1.5px solid #cbd5e1',
-    borderRadius: '0',
+    borderRadius: '8px',
     padding: '3px 12px',
     backgroundColor: '#f8fafc',
     transition: 'border-color 0.2s',
@@ -442,7 +521,7 @@ const styles = {
     flex: 1,
     padding: '14px',
     border: '1.5px solid #ff7a00',
-    borderRadius: '0',
+    borderRadius: '8px',
     backgroundColor: '#fff',
     color: '#ff7a00',
     fontSize: '15px',
@@ -455,7 +534,7 @@ const styles = {
     flex: 1.5,
     padding: '14px',
     border: 'none',
-    borderRadius: '0',
+    borderRadius: '8px',
     backgroundColor: '#002060',
     color: '#fff',
     fontSize: '15px',
@@ -515,7 +594,7 @@ const styles = {
     background: 'linear-gradient(135deg, #002060 0%, #1d4ed8 100%)',
     color: '#fff',
     padding: '12px',
-    borderRadius: '0',
+    borderRadius: '8px',
     border: 'none',
     fontSize: '14px',
     fontWeight: '600',
@@ -556,6 +635,52 @@ const styles = {
     textDecoration: 'underline',
     letterSpacing: '0.5px',
     fontWeight: 'bold',
+  },
+  welcomeText: {
+    fontSize: '15px',
+    color: '#627d98',
+    textAlign: 'left',
+    margin: '0 0 4px 0',
+    fontWeight: '400',
+  },
+  chatContainer: {
+    textAlign: 'center',
+    marginTop: '6px',
+  },
+  chatLink: {
+    fontSize: '14px',
+    color: '#6366f1',
+    textDecoration: 'none',
+    fontWeight: '500',
+  },
+  footerContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '8px',
+    marginTop: '20px',
+  },
+  footerLineRow: {
+    display: 'flex',
+    alignItems: 'center',
+    width: '100%',
+    gap: '10px',
+  },
+  footerLine: {
+    flex: 1,
+    height: '1px',
+    backgroundColor: '#cbd5e1',
+    opacity: 0.7,
+  },
+  footerCopyright: {
+    fontSize: '12px',
+    fontWeight: '500',
+    color: '#64748b',
+    whiteSpace: 'nowrap',
+  },
+  footerEmail: {
+    fontSize: '12px',
+    color: '#94a3b8',
   }
 };
 

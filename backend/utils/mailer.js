@@ -2,11 +2,12 @@ const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 /**
- * Sends an email using the Resend API.
- * Falls back to console simulation if RESEND_API_KEY is not defined.
+ * Sends an email using the Brevo (formerly Sendinblue) transactional email API.
+ * Falls back to console simulation if BREVO_API_KEY is not defined.
  */
 const sendEmail = async ({ to, subject, html, text }) => {
-  const apiKey = process.env.RESEND_API_KEY;
+  const apiKey = process.env.BREVO_API_KEY;
+  const senderEmail = process.env.BREVO_SENDER_EMAIL || '0324080147@htu.edu.gh';
 
   if (!apiKey || apiKey.includes('placeholder')) {
     console.log('--- [SIMULATED EMAIL SENT] ---');
@@ -19,30 +20,38 @@ const sendEmail = async ({ to, subject, html, text }) => {
   }
 
   try {
-    const response = await fetch('https://api.resend.com/emails', {
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
+        'accept': 'application/json',
+        'api-key': apiKey,
+        'content-type': 'application/json'
       },
       body: JSON.stringify({
-        from: 'COMPSSA Dues <onboarding@resend.dev>',
-        to: [to],
+        sender: {
+          name: 'COMPSSA HTU',
+          email: senderEmail
+        },
+        to: [
+          {
+            email: to
+          }
+        ],
         subject: subject,
-        html: html,
-        text: text
+        htmlContent: html,
+        textContent: text
       })
     });
 
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.message || `Resend HTTP error ${response.status}`);
+      throw new Error(data.message || `Brevo HTTP error ${response.status}`);
     }
 
     return { success: true, data };
   } catch (error) {
-    console.error('❌ Error sending email via Resend:', error.message);
+    console.error('❌ Error sending email via Brevo:', error.message);
     return { success: false, error: error.message };
   }
 };

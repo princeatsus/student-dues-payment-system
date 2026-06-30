@@ -1,4 +1,6 @@
 const pool = require('../config/db');
+const { decrypt } = require('../utils/encryption');
+const { sendEmail } = require('../utils/mailer');
 
 /**
  * Parses CSV lines into structured row objects.
@@ -139,6 +141,12 @@ const confirmReconciliation = async (req, res) => {
       return res.status(400).json({ message: 'No payments provided for confirmation' });
     }
 
+    // Fetch active session info once
+    const sessionResult = await pool.query(
+      'SELECT academic_year, semester FROM academic_sessions WHERE is_active = TRUE LIMIT 1'
+    );
+    const sessionInfo = sessionResult.rows.length > 0 ? sessionResult.rows[0] : { academic_year: '2025/2026', semester: 1 };
+
     let successCount = 0;
 
     for (const payment of payments) {
@@ -178,6 +186,55 @@ const confirmReconciliation = async (req, res) => {
             })
           ]
         );
+
+        // Fetch student details and send receipt email asynchronously
+        pool.query(
+          'SELECT full_name, email FROM students WHERE id = $1',
+          [tx.student_id]
+        ).then(studentResult => {
+          if (studentResult.rows.length > 0) {
+            const student = studentResult.rows[0];
+            const decryptedEmail = decrypt(student.email);
+            const emailText = `Dear ${student.full_name}, your MoMo payment of GHS ${parseFloat(amount).toFixed(2)} with reference ${tx.payment_reference} has been successfully reconciled for the ${sessionInfo.academic_year} academic year, semester ${sessionInfo.semester}.`;
+            const emailHtml = `
+              <div style="font-family: sans-serif; max-width: 600px; padding: 20px; border: 1px solid #eaeaea; border-radius: 8px;">
+                <h2 style="color: #0f9d58; margin-top: 0;">✅ COMPSSA Dues Reconciled Receipt</h2>
+                <p>Dear <strong>${student.full_name}</strong>,</p>
+                <p>We are pleased to inform you that your mobile money transaction has been successfully matched and reconciled against your dues invoice.</p>
+                <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
+                  <tr>
+                    <td style="padding: 8px 0; border-bottom: 1px solid #eaeaea; color: #64748b;">Amount Paid:</td>
+                    <td style="padding: 8px 0; border-bottom: 1px solid #eaeaea; text-align: right; font-weight: bold; color: #0f9d58;">GHS ${parseFloat(amount).toFixed(2)}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; border-bottom: 1px solid #eaeaea; color: #64748b;">Reference:</td>
+                    <td style="padding: 8px 0; border-bottom: 1px solid #eaeaea; text-align: right; font-family: monospace;">${tx.payment_reference}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; border-bottom: 1px solid #eaeaea; color: #64748b;">MoMo Trans ID:</td>
+                    <td style="padding: 8px 0; border-bottom: 1px solid #eaeaea; text-align: right; font-family: monospace;">${tx_id || 'N/A'}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; border-bottom: 1px solid #eaeaea; color: #64748b;">Semester:</td>
+                    <td style="padding: 8px 0; border-bottom: 1px solid #eaeaea; text-align: right;">${sessionInfo.academic_year} - Sem ${sessionInfo.semester}</td>
+                  </tr>
+                </table>
+                <p>You can now download your Department Clearance Certificate from the student portal.</p>
+                <div style="margin: 24px 0;">
+                  <a href="https://student-dues-payment-system.vercel.app" style="background-color: #0f9d58; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: bold;">Go to Student Portal</a>
+                </div>
+                <hr style="border: 0; border-top: 1px solid #eaeaea;" />
+                <p style="font-size: 12px; color: #64748b;">Ho Technical University · Computer Science Department</p>
+              </div>
+            `;
+            sendEmail({
+              to: decryptedEmail,
+              subject: '✅ COMPSSA Dues Reconciled Receipt',
+              text: emailText,
+              html: emailHtml
+            }).catch(err => console.error('Failed to send MoMo reconciliation email:', err.message));
+          }
+        }).catch(err => console.error('Failed to query student info for reconciliation email:', err.message));
       }
     }
 

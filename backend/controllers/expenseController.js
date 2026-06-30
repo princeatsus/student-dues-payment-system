@@ -1,5 +1,7 @@
 const pool = require('../config/db');
 const path = require('path');
+const { decrypt } = require('../utils/encryption');
+const { sendEmail } = require('../utils/mailer');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 // Helper to check base64 file size limit (2MB)
@@ -59,6 +61,49 @@ const submitExpenseRequest = async (req, res) => {
        VALUES ($1, $2, $3, $4, $5)`,
       [requestedBy, 'EXPENSE_REQUESTED', 'EXPENSE_REQUEST', result.rows[0].id, JSON.stringify({ item_description, amount })]
     );
+
+    // Notify HODs asynchronously
+    pool.query(
+      `SELECT u.email, u.full_name FROM students u
+       JOIN student_roles sr ON u.id = sr.student_id
+       JOIN roles r ON sr.role_id = r.id
+       WHERE r.name = 'HOD'`
+    ).then(hodsResult => {
+      for (const hodRow of hodsResult.rows) {
+        const hodEmail = decrypt(hodRow.email);
+        sendEmail({
+          to: hodEmail,
+          subject: '📥 New COMPSSA Expense Request Awaiting Approval',
+          html: `
+            <div style="font-family: sans-serif; max-width: 600px; padding: 20px; border: 1px solid #eaeaea; border-radius: 8px;">
+              <h2 style="color: #1a73e8; margin-top: 0;">📥 New Budget Proposal</h2>
+              <p>Dear Dr. Darko,</p>
+              <p>A new budget proposal has been submitted by a Course Rep and is awaiting your review:</p>
+              <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
+                <tr>
+                  <td style="padding: 8px 0; border-bottom: 1px solid #eaeaea; color: #64748b;">Item Description:</td>
+                  <td style="padding: 8px 0; border-bottom: 1px solid #eaeaea; font-weight: bold;">${item_description}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; border-bottom: 1px solid #eaeaea; color: #64748b;">Amount:</td>
+                  <td style="padding: 8px 0; border-bottom: 1px solid #eaeaea; font-weight: bold; color: #e53e3e;">GHS ${parseFloat(amount).toFixed(2)}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; border-bottom: 1px solid #eaeaea; color: #64748b;">Justification:</td>
+                  <td style="padding: 8px 0; border-bottom: 1px solid #eaeaea;">${purpose_justification}</td>
+                </tr>
+              </table>
+              <p>Please log in to the portal to approve or reject this request.</p>
+              <div style="margin: 24px 0;">
+                <a href="https://student-dues-payment-system.vercel.app" style="background-color: #1a73e8; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: bold;">Review Request</a>
+              </div>
+              <hr style="border: 0; border-top: 1px solid #eaeaea;" />
+              <p style="font-size: 12px; color: #64748b;">Ho Technical University · Computer Science Department</p>
+            </div>
+          `
+        }).catch(err => console.error('Failed to send HOD budget email:', err.message));
+      }
+    }).catch(err => console.error('Failed to query HODs for email notification:', err.message));
 
     res.status(201).json({
       message: 'Expense request submitted successfully. Awaiting HOD approval.',
@@ -121,6 +166,31 @@ const approveExpenseRequest = async (req, res) => {
       [hodId, 'EXPENSE_APPROVED', 'EXPENSE_REQUEST', id, JSON.stringify({ status: 'PENDING_FINANCE' })]
     );
 
+    // Notify Course Rep asynchronously
+    pool.query(
+      'SELECT full_name, email FROM students WHERE id = $1',
+      [result.rows[0].requested_by]
+    ).then(repResult => {
+      if (repResult.rows.length > 0) {
+        const rep = repResult.rows[0];
+        const decryptedEmail = decrypt(rep.email);
+        sendEmail({
+          to: decryptedEmail,
+          subject: '🔔 COMPSSA Budget Request Approved',
+          html: `
+            <div style="font-family: sans-serif; max-width: 600px; padding: 20px; border: 1px solid #eaeaea; border-radius: 8px;">
+              <h2 style="color: #0f9d58; margin-top: 0;">🔔 Budget Approved</h2>
+              <p>Dear ${rep.full_name},</p>
+              <p>We are pleased to inform you that your budget request for <strong>"${result.rows[0].item_description}"</strong> (GHS ${parseFloat(result.rows[0].amount).toFixed(2)}) has been <strong>APPROVED</strong> by the HOD.</p>
+              <p>The request has been sent to the Accountant for disbursement. You will receive an email once the funds are sent.</p>
+              <hr style="border: 0; border-top: 1px solid #eaeaea;" />
+              <p style="font-size: 12px; color: #64748b;">Ho Technical University · Computer Science Department</p>
+            </div>
+          `
+        }).catch(err => console.error('Failed to send rep approval email:', err.message));
+      }
+    }).catch(err => console.error('Failed to query rep for email:', err.message));
+
     res.status(200).json({
       message: 'Expense request approved. Sent to accountant for disbursement.',
       expense: result.rows[0]
@@ -162,6 +232,32 @@ const rejectExpenseRequest = async (req, res) => {
       [hodId, 'EXPENSE_REJECTED', 'EXPENSE_REQUEST', id, JSON.stringify({ reason })]
     );
 
+    // Notify Course Rep asynchronously
+    pool.query(
+      'SELECT full_name, email FROM students WHERE id = $1',
+      [result.rows[0].requested_by]
+    ).then(repResult => {
+      if (repResult.rows.length > 0) {
+        const rep = repResult.rows[0];
+        const decryptedEmail = decrypt(rep.email);
+        sendEmail({
+          to: decryptedEmail,
+          subject: '❌ COMPSSA Budget Request Rejected',
+          html: `
+            <div style="font-family: sans-serif; max-width: 600px; padding: 20px; border: 1px solid #eaeaea; border-radius: 8px;">
+              <h2 style="color: #e53e3e; margin-top: 0;">❌ Budget Proposal Rejected</h2>
+              <p>Dear ${rep.full_name},</p>
+              <p>Your budget request for <strong>"${result.rows[0].item_description}"</strong> has been rejected by the HOD.</p>
+              <p><strong>Reason for rejection:</strong> ${reason}</p>
+              <p>You can adjust your proposal and resubmit via the portal.</p>
+              <hr style="border: 0; border-top: 1px solid #eaeaea;" />
+              <p style="font-size: 12px; color: #64748b;">Ho Technical University · Computer Science Department</p>
+            </div>
+          `
+        }).catch(err => console.error('Failed to send rep rejection email:', err.message));
+      }
+    }).catch(err => console.error('Failed to query rep for email:', err.message));
+
     res.status(200).json({
       message: 'Expense request rejected.',
       expense: result.rows[0]
@@ -199,6 +295,31 @@ const disburseExpenseRequest = async (req, res) => {
     if (result.rows.length === 0) {
       return res.status(404).json({ message: 'Expense request not found or not yet approved by HOD' });
     }
+
+    // Notify Course Rep asynchronously
+    pool.query(
+      'SELECT full_name, email FROM students WHERE id = $1',
+      [result.rows[0].requested_by]
+    ).then(repResult => {
+      if (repResult.rows.length > 0) {
+        const rep = repResult.rows[0];
+        const decryptedEmail = decrypt(rep.email);
+        sendEmail({
+          to: decryptedEmail,
+          subject: '💰 COMPSSA Budget Funds Disbursed',
+          html: `
+            <div style="font-family: sans-serif; max-width: 600px; padding: 20px; border: 1px solid #eaeaea; border-radius: 8px;">
+              <h2 style="color: #0f9d58; margin-top: 0;">💰 Funds Disbursed</h2>
+              <p>Dear ${rep.full_name},</p>
+              <p>We are pleased to inform you that the funds for your budget request <strong>"${result.rows[0].item_description}"</strong> (GHS ${parseFloat(result.rows[0].amount).toFixed(2)}) have been successfully disbursed by Finance.</p>
+              <p>Please make the necessary payments and remember to upload your receipts as proof of purchase on your Course Rep dashboard.</p>
+              <hr style="border: 0; border-top: 1px solid #eaeaea;" />
+              <p style="font-size: 12px; color: #64748b;">Ho Technical University · Computer Science Department</p>
+            </div>
+          `
+        }).catch(err => console.error('Failed to send rep disbursement email:', err.message));
+      }
+    }).catch(err => console.error('Failed to query rep for email:', err.message));
 
     // Log action
     await pool.query(

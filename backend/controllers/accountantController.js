@@ -1,5 +1,7 @@
 const pool = require('../config/db');
 const path = require('path');
+const { decrypt } = require('../utils/encryption');
+const { sendEmail } = require('../utils/mailer');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 // GET /api/accountant/transactions - View all transactions
@@ -72,6 +74,21 @@ const confirmPayment = async (req, res) => {
       ]
     );
 
+    // Fetch session info & send receipt email
+    const sessionResult = await pool.query(
+      'SELECT academic_year, semester FROM academic_sessions WHERE id = $1',
+      [transaction.session_id]
+    );
+    if (sessionResult.rows.length > 0) {
+      await sendPaymentReceipt(
+        transaction.student_id,
+        updated.rows[0].amount,
+        updated.rows[0].payment_reference,
+        updated.rows[0].payment_method,
+        sessionResult.rows[0]
+      );
+    }
+
     res.status(200).json({
       message: 'Payment confirmed successfully',
       transaction: updated.rows[0]
@@ -80,6 +97,63 @@ const confirmPayment = async (req, res) => {
   } catch (error) {
     console.error('Confirm payment error:', error.message);
     res.status(500).json({ message: 'Server error' });
+  }
+};
+
+/**
+ * Helper to send payment receipt email to a student
+ */
+const sendPaymentReceipt = async (studentId, amount, reference, paymentMethod, sessionInfo) => {
+  try {
+    const studentResult = await pool.query(
+      'SELECT full_name, email FROM students WHERE id = $1',
+      [studentId]
+    );
+    if (studentResult.rows.length === 0) return;
+    const student = studentResult.rows[0];
+    const decryptedEmail = decrypt(student.email);
+
+    const emailText = `Dear ${student.full_name}, your payment of GHS ${parseFloat(amount).toFixed(2)} with reference ${reference} has been successfully confirmed and reconciled for the ${sessionInfo.academic_year} academic year, semester ${sessionInfo.semester}.`;
+    const emailHtml = `
+      <div style="font-family: sans-serif; max-width: 600px; padding: 20px; border: 1px solid #eaeaea; border-radius: 8px;">
+        <h2 style="color: #0f9d58; margin-top: 0;">✅ COMPSSA Dues Payment Receipt</h2>
+        <p>Dear <strong>${student.full_name}</strong>,</p>
+        <p>We are pleased to confirm that your department dues payment has been successfully received and reconciled.</p>
+        <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
+          <tr>
+            <td style="padding: 8px 0; border-bottom: 1px solid #eaeaea; color: #64748b;">Amount Paid:</td>
+            <td style="padding: 8px 0; border-bottom: 1px solid #eaeaea; text-align: right; font-weight: bold; color: #0f9d58;">GHS ${parseFloat(amount).toFixed(2)}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; border-bottom: 1px solid #eaeaea; color: #64748b;">Reference:</td>
+            <td style="padding: 8px 0; border-bottom: 1px solid #eaeaea; text-align: right; font-family: monospace;">${reference}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; border-bottom: 1px solid #eaeaea; color: #64748b;">Payment Method:</td>
+            <td style="padding: 8px 0; border-bottom: 1px solid #eaeaea; text-align: right;">${paymentMethod}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; border-bottom: 1px solid #eaeaea; color: #64748b;">Semester:</td>
+            <td style="padding: 8px 0; border-bottom: 1px solid #eaeaea; text-align: right;">${sessionInfo.academic_year} - Sem ${sessionInfo.semester}</td>
+          </tr>
+        </table>
+        <p>You can now download your Department Clearance Certificate from the student portal.</p>
+        <div style="margin: 24px 0;">
+          <a href="https://student-dues-payment-system.vercel.app" style="background-color: #0f9d58; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: bold;">Go to Student Portal</a>
+        </div>
+        <hr style="border: 0; border-top: 1px solid #eaeaea;" />
+        <p style="font-size: 12px; color: #64748b;">Ho Technical University · Computer Science Department</p>
+      </div>
+    `;
+
+    await sendEmail({
+      to: decryptedEmail,
+      subject: '✅ COMPSSA Department Dues Payment Receipt',
+      text: emailText,
+      html: emailHtml
+    });
+  } catch (error) {
+    console.error('Error sending payment receipt email:', error.message);
   }
 };
 
@@ -180,6 +254,15 @@ const manualAssignPayment = async (req, res) => {
           notes 
         })
       ]
+    );
+
+    // Send receipt email to student
+    await sendPaymentReceipt(
+      student_id,
+      amount,
+      reference,
+      payment_method || 'CASH',
+      session
     );
 
     res.status(201).json({

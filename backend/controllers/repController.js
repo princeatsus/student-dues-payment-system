@@ -1,5 +1,6 @@
 const pool = require('../config/db');
 const { decrypt } = require('../utils/encryption');
+const { sendEmail } = require('../utils/mailer');
 
 // Helper to get Course Rep's assignment
 const getRepAssignment = async (studentId) => {
@@ -128,13 +129,29 @@ const sendReminderEmail = async (req, res) => {
     const decryptedEmail = decrypt(student.email);
     const deadlineDate = '3rd July'; // Simulated deadline or dynamic date
 
-    // Simulated Email Log (Gmail API simulation)
-    const emailBody = `Hi ${student.full_name}, just a reminder that Level ${student.current_level} dues (GHS ${outstanding.toFixed(2)}) are due by ${deadlineDate} to fund the final year project exhibition. Click here to view your invoice.`;
-    
-    console.log(`[SIMULATED EMAIL SENT]`);
-    console.log(`To: ${decryptedEmail}`);
-    console.log(`Subject: 📢 COMPSSA Department Dues Payment Reminder`);
-    console.log(`Body: ${emailBody}`);
+    // HTML & Plain-text bodies
+    const emailText = `Hi ${student.full_name}, just a reminder that Level ${student.current_level} dues (GHS ${outstanding.toFixed(2)}) are due by ${deadlineDate} to fund the final year project exhibition. Please view your invoice on the COMPSSA portal.`;
+    const emailHtml = `
+      <div style="font-family: sans-serif; max-width: 600px; padding: 20px; border: 1px solid #eaeaea; border-radius: 8px;">
+        <h2 style="color: #1a73e8; margin-top: 0;">📢 COMPSSA Dues Reminder</h2>
+        <p>Hi <strong>${student.full_name}</strong>,</p>
+        <p>This is a friendly reminder from your Course Rep that your outstanding department dues for this semester are <strong>GHS ${outstanding.toFixed(2)}</strong>.</p>
+        <p>Dues fund our final year project exhibition and other class-group activities. Please clear your dues by <strong>${deadlineDate}</strong>.</p>
+        <div style="margin: 24px 0;">
+          <a href="https://student-dues-payment-system.vercel.app" style="background-color: #1a73e8; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: bold;">View Your Invoice & Pay</a>
+        </div>
+        <hr style="border: 0; border-top: 1px solid #eaeaea;" />
+        <p style="font-size: 12px; color: #64748b;">Ho Technical University · Computer Science Department</p>
+      </div>
+    `;
+
+    // Send real email via Resend utility
+    await sendEmail({
+      to: decryptedEmail,
+      subject: '📢 COMPSSA Department Dues Payment Reminder',
+      text: emailText,
+      html: emailHtml
+    });
 
     // Log action in audit logs
     await pool.query(
@@ -145,13 +162,13 @@ const sendReminderEmail = async (req, res) => {
         'REMINDER_EMAIL_SENT',
         'STUDENT',
         student.id,
-        JSON.stringify({ to: decryptedEmail, body: emailBody })
+        JSON.stringify({ to: decryptedEmail, body: emailText })
       ]
     );
 
     res.status(200).json({ 
       message: `Reminder email successfully sent to ${decryptedEmail}`, 
-      simulated_body: emailBody 
+      simulated_body: emailText 
     });
 
   } catch (error) {

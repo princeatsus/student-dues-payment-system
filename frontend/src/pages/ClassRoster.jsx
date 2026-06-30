@@ -2,6 +2,17 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getClassRoster, sendReminderEmail } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
+import { 
+  GraduationCap, 
+  LogOut, 
+  DollarSign, 
+  Download, 
+  Users, 
+  CheckCircle, 
+  AlertCircle, 
+  Search, 
+  Bell 
+} from 'lucide-react';
 
 const ClassRoster = () => {
   const [rosterData, setRosterData] = useState(null);
@@ -129,7 +140,9 @@ const ClassRoster = () => {
       {/* Premium Navbar */}
       <div style={styles.navbar}>
         <div style={styles.navBrand}>
-          <div style={styles.navIcon}>🎓</div>
+          <div style={styles.navIconContainer}>
+            <GraduationCap size={24} style={{ color: '#a5b4fc' }} />
+          </div>
           <div>
             <h1 style={styles.navTitle}>COMPSSA SDMS</h1>
             <p style={styles.navSubtitle}>Ho Technical University</p>
@@ -137,8 +150,14 @@ const ClassRoster = () => {
         </div>
         <div style={styles.navActions}>
           <span style={styles.navUser}>👋 Rep: <strong>{user?.full_name}</strong></span>
-          <button onClick={() => navigate('/expenses')} style={styles.expensesBtn}>💰 Expenses</button>
-          <button onClick={handleLogout} style={styles.logoutBtn}>Logout</button>
+          <button onClick={() => navigate('/expenses')} style={styles.expensesBtn}>
+            <DollarSign size={14} style={{ marginRight: '4px' }} />
+            Expenses
+          </button>
+          <button onClick={handleLogout} style={styles.logoutBtn}>
+            <LogOut size={13} style={{ marginRight: '4px' }} />
+            Logout
+          </button>
         </div>
       </div>
 
@@ -156,7 +175,8 @@ const ClassRoster = () => {
               Academic Session: <strong>{rosterData?.session?.academic_year} Semester {rosterData?.session?.semester}</strong>
             </p>
             <button onClick={handleExportRoster} style={styles.exportBtn}>
-              📥 Export Roster Sheet (CSV)
+              <Download size={13} style={{ marginRight: '6px' }} />
+              Export Roster Sheet (CSV)
             </button>
           </div>
           
@@ -191,21 +211,27 @@ const ClassRoster = () => {
         {/* Stats Grid Cards */}
         <div style={styles.statsGrid}>
           <div style={styles.statCard}>
-            <div style={{ ...styles.statIconWrapper, backgroundColor: '#e0e7ff', color: '#6366f1' }}>👥</div>
+            <div style={{ ...styles.statIconWrapper, backgroundColor: '#e0e7ff', color: '#6366f1' }}>
+              <Users size={22} />
+            </div>
             <div>
               <p style={styles.statLabel}>Total Class Strength</p>
               <h3 style={styles.statValue}>{totalCount} Students</h3>
             </div>
           </div>
           <div style={styles.statCard}>
-            <div style={{ ...styles.statIconWrapper, backgroundColor: '#ecfdf5', color: '#10b981' }}>✅</div>
+            <div style={{ ...styles.statIconWrapper, backgroundColor: '#ecfdf5', color: '#10b981' }}>
+              <CheckCircle size={22} />
+            </div>
             <div>
               <p style={styles.statLabel}>Fully Cleared</p>
               <h3 style={{ ...styles.statValue, color: '#10b981' }}>{paidCount} Paid</h3>
             </div>
           </div>
           <div style={styles.statCard}>
-            <div style={{ ...styles.statIconWrapper, backgroundColor: '#fff1f2', color: '#f43f5e' }}>⚠️</div>
+            <div style={{ ...styles.statIconWrapper, backgroundColor: '#fff1f2', color: '#f43f5e' }}>
+              <AlertCircle size={22} />
+            </div>
             <div>
               <p style={styles.statLabel}>Outstanding Defaulters</p>
               <h3 style={{ ...styles.statValue, color: '#f43f5e' }}>{owingCount} Owing</h3>
@@ -240,7 +266,7 @@ const ClassRoster = () => {
 
             {/* Search Input Box */}
             <div style={styles.searchWrapper}>
-              <span style={styles.searchIcon}>🔍</span>
+              <Search size={14} style={styles.searchIcon} />
               <input
                 type="text"
                 placeholder="Search index or name..."
@@ -254,7 +280,7 @@ const ClassRoster = () => {
           {/* Table View (Desktop) / Card View (Mobile) */}
           {filteredRoster.length === 0 ? (
             <div style={styles.emptyState}>
-              <span style={{ fontSize: '32px' }}>🔎</span>
+              <Search size={32} style={{ color: '#94a3b8' }} />
               <p style={{ marginTop: '8px', color: '#64748b' }}>No students found matching filters.</p>
             </div>
           ) : isMobile ? (
@@ -302,7 +328,8 @@ const ClassRoster = () => {
                           style={styles.mobileNudgeBtn}
                           disabled={remindLoading === student.id}
                         >
-                          {remindLoading === student.id ? 'Sending...' : '📢 Send Nudge'}
+                          <Bell size={11} style={{ marginRight: '3px', display: 'inline-block', verticalAlign: 'middle' }} />
+                          {remindLoading === student.id ? 'Sending...' : 'Send Nudge'}
                         </button>
                       )}
                     </div>
@@ -349,7 +376,8 @@ const ClassRoster = () => {
                             style={styles.remindBtn}
                             disabled={remindLoading === student.id}
                           >
-                            {remindLoading === student.id ? 'Sending...' : '📢 Send Nudge'}
+                            <Bell size={11} style={{ marginRight: '4px', display: 'inline-block', verticalAlign: 'middle' }} />
+                            {remindLoading === student.id ? 'Sending...' : 'Send Nudge'}
                           </button>
                         ) : (
                           <span style={styles.noActionText}>No Action</span>
@@ -405,12 +433,18 @@ const styles = {
     alignItems: 'center',
     gap: '12px'
   },
-  navIcon: {
-    fontSize: '24px'
+  navIconContainer: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '36px',
+    height: '36px',
+    borderRadius: '8px',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)'
   },
   navTitle: {
     margin: 0,
-    fontSize: '16px',
+    fontSize: '15px',
     fontWeight: '700',
     letterSpacing: '0.5px'
   },
@@ -433,11 +467,13 @@ const styles = {
     backgroundColor: '#6366f1',
     color: '#fff',
     border: 'none',
-    padding: '6px 14px',
+    padding: '7px 14px',
     borderRadius: '6px',
     cursor: 'pointer',
     fontSize: '12px',
     fontWeight: '600',
+    display: 'flex',
+    alignItems: 'center',
     transition: 'all 0.2s ease',
     boxShadow: '0 2px 4px rgba(99, 102, 241, 0.2)'
   },
@@ -445,11 +481,13 @@ const styles = {
     backgroundColor: 'transparent',
     border: '1px solid #475569',
     color: '#cbd5e1',
-    padding: '5px 12px',
+    padding: '6px 12px',
     borderRadius: '6px',
     cursor: 'pointer',
     fontSize: '12px',
     fontWeight: '500',
+    display: 'flex',
+    alignItems: 'center',
     transition: 'all 0.2s ease'
   },
   content: {
@@ -527,6 +565,8 @@ const styles = {
     fontSize: '12px',
     fontWeight: '600',
     marginTop: '6px',
+    display: 'flex',
+    alignItems: 'center',
     transition: 'all 0.2s ease'
   },
   chartWrapper: {
@@ -651,7 +691,6 @@ const styles = {
   searchIcon: {
     position: 'absolute',
     left: '12px',
-    fontSize: '12px',
     color: '#94a3b8'
   },
   searchInput: {
@@ -662,13 +701,15 @@ const styles = {
     fontSize: '12px',
     color: '#0f172a',
     outline: 'none',
-    transition: 'border 0.2s ease',
-    '&:focus': {
-      border: '1px solid #6366f1'
-    }
+    transition: 'all 0.2s ease',
+    boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.02)'
   },
   emptyState: {
     padding: '40px 0',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
     textAlign: 'center'
   },
   tableWrapper: {
@@ -722,11 +763,14 @@ const styles = {
     backgroundColor: '#f43f5e',
     color: '#fff',
     border: 'none',
-    padding: '5px 12px',
+    padding: '6px 12px',
     borderRadius: '6px',
     cursor: 'pointer',
     fontSize: '10px',
     fontWeight: '700',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
     boxShadow: '0 2px 4px rgba(244, 63, 94, 0.15)',
     transition: 'all 0.2s ease'
   },
@@ -801,11 +845,13 @@ const styles = {
     backgroundColor: '#f43f5e',
     color: '#fff',
     border: 'none',
-    padding: '5px 12px',
+    padding: '6px 14px',
     borderRadius: '6px',
     cursor: 'pointer',
     fontSize: '10px',
     fontWeight: '700',
+    display: 'flex',
+    alignItems: 'center',
     boxShadow: '0 2px 4px rgba(244, 63, 94, 0.15)'
   }
 };

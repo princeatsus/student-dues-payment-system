@@ -9,8 +9,18 @@ const ClassRoster = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [remindLoading, setRemindLoading] = useState(null);
-  const { user } = useAuth();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState('ALL');
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const { user, logoutUser } = useAuth();
   const navigate = useNavigate();
+
+  // Handle window resize for responsive layout
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     fetchRoster();
@@ -39,16 +49,16 @@ const ClassRoster = () => {
     try {
       const response = await sendReminderEmail({ student_id: studentId });
       setSuccess(response.data.message);
-      // Optional: alert the simulated body content for the hackathon demo
-      alert(`📧 Simulated Email Sent Successfully!\n\nTo: ${studentName}\n\nContent:\n"${response.data.simulated_body}"`);
+      // Automatically fade out success message
+      setTimeout(() => setSuccess(''), 8000);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to send reminder.');
+      setTimeout(() => setError(''), 8000);
     } finally {
       setRemindLoading(null);
     }
   };
 
-  // CSV Roster Exporter (satisfies US-2.1.3 "Export to Excel")
   const handleExportRoster = () => {
     if (!rosterData || rosterData.roster.length === 0) return;
 
@@ -73,105 +83,284 @@ const ClassRoster = () => {
     document.body.removeChild(link);
   };
 
-  if (loading) return <div style={styles.loading}>Loading class roster...</div>;
+  const handleLogout = () => {
+    logoutUser();
+    navigate('/');
+  };
+
+  // Filter & search student array
+  const filteredRoster = (rosterData?.roster || []).filter(student => {
+    const matchesSearch = 
+      student.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      student.index_number.includes(searchTerm);
+    
+    const matchesFilter = 
+      filterStatus === 'ALL' ||
+      (filterStatus === 'PAID' && student.status === 'PAID') ||
+      (filterStatus === 'OWING' && student.status === 'OWING');
+
+    return matchesSearch && matchesFilter;
+  });
+
+  // Calculate metrics
+  const totalCount = rosterData?.roster?.length || 0;
+  const paidCount = rosterData?.roster?.filter(s => s.status === 'PAID').length || 0;
+  const owingCount = rosterData?.roster?.filter(s => s.status === 'OWING').length || 0;
+  const percentCleared = totalCount > 0 ? Math.round((paidCount / totalCount) * 100) : 0;
+
+  // SVG Progress Ring calculations
+  const radius = 35;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (percentCleared / 100) * circumference;
+
+  if (loading) {
+    return (
+      <div style={styles.loadingContainer}>
+        <div style={styles.spinner}></div>
+        <div style={{ marginTop: '16px', fontSize: '15px', color: '#6366f1', fontWeight: '600' }}>
+          Loading class roster...
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={styles.container}>
-      {/* Navbar */}
+      {/* Premium Navbar */}
       <div style={styles.navbar}>
-        <div>
-          <h1 style={styles.navTitle}>HTU Computer Science — Course Rep Portal</h1>
+        <div style={styles.navBrand}>
+          <div style={styles.navIcon}>🎓</div>
+          <div>
+            <h1 style={styles.navTitle}>COMPSSA SDMS</h1>
+            <p style={styles.navSubtitle}>Ho Technical University</p>
+          </div>
         </div>
-        <div style={styles.navRight}>
-          <span style={styles.navUser}>👋 Rep: {user?.full_name}</span>
-          <button onClick={() => navigate('/expenses')} style={styles.backBtn}>Expenses Dashboard</button>
+        <div style={styles.navActions}>
+          <span style={styles.navUser}>👋 Rep: <strong>{user?.full_name}</strong></span>
+          <button onClick={() => navigate('/expenses')} style={styles.expensesBtn}>💰 Expenses</button>
+          <button onClick={handleLogout} style={styles.logoutBtn}>Logout</button>
         </div>
       </div>
 
-      {/* Main Content */}
+      {/* Main Content Body */}
       <div style={styles.content}>
-        {error && <div style={styles.error}>{error}</div>}
-        {success && <div style={styles.success}>{success}</div>}
+        {error && <div style={styles.errorBox}>⚠️ {error}</div>}
+        {success && <div style={styles.successBox}>✅ {success}</div>}
 
-        <div style={styles.headerCard}>
-          <div style={styles.headerInfo}>
-            <h2 style={styles.title}>Class Roster: Level {rosterData?.level} {rosterData?.class_group}</h2>
-            <p style={styles.sub}>
-              Academic Year {rosterData?.session?.academic_year} · Semester {rosterData?.session?.semester}
+        {/* Portal Greeting Card with Circular Chart */}
+        <div style={styles.heroCard}>
+          <div style={styles.heroLeft}>
+            <div style={styles.badge}>Level {rosterData?.level} Class Group {rosterData?.class_group}</div>
+            <h2 style={styles.heroTitle}>Class Financial Overview</h2>
+            <p style={styles.heroSub}>
+              Academic Session: <strong>{rosterData?.session?.academic_year} Semester {rosterData?.session?.semester}</strong>
             </p>
+            <button onClick={handleExportRoster} style={styles.exportBtn}>
+              📥 Export Roster Sheet (CSV)
+            </button>
           </div>
-          <button onClick={handleExportRoster} style={styles.exportBtn}>
-            📥 Export to Excel (CSV)
-          </button>
+          
+          {/* Glowing Circular Clearance Ring */}
+          <div style={styles.chartWrapper}>
+            <svg width="100" height="100" style={{ transform: 'rotate(-90deg)' }}>
+              <circle cx="50" cy="50" r={radius} fill="transparent" stroke="#e2e8f0" strokeWidth="8" />
+              <circle 
+                cx="50" cy="50" r={radius} 
+                fill="transparent" 
+                stroke="url(#tealGradient)" 
+                strokeWidth="8" 
+                strokeDasharray={circumference}
+                strokeDashoffset={strokeDashoffset}
+                strokeLinecap="round"
+                style={{ transition: 'stroke-dashoffset 0.8s ease-out' }}
+              />
+              <defs>
+                <linearGradient id="tealGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#10b981" />
+                  <stop offset="100%" stopColor="#06b6d4" />
+                </linearGradient>
+              </defs>
+            </svg>
+            <div style={styles.chartCenterText}>
+              <span style={styles.chartNumber}>{percentCleared}%</span>
+              <span style={styles.chartLabel}>Cleared</span>
+            </div>
+          </div>
         </div>
 
-        <div style={styles.statsRow}>
+        {/* Stats Grid Cards */}
+        <div style={styles.statsGrid}>
           <div style={styles.statCard}>
-            <span style={styles.statLabel}>Total Class Strength</span>
-            <strong style={styles.statValue}>{rosterData?.roster?.length} students</strong>
+            <div style={{ ...styles.statIconWrapper, backgroundColor: '#e0e7ff', color: '#6366f1' }}>👥</div>
+            <div>
+              <p style={styles.statLabel}>Total Class Strength</p>
+              <h3 style={styles.statValue}>{totalCount} Students</h3>
+            </div>
           </div>
           <div style={styles.statCard}>
-            <span style={styles.statLabel}>Fully Paid</span>
-            <strong style={{ ...styles.statValue, color: '#2e7d32' }}>
-              {rosterData?.roster?.filter(s => s.status === 'PAID').length}
-            </strong>
+            <div style={{ ...styles.statIconWrapper, backgroundColor: '#ecfdf5', color: '#10b981' }}>✅</div>
+            <div>
+              <p style={styles.statLabel}>Fully Cleared</p>
+              <h3 style={{ ...styles.statValue, color: '#10b981' }}>{paidCount} Paid</h3>
+            </div>
           </div>
           <div style={styles.statCard}>
-            <span style={styles.statLabel}>Owing Balance</span>
-            <strong style={{ ...styles.statValue, color: '#c62828' }}>
-              {rosterData?.roster?.filter(s => s.status === 'OWING').length}
-            </strong>
+            <div style={{ ...styles.statIconWrapper, backgroundColor: '#fff1f2', color: '#f43f5e' }}>⚠️</div>
+            <div>
+              <p style={styles.statLabel}>Outstanding Defaulters</p>
+              <h3 style={{ ...styles.statValue, color: '#f43f5e' }}>{owingCount} Owing</h3>
+            </div>
           </div>
         </div>
 
-        {/* Roster Table */}
+        {/* Search, Filter Panel & List Section */}
         <div style={styles.tableCard}>
-          <div style={styles.tableWrapper}>
-            <table style={styles.table}>
-              <thead>
-                <tr style={styles.tableHeaderRow}>
-                  <th style={styles.th}>Index Number</th>
-                  <th style={styles.th}>Full Name</th>
-                  <th style={styles.th}>Email Address</th>
-                  <th style={{ ...styles.th, textAlign: 'right' }}>Dues Configured</th>
-                  <th style={{ ...styles.th, textAlign: 'right' }}>Paid (GHS)</th>
-                  <th style={{ ...styles.th, textAlign: 'right' }}>Outstanding</th>
-                  <th style={styles.th}>Status</th>
-                  <th style={{ ...styles.th, textAlign: 'center' }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rosterData?.roster?.map((student) => (
-                  <tr key={student.id} style={styles.tableRow}>
-                    <td style={styles.td}><code>{student.index_number}</code></td>
-                    <td style={styles.td}>{student.full_name}</td>
-                    <td style={styles.td}>{student.email}</td>
-                    <td style={{ ...styles.td, textAlign: 'right' }}>₵{student.total_dues.toFixed(2)}</td>
-                    <td style={{ ...styles.td, textAlign: 'right', color: '#2e7d32', fontWeight: 'bold' }}>₵{student.total_paid.toFixed(2)}</td>
-                    <td style={{ ...styles.td, textAlign: 'right', color: student.outstanding > 0 ? '#c62828' : '#2d3748' }}>₵{student.outstanding.toFixed(2)}</td>
-                    <td style={styles.td}>
-                      <span style={student.status === 'PAID' ? styles.statusBadgePaid : styles.statusBadgeOwing}>
+          <div style={styles.controlHeader}>
+            {/* Filter Tabs */}
+            <div style={styles.tabContainer}>
+              <button 
+                onClick={() => setFilterStatus('ALL')} 
+                style={filterStatus === 'ALL' ? styles.activeTab : styles.tab}
+              >
+                All
+              </button>
+              <button 
+                onClick={() => setFilterStatus('PAID')} 
+                style={filterStatus === 'PAID' ? styles.activeTab : styles.tab}
+              >
+                Cleared
+              </button>
+              <button 
+                onClick={() => setFilterStatus('OWING')} 
+                style={filterStatus === 'OWING' ? styles.activeTab : styles.tab}
+              >
+                Owing
+              </button>
+            </div>
+
+            {/* Search Input Box */}
+            <div style={styles.searchWrapper}>
+              <span style={styles.searchIcon}>🔍</span>
+              <input
+                type="text"
+                placeholder="Search index or name..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={styles.searchInput}
+              />
+            </div>
+          </div>
+
+          {/* Table View (Desktop) / Card View (Mobile) */}
+          {filteredRoster.length === 0 ? (
+            <div style={styles.emptyState}>
+              <span style={{ fontSize: '32px' }}>🔎</span>
+              <p style={{ marginTop: '8px', color: '#64748b' }}>No students found matching filters.</p>
+            </div>
+          ) : isMobile ? (
+            /* MOBILE STACKED CARD VIEW */
+            <div style={styles.mobileCardList}>
+              {filteredRoster.map((student) => {
+                const progressPercent = student.total_dues > 0 
+                  ? Math.min(100, Math.round((student.total_paid / student.total_dues) * 100)) 
+                  : 0;
+
+                return (
+                  <div key={student.id} style={styles.mobileStudentCard}>
+                    <div style={styles.mobileCardHeader}>
+                      <div>
+                        <h4 style={styles.mobileStudentName}>{student.full_name}</h4>
+                        <code style={styles.mobileStudentIndex}>{student.index_number}</code>
+                      </div>
+                      <span style={student.status === 'PAID' ? styles.badgePaid : styles.badgeOwing}>
                         {student.status}
                       </span>
-                    </td>
-                    <td style={{ ...styles.td, textAlign: 'center' }}>
-                      {student.status === 'OWING' ? (
+                    </div>
+
+                    <div style={styles.progressContainer}>
+                      <div style={styles.progressLabels}>
+                        <span>Paid: ₵{student.total_paid.toFixed(0)}</span>
+                        <span>Dues: ₵{student.total_dues.toFixed(0)}</span>
+                      </div>
+                      <div style={styles.progressBarBg}>
+                        <div style={{ ...styles.progressBarFill, width: `${progressPercent}%`, backgroundColor: student.status === 'PAID' ? '#10b981' : '#6366f1' }}></div>
+                      </div>
+                    </div>
+
+                    <div style={styles.mobileCardFooter}>
+                      <div style={{ fontSize: '11px', color: '#64748b' }}>
+                        {student.outstanding > 0 ? (
+                          <span>Balance: <strong style={{ color: '#f43f5e' }}>₵{student.outstanding.toFixed(2)}</strong></span>
+                        ) : (
+                          <span style={{ color: '#10b981' }}>Fully Cleared</span>
+                        )}
+                      </div>
+                      
+                      {student.status === 'OWING' && (
                         <button
                           onClick={() => handleSendReminder(student.id, student.full_name)}
-                          style={styles.remindBtn}
+                          style={styles.mobileNudgeBtn}
                           disabled={remindLoading === student.id}
                         >
                           {remindLoading === student.id ? 'Sending...' : '📢 Send Nudge'}
                         </button>
-                      ) : (
-                        <span style={styles.noActionText}>No Action</span>
                       )}
-                    </td>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            /* DESKTOP TABLE VIEW */
+            <div style={styles.tableWrapper}>
+              <table style={styles.table}>
+                <thead>
+                  <tr style={styles.tableHeaderRow}>
+                    <th style={styles.th}>Index Number</th>
+                    <th style={styles.th}>Full Name</th>
+                    <th style={styles.th}>Email Address</th>
+                    <th style={{ ...styles.th, textAlign: 'right' }}>Dues Configured</th>
+                    <th style={{ ...styles.th, textAlign: 'right' }}>Paid</th>
+                    <th style={{ ...styles.th, textAlign: 'right' }}>Outstanding</th>
+                    <th style={styles.th}>Status</th>
+                    <th style={{ ...styles.th, textAlign: 'center' }}>Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {filteredRoster.map((student) => (
+                    <tr key={student.id} style={styles.tableRow}>
+                      <td style={styles.td}><code>{student.index_number}</code></td>
+                      <td style={{ ...styles.td, fontWeight: '500', color: '#0f172a' }}>{student.full_name}</td>
+                      <td style={styles.td}>{student.email}</td>
+                      <td style={{ ...styles.td, textAlign: 'right' }}>₵{student.total_dues.toFixed(2)}</td>
+                      <td style={{ ...styles.td, textAlign: 'right', color: '#10b981', fontWeight: 'bold' }}>₵{student.total_paid.toFixed(2)}</td>
+                      <td style={{ ...styles.td, textAlign: 'right', color: student.outstanding > 0 ? '#f43f5e' : '#0f172a', fontWeight: student.outstanding > 0 ? 'bold' : 'normal' }}>
+                        ₵{student.outstanding.toFixed(2)}
+                      </td>
+                      <td style={styles.td}>
+                        <span style={student.status === 'PAID' ? styles.badgePaid : styles.badgeOwing}>
+                          {student.status}
+                        </span>
+                      </td>
+                      <td style={{ ...styles.td, textAlign: 'center' }}>
+                        {student.status === 'OWING' ? (
+                          <button
+                            onClick={() => handleSendReminder(student.id, student.full_name)}
+                            style={styles.remindBtn}
+                            disabled={remindLoading === student.id}
+                          >
+                            {remindLoading === student.id ? 'Sending...' : '📢 Send Nudge'}
+                          </button>
+                        ) : (
+                          <span style={styles.noActionText}>No Action</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -179,70 +368,446 @@ const ClassRoster = () => {
 };
 
 const styles = {
-  container: { minHeight: '100vh', backgroundColor: '#f0f4f8' },
-  loading: { display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontSize: '16px', color: '#003087', fontWeight: 'bold' },
+  container: { 
+    minHeight: '100vh', 
+    backgroundColor: '#f8fafc',
+    fontFamily: "'Inter', sans-serif" 
+  },
+  loadingContainer: { 
+    display: 'flex', 
+    flexDirection: 'column',
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    height: '100vh',
+    backgroundColor: '#f8fafc'
+  },
+  spinner: {
+    width: '40px',
+    height: '40px',
+    border: '4px solid #f3f3f3',
+    borderTop: '4px solid #6366f1',
+    borderRadius: '50%',
+    animation: 'spin 1s linear infinite'
+  },
   navbar: {
-    backgroundColor: '#0a2540', color: '#fff',
-    padding: '16px 30px', display: 'flex',
-    justifyContent: 'space-between', alignItems: 'center',
+    background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)',
+    color: '#fff',
+    padding: '14px 24px',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+    flexWrap: 'wrap',
+    gap: '12px'
   },
-  navTitle: { margin: 0, fontSize: '18px', fontWeight: 'bold' },
-  navRight: { display: 'flex', alignItems: 'center', gap: '16px' },
-  navUser: { fontSize: '14px', fontWeight: '500' },
-  backBtn: {
-    backgroundColor: 'transparent', border: '1px solid #fff',
-    color: '#fff', padding: '6px 14px', borderRadius: '6px',
-    cursor: 'pointer', fontSize: '13px',
+  navBrand: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px'
   },
-  content: { maxWidth: '1200px', margin: '0 auto', padding: '30px' },
-  error: {
-    backgroundColor: '#fff5f5', border: '1px solid #feb2b2',
-    color: '#c53030', padding: '14px', borderRadius: '8px', marginBottom: '20px', fontSize: '14px'
+  navIcon: {
+    fontSize: '24px'
   },
-  success: {
-    backgroundColor: '#f0fff4', border: '1px solid #c6f6d5',
-    color: '#22543d', padding: '14px', borderRadius: '8px', marginBottom: '20px', fontSize: '14px'
+  navTitle: {
+    margin: 0,
+    fontSize: '16px',
+    fontWeight: '700',
+    letterSpacing: '0.5px'
   },
-  headerCard: {
-    backgroundColor: '#fff', borderRadius: '12px', padding: '24px',
-    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-    boxShadow: '0 4px 20px rgba(0,0,0,0.03)', marginBottom: '24px', flexWrap: 'wrap', gap: '16px'
+  navSubtitle: {
+    margin: 0,
+    fontSize: '11px',
+    color: '#94a3b8'
   },
-  headerInfo: {},
-  title: { margin: '0 0 6px 0', color: '#0a2540', fontSize: '22px' },
-  sub: { margin: 0, color: '#627d98', fontSize: '14px' },
+  navActions: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    flexWrap: 'wrap'
+  },
+  navUser: {
+    fontSize: '13px',
+    color: '#cbd5e1'
+  },
+  expensesBtn: {
+    backgroundColor: '#6366f1',
+    color: '#fff',
+    border: 'none',
+    padding: '6px 14px',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontSize: '12px',
+    fontWeight: '600',
+    transition: 'all 0.2s ease',
+    boxShadow: '0 2px 4px rgba(99, 102, 241, 0.2)'
+  },
+  logoutBtn: {
+    backgroundColor: 'transparent',
+    border: '1px solid #475569',
+    color: '#cbd5e1',
+    padding: '5px 12px',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontSize: '12px',
+    fontWeight: '500',
+    transition: 'all 0.2s ease'
+  },
+  content: {
+    maxWidth: '1140px',
+    margin: '0 auto',
+    padding: '20px 16px 40px 16px'
+  },
+  errorBox: {
+    backgroundColor: '#fef2f2',
+    border: '1px solid #fca5a5',
+    color: '#b91c1c',
+    padding: '12px 16px',
+    borderRadius: '8px',
+    marginBottom: '20px',
+    fontSize: '13px',
+    fontWeight: '500'
+  },
+  successBox: {
+    backgroundColor: '#f0fdf4',
+    border: '1px solid #86efac',
+    color: '#15803d',
+    padding: '12px 16px',
+    borderRadius: '8px',
+    marginBottom: '20px',
+    fontSize: '13px',
+    fontWeight: '500'
+  },
+  heroCard: {
+    background: '#ffffff',
+    borderRadius: '16px',
+    padding: '24px',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.05)',
+    border: '1px solid #f1f5f9',
+    marginBottom: '24px',
+    flexWrap: 'wrap',
+    gap: '24px'
+  },
+  heroLeft: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    gap: '8px'
+  },
+  badge: {
+    backgroundColor: '#e0e7ff',
+    color: '#4f46e5',
+    fontSize: '11px',
+    fontWeight: '700',
+    padding: '4px 10px',
+    borderRadius: '20px',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px'
+  },
+  heroTitle: {
+    margin: 0,
+    fontSize: '22px',
+    fontWeight: '800',
+    color: '#0f172a'
+  },
+  heroSub: {
+    margin: 0,
+    fontSize: '13px',
+    color: '#475569'
+  },
   exportBtn: {
-    backgroundColor: '#1565c0', color: '#fff', padding: '10px 20px',
-    borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold'
+    backgroundColor: '#0f172a',
+    color: '#fff',
+    border: 'none',
+    padding: '8px 16px',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontSize: '12px',
+    fontWeight: '600',
+    marginTop: '6px',
+    transition: 'all 0.2s ease'
   },
-  statsRow: { display: 'flex', gap: '16px', marginBottom: '24px', flexWrap: 'wrap' },
+  chartWrapper: {
+    position: 'relative',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100px',
+    height: '100px'
+  },
+  chartCenterText: {
+    position: 'absolute',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  chartNumber: {
+    fontSize: '20px',
+    fontWeight: '800',
+    color: '#0f172a'
+  },
+  chartLabel: {
+    fontSize: '9px',
+    color: '#64748b',
+    textTransform: 'uppercase',
+    fontWeight: '700',
+    letterSpacing: '0.5px'
+  },
+  statsGrid: {
+    display: 'flex',
+    gap: '16px',
+    marginBottom: '24px',
+    flexWrap: 'wrap'
+  },
   statCard: {
-    flex: 1, minWidth: '180px', backgroundColor: '#fff', borderRadius: '12px', padding: '20px',
-    boxShadow: '0 4px 20px rgba(0,0,0,0.03)', display: 'flex', flexDirection: 'column', gap: '6px'
+    flex: 1,
+    minWidth: '220px',
+    backgroundColor: '#ffffff',
+    borderRadius: '14px',
+    padding: '16px 20px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '16px',
+    boxShadow: '0 4px 15px -3px rgba(0, 0, 0, 0.04)',
+    border: '1px solid #f1f5f9'
   },
-  statLabel: { fontSize: '12px', color: '#627d98', fontWeight: '600' },
-  statValue: { fontSize: '20px', color: '#0a2540', fontWeight: 'bold' },
+  statIconWrapper: {
+    width: '44px',
+    height: '44px',
+    borderRadius: '10px',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    fontSize: '20px'
+  },
+  statLabel: {
+    margin: 0,
+    fontSize: '11px',
+    color: '#64748b',
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: '0.3px'
+  },
+  statValue: {
+    margin: '2px 0 0 0',
+    fontSize: '17px',
+    fontWeight: '800',
+    color: '#0f172a'
+  },
   tableCard: {
-    backgroundColor: '#fff', borderRadius: '12px', padding: '20px',
-    boxShadow: '0 4px 20px rgba(0,0,0,0.03)',
+    backgroundColor: '#ffffff',
+    borderRadius: '16px',
+    padding: '20px',
+    boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.05)',
+    border: '1px solid #f1f5f9'
   },
-  tableWrapper: { overflowX: 'auto' },
-  table: { width: '100%', borderCollapse: 'collapse', fontSize: '13px' },
-  tableHeaderRow: { borderBottom: '2px solid #e2e8f0', backgroundColor: '#f7fafc' },
-  th: { padding: '12px 16px', color: '#4a5568', fontWeight: 'bold', textAlign: 'left' },
-  tableRow: { borderBottom: '1px solid #f0f4f8', '&:hover': { backgroundColor: '#f7fafc' } },
-  td: { padding: '12px 16px', color: '#2d3748' },
-  statusBadgePaid: {
-    backgroundColor: '#e6fffa', color: '#234e52', padding: '4px 12px', borderRadius: '20px', fontSize: '11px', fontWeight: 'bold'
+  controlHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '20px',
+    flexWrap: 'wrap',
+    gap: '16px'
   },
-  statusBadgeOwing: {
-    backgroundColor: '#fff5f5', color: '#742a2a', padding: '4px 12px', borderRadius: '20px', fontSize: '11px', fontWeight: 'bold'
+  tabContainer: {
+    display: 'flex',
+    backgroundColor: '#f1f5f9',
+    padding: '4px',
+    borderRadius: '8px',
+    gap: '2px'
+  },
+  tab: {
+    backgroundColor: 'transparent',
+    border: 'none',
+    color: '#64748b',
+    padding: '6px 16px',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontSize: '12px',
+    fontWeight: '600',
+    transition: 'all 0.15s ease'
+  },
+  activeTab: {
+    backgroundColor: '#ffffff',
+    border: 'none',
+    color: '#0f172a',
+    padding: '6px 16px',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontSize: '12px',
+    fontWeight: '700',
+    boxShadow: '0 2px 5px rgba(0,0,0,0.06)'
+  },
+  searchWrapper: {
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center',
+    width: '100%',
+    maxWidth: '260px'
+  },
+  searchIcon: {
+    position: 'absolute',
+    left: '12px',
+    fontSize: '12px',
+    color: '#94a3b8'
+  },
+  searchInput: {
+    width: '100%',
+    padding: '7px 12px 7px 32px',
+    borderRadius: '8px',
+    border: '1px solid #cbd5e1',
+    fontSize: '12px',
+    color: '#0f172a',
+    outline: 'none',
+    transition: 'border 0.2s ease',
+    '&:focus': {
+      border: '1px solid #6366f1'
+    }
+  },
+  emptyState: {
+    padding: '40px 0',
+    textAlign: 'center'
+  },
+  tableWrapper: {
+    overflowX: 'auto'
+  },
+  table: {
+    width: '100%',
+    borderCollapse: 'collapse',
+    fontSize: '12px'
+  },
+  tableHeaderRow: {
+    borderBottom: '1.5px solid #e2e8f0',
+    backgroundColor: '#f8fafc'
+  },
+  th: {
+    padding: '12px 14px',
+    color: '#475569',
+    fontWeight: '600',
+    textAlign: 'left'
+  },
+  tableRow: {
+    borderBottom: '1px solid #f1f5f9',
+    transition: 'background-color 0.15s ease',
+    '&:hover': {
+      backgroundColor: '#f8fafc'
+    }
+  },
+  td: {
+    padding: '12px 14px',
+    color: '#334155'
+  },
+  badgePaid: {
+    backgroundColor: '#d1fae5',
+    color: '#065f46',
+    padding: '3px 10px',
+    borderRadius: '12px',
+    fontSize: '10px',
+    fontWeight: '700',
+    display: 'inline-block'
+  },
+  badgeOwing: {
+    backgroundColor: '#ffe4e6',
+    color: '#9f1239',
+    padding: '3px 10px',
+    borderRadius: '12px',
+    fontSize: '10px',
+    fontWeight: '700',
+    display: 'inline-block'
   },
   remindBtn: {
-    backgroundColor: '#c62828', color: '#fff', padding: '6px 12px', borderRadius: '6px',
-    border: 'none', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold'
+    backgroundColor: '#f43f5e',
+    color: '#fff',
+    border: 'none',
+    padding: '5px 12px',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontSize: '10px',
+    fontWeight: '700',
+    boxShadow: '0 2px 4px rgba(244, 63, 94, 0.15)',
+    transition: 'all 0.2s ease'
   },
-  noActionText: { color: '#a0aec0', fontSize: '11px', fontStyle: 'italic' }
+  noActionText: {
+    color: '#94a3b8',
+    fontSize: '11px',
+    fontStyle: 'italic'
+  },
+
+  /* MOBILE CARD VIEW STYLES */
+  mobileCardList: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '12px'
+  },
+  mobileStudentCard: {
+    backgroundColor: '#ffffff',
+    border: '1px solid #f1f5f9',
+    borderRadius: '12px',
+    padding: '14px',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '12px'
+  },
+  mobileCardHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start'
+  },
+  mobileStudentName: {
+    margin: 0,
+    fontSize: '13px',
+    fontWeight: '700',
+    color: '#0f172a'
+  },
+  mobileStudentIndex: {
+    fontSize: '11px',
+    color: '#64748b'
+  },
+  progressContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '4px'
+  },
+  progressLabels: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    fontSize: '10px',
+    color: '#64748b',
+    fontWeight: '600'
+  },
+  progressBarBg: {
+    height: '6px',
+    backgroundColor: '#f1f5f9',
+    borderRadius: '3px',
+    overflow: 'hidden'
+  },
+  progressBarFill: {
+    height: '100%',
+    borderRadius: '3px',
+    transition: 'width 0.4s ease'
+  },
+  mobileCardFooter: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderTop: '1px solid #f8fafc',
+    paddingTop: '8px'
+  },
+  mobileNudgeBtn: {
+    backgroundColor: '#f43f5e',
+    color: '#fff',
+    border: 'none',
+    padding: '5px 12px',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontSize: '10px',
+    fontWeight: '700',
+    boxShadow: '0 2px 4px rgba(244, 63, 94, 0.15)'
+  }
 };
 
 export default ClassRoster;

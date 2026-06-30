@@ -49,8 +49,6 @@ const Login = () => {
   const [passcode, setPasscode] = useState('');
   const [passcodeError, setPasscodeError] = useState('');
 
-  const [portalEmail, setPortalEmail] = useState('');
-  const [portalPassword, setPortalPassword] = useState('');
 
   const [customUsers, setCustomUsers] = useState(() => {
     try {
@@ -148,8 +146,7 @@ const Login = () => {
     }
   };
 
-  const handlePortalLoginSubmit = async (e) => {
-    e.preventDefault();
+  const handleQuickMockLogin = async (email, password) => {
     setLoading(true);
     setError('');
 
@@ -160,45 +157,25 @@ const Login = () => {
       'kojo@indexnumber.htu.edu.gh': { email: 'kojo@indexnumber.htu.edu.gh', password: 'rep123', name: 'Kojo Mensah', role: 'COURSE_REP', level: 200, group: 'B' },
       'francis@htu.edu.gh': { email: 'francis@htu.edu.gh', password: 'accountant123', name: 'Francis Dogbey', role: 'ACCOUNTANT', level: 100, group: 'A' },
       'joseph@htu.edu.gh': { email: 'joseph@htu.edu.gh', password: 'hod123', name: 'Dr. Joseph Darko', role: 'HOD', level: 100, group: 'A' },
-      'joseph': { email: 'joseph@htu.edu.gh', password: 'hod123', name: 'Dr. Joseph Darko', role: 'HOD', level: 100, group: 'A' },
-      'francis': { email: 'francis@htu.edu.gh', password: 'accountant123', name: 'Francis Dogbey', role: 'ACCOUNTANT', level: 100, group: 'A' },
     };
 
-    const inputKey = portalEmail.toLowerCase().trim();
-
-    if (showDemoSwitcher && isMockUnlocked) {
-      let matchedUser = null;
-      if (presets[inputKey] && presets[inputKey].password === portalPassword) {
-        matchedUser = presets[inputKey];
-      } else {
-        const found = customUsers.find(u => (u.email.toLowerCase().trim() === inputKey || u.indexNumber === inputKey) && u.password === portalPassword);
-        if (found) {
-          matchedUser = found;
-        }
-      }
-
-      if (matchedUser) {
-        try {
-          const response = await login({
-            isMock: true,
-            mockEmail: matchedUser.email,
-            mockName: matchedUser.name,
-            mockRole: matchedUser.role,
-            mockLevel: parseInt(matchedUser.level),
-            mockClassGroup: matchedUser.group
-          });
-          handleAuthSuccess(response.data);
-          return;
-        } catch (err) {
-          setError(err.response?.data?.message || 'Mock login failed.');
-          setLoading(false);
-          return;
-        }
+    const presetUser = presets[email];
+    if (presetUser) {
+      try {
+        const response = await login({
+          isMock: true,
+          mockEmail: presetUser.email,
+          mockName: presetUser.name,
+          mockRole: presetUser.role,
+          mockLevel: parseInt(presetUser.level),
+          mockClassGroup: presetUser.group
+        });
+        handleAuthSuccess(response.data);
+      } catch (err) {
+        setError(err.response?.data?.message || 'Mock login failed.');
+        setLoading(false);
       }
     }
-
-    setError('Traditional Index Number / Password login is restricted in production. Please use the "Google" login button below to authenticate with your official HTU email address.');
-    setLoading(false);
   };
 
   const handleAuthSuccess = (authData) => {
@@ -217,11 +194,13 @@ const Login = () => {
       <div style={styles.overlay} />
       
       {/* Centered Login Card Container */}
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 2, width: '100%', maxWidth: '400px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 2, width: '100%', maxWidth: '440px' }}>
         <div style={styles.card}>
           <div style={styles.cardHeader}>
             <img src={htuLogo} alt="HTU Logo" style={styles.logoImage} />
           </div>
+
+          <div style={styles.dividerLine} />
 
           {error && (
             <div style={styles.errorBox}>
@@ -232,7 +211,7 @@ const Login = () => {
           {/* If showDemoSwitcher is active and Developer mode is locked, show passcode lock */}
           {showDemoSwitcher && !isMockUnlocked ? (
             <form onSubmit={handleVerifyPasscode} style={styles.form}>
-              <p style={{ ...styles.oauthNote, fontSize: '12px', margin: '0 0 10px 0', textAlign: 'center' }}>
+              <p style={{ ...styles.oauthNote, fontSize: '13px', margin: '0 0 10px 0', textAlign: 'center' }}>
                 🔑 Enter Developer Passcode to unlock presets:
               </p>
               
@@ -258,60 +237,12 @@ const Login = () => {
               </button>
             </form>
           ) : (
-            /* Main Portal Login Form */
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <form onSubmit={handlePortalLoginSubmit} style={styles.form}>
-                <div style={styles.inputGroup}>
-                  <div style={styles.inputWrapper}>
-                    <span style={styles.inputIcon}>✏️</span>
-                    <input
-                      type="text"
-                      placeholder="Enter Index Number"
-                      value={portalEmail}
-                      onChange={(e) => setPortalEmail(e.target.value)}
-                      style={styles.portalInput}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div style={styles.inputGroup}>
-                  <div style={styles.inputWrapper}>
-                    <span style={styles.inputIcon}>🔒</span>
-                    <input
-                      type="password"
-                      placeholder="Enter Password"
-                      value={portalPassword}
-                      onChange={(e) => setPortalPassword(e.target.value)}
-                      style={styles.portalInput}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div style={styles.rememberRow}>
-                  <label style={styles.checkboxLabel}>
-                    <input type="checkbox" style={{ marginRight: '6px' }} /> Remember me
-                  </label>
-                  <a href="#forgot" style={styles.forgotLink}>Forgot Details</a>
-                </div>
-
-                <div style={styles.buttonRow}>
-                  <button type="button" style={styles.enquiriesBtn}>Enquiries</button>
-                  <button type="submit" style={styles.loginBtn} disabled={loading}>
-                    {loading ? 'Login...' : 'Login'}
-                  </button>
-                </div>
-              </form>
-
-              <div style={styles.orDivider}>
-                <span style={styles.orLine} />
-                <span style={styles.orText}>OR</span>
-                <span style={styles.orLine} />
-              </div>
-
+            /* Main Portal Login Form - MATCHES THE SCREENSHOT EXACTLY */
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', padding: '10px 0' }}>
+              <div style={styles.lmsTitle}>Log in using your account on:</div>
+              
               {/* Google Sign In Button */}
-              <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <div style={styles.googleBtnWrapper}>
                 <div id="google-signin-btn" style={styles.googleBtn}></div>
               </div>
             </div>
@@ -319,15 +250,12 @@ const Login = () => {
 
           {/* Compact Quick Presets Links */}
           {showDemoSwitcher && isMockUnlocked && (
-            <div style={styles.compactPresets}>
+            <div style={{ ...styles.compactPresets, borderTop: '1px solid #eaeaea', paddingTop: '10px', marginTop: '10px' }}>
               <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '500' }}>Presets: </span>
               <button
                 type="button"
                 style={styles.presetLink}
-                onClick={() => {
-                  setPortalEmail('1026002202');
-                  setPortalPassword('student123');
-                }}
+                onClick={() => handleQuickMockLogin('1026002202', 'student123')}
               >
                 Student
               </button>
@@ -335,10 +263,7 @@ const Login = () => {
               <button
                 type="button"
                 style={styles.presetLink}
-                onClick={() => {
-                  setPortalEmail('1026002201');
-                  setPortalPassword('rep123');
-                }}
+                onClick={() => handleQuickMockLogin('1026002201', 'rep123')}
               >
                 Rep
               </button>
@@ -346,10 +271,7 @@ const Login = () => {
               <button
                 type="button"
                 style={styles.presetLink}
-                onClick={() => {
-                  setPortalEmail('francis@htu.edu.gh');
-                  setPortalPassword('accountant123');
-                }}
+                onClick={() => handleQuickMockLogin('francis@htu.edu.gh', 'accountant123')}
               >
                 Accountant
               </button>
@@ -357,15 +279,18 @@ const Login = () => {
               <button
                 type="button"
                 style={styles.presetLink}
-                onClick={() => {
-                  setPortalEmail('joseph@htu.edu.gh');
-                  setPortalPassword('hod123');
-                }}
+                onClick={() => handleQuickMockLogin('joseph@htu.edu.gh', 'hod123')}
               >
                 HOD
               </button>
             </div>
           )}
+
+          <div style={styles.dividerLine} />
+
+          <div style={styles.cookiesNotice}>
+            <a href="#cookies" style={styles.cookiesLink}>COOKIES NOTICE</a>
+          </div>
         </div>
 
         {/* Footer Note Outside Card */}
@@ -603,6 +528,34 @@ const styles = {
     color: '#475569',
     lineHeight: '1.5',
     marginBottom: '16px',
+  },
+  dividerLine: {
+    height: '1px',
+    backgroundColor: '#e2e8f0',
+    margin: '16px 0',
+  },
+  lmsTitle: {
+    fontSize: '17px',
+    color: '#4a5568',
+    textAlign: 'center',
+    fontWeight: '400',
+    margin: '10px 0',
+  },
+  googleBtnWrapper: {
+    width: '100%',
+    display: 'flex',
+    justifyContent: 'center',
+  },
+  cookiesNotice: {
+    textAlign: 'center',
+    marginTop: '6px',
+  },
+  cookiesLink: {
+    fontSize: '12px',
+    color: '#2d3748',
+    textDecoration: 'underline',
+    letterSpacing: '0.5px',
+    fontWeight: 'bold',
   }
 };
 

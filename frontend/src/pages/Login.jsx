@@ -240,127 +240,132 @@ const Login = () => {
   };
   return (
     <div style={styles.page}>
-      <div style={styles.overlay} />
-      
       {/* Centered Login Card Container */}
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 2, width: '100%', maxWidth: '460px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 2, width: '100%', maxWidth: '580px' }}>
         <div style={styles.card}>
-          <div style={styles.cardHeader}>
-            <img src={htuLogo} alt="HTU Logo" style={styles.logoImage} />
-          </div>
-
-          {error && (
-            <div style={styles.errorBox}>
-              ⚠️ {error}
+          
+          {/* Top Section */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%' }}>
+            <div style={styles.cardHeader}>
+              <img src={htuLogo} alt="HTU Logo" style={styles.logoImage} />
             </div>
-          )}
 
-          {/* If showDemoSwitcher is active and Developer mode is locked, show passcode lock */}
-          {showDemoSwitcher && !isMockUnlocked ? (
-            <form onSubmit={handleVerifyPasscode} style={styles.form}>
-              <p style={{ ...styles.oauthNote, fontSize: '13px', margin: '0 0 10px 0', textAlign: 'center' }}>
-                🔑 Enter Developer Passcode to unlock presets:
-              </p>
-              
-              <div style={styles.inputGroup}>
-                <input
-                  type="password"
-                  placeholder="Enter passcode"
-                  value={passcode}
-                  onChange={(e) => setPasscode(e.target.value)}
-                  style={styles.input}
-                  required
-                />
+            {error && (
+              <div style={styles.errorBox}>
+                ⚠️ {error}
               </div>
+            )}
 
-              {passcodeError && (
-                <p style={{ color: '#e53e3e', fontSize: '11px', margin: '0', textAlign: 'center' }}>
-                  ❌ {passcodeError}
+            {/* If showDemoSwitcher is active and Developer mode is locked, show passcode lock */}
+            {showDemoSwitcher && !isMockUnlocked ? (
+              <form onSubmit={handleVerifyPasscode} style={styles.form}>
+                <p style={{ ...styles.oauthNote, fontSize: '13px', margin: '0 0 10px 0', textAlign: 'center' }}>
+                  🔑 Enter Developer Passcode to unlock presets:
                 </p>
-              )}
-
-              <button type="submit" style={styles.submitBtn}>
-                Unlock Presets
-              </button>
-            </form>
-          ) : showCredentialsForm ? (
-            /* Traditional login form if they clicked 'Use another account' */
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div style={styles.welcomeText}>Welcome, please login to register.</div>
-
-              <form onSubmit={handlePortalLoginSubmit} style={styles.form}>
+                
                 <div style={styles.inputGroup}>
-                  <div style={styles.inputWrapper}>
-                    <span style={styles.inputIcon}>✏️</span>
-                    <input
-                      type="text"
-                      placeholder="Enter Index Number"
-                      value={portalEmail}
-                      onChange={(e) => setPortalEmail(e.target.value)}
-                      style={styles.portalInput}
-                      required
-                    />
+                  <input
+                    type="password"
+                    placeholder="Enter passcode"
+                    value={passcode}
+                    onChange={(e) => setPasscode(e.target.value)}
+                    style={styles.input}
+                    required
+                  />
+                </div>
+
+                {passcodeError && (
+                  <p style={{ color: '#e53e3e', fontSize: '11px', margin: '0', textAlign: 'center' }}>
+                    ❌ {passcodeError}
+                  </p>
+                )}
+
+                <button type="submit" style={styles.submitBtn}>
+                  Unlock Presets
+                </button>
+              </form>
+            ) : showCredentialsForm ? (
+              /* Traditional login form if they clicked 'Use another account' */
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div style={styles.welcomeText}>Welcome, please login to register.</div>
+
+                <form onSubmit={handlePortalLoginSubmit} style={styles.form}>
+                  <div style={styles.inputGroup}>
+                    <div style={styles.inputWrapper}>
+                      <span style={styles.inputIcon}>✏️</span>
+                      <input
+                        type="text"
+                        placeholder="Enter Index Number"
+                        value={portalEmail}
+                        onChange={(e) => setPortalEmail(e.target.value)}
+                        style={styles.portalInput}
+                        required
+                      />
+                    </div>
                   </div>
-                </div>
 
-                <div style={styles.inputGroup}>
-                  <div style={styles.inputWrapper}>
-                    <span style={styles.inputIcon}>🔒</span>
-                    <input
-                      type="password"
-                      placeholder="Enter Password"
-                      value={portalPassword}
-                      onChange={(e) => setPortalPassword(e.target.value)}
-                      style={styles.portalInput}
-                      required
-                    />
+                  <div style={styles.inputGroup}>
+                    <div style={styles.inputWrapper}>
+                      <span style={styles.inputIcon}>🔒</span>
+                      <input
+                        type="password"
+                        placeholder="Enter Password"
+                        value={portalPassword}
+                        onChange={(e) => setPortalPassword(e.target.value)}
+                        style={styles.portalInput}
+                        required
+                      />
+                    </div>
                   </div>
-                </div>
 
-                <div style={styles.rememberRow}>
-                  <label style={styles.checkboxLabel}>
-                    <input type="checkbox" style={{ marginRight: '6px' }} /> Remember me
-                  </label>
-                  <a href="#forgot" style={styles.forgotLink}>Forgot Details</a>
-                </div>
+                  <div style={styles.rememberRow}>
+                    <label style={styles.checkboxLabel}>
+                      <input type="checkbox" style={{ marginRight: '6px' }} /> Remember me
+                    </label>
+                    <a href="#forgot" style={styles.forgotLink}>Forgot Details</a>
+                  </div>
 
-                <div style={styles.buttonRow}>
-                  <button type="button" style={styles.enquiriesBtn} onClick={() => setShowCredentialsForm(false)}>Back</button>
-                  <button type="submit" style={styles.loginBtn} disabled={loading}>
-                    {loading ? 'Login...' : 'Login'}
+                  <div style={styles.buttonRow}>
+                    <button type="button" style={styles.enquiriesBtn} onClick={() => setShowCredentialsForm(false)}>Back</button>
+                    <button type="submit" style={styles.loginBtn} disabled={loading}>
+                      {loading ? 'Login...' : 'Login'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            ) : (
+              /* Main LMS-style Login Card - Matches the screenshot exactly! */
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={styles.dividerLine} />
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'flex-start', width: '100%' }}>
+                  <div style={{ fontSize: '15px', color: '#1e293b', fontWeight: '600' }}>
+                    Log in using your account on:
+                  </div>
+                  
+                  <button 
+                    type="button" 
+                    onClick={() => setShowAccountChooser(true)} 
+                    style={styles.customGoogleBtn}
+                    disabled={loading}
+                  >
+                    <svg viewBox="0 0 24 24" width="18" height="18" style={styles.googleIconSvg}>
+                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                    </svg>
+                    <span>Login with HTU Email</span>
                   </button>
                 </div>
-              </form>
-            </div>
-          ) : (
-            /* Main LMS-style Login Card - Matches the screenshot exactly! */
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={styles.dividerLine} />
-              
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'flex-start', width: '100%' }}>
-                <div style={{ fontSize: '15px', color: '#1e293b', fontWeight: '600' }}>
-                  Log in using your account on:
-                </div>
-                
-                <button 
-                  type="button" 
-                  onClick={() => setShowAccountChooser(true)} 
-                  style={styles.customGoogleBtn}
-                  disabled={loading}
-                >
-                  <svg viewBox="0 0 24 24" width="18" height="18" style={styles.googleIconSvg}>
-                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
-                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
-                  </svg>
-                  <span>Login with HTU Email</span>
-                </button>
               </div>
+            )}
+          </div>
 
-              <div style={styles.cookiesNotice}>
-                <a href="#cookies" style={styles.cookiesLink}>COOKIES NOTICE</a>
-              </div>
+          {/* Bottom Section (Cookies notice) */}
+          {(!showDemoSwitcher || isMockUnlocked) && !showCredentialsForm && (
+            <div style={styles.cookiesNotice}>
+              <a href="#cookies" style={styles.cookiesLink}>COOKIES NOTICE</a>
             </div>
           )}
 
@@ -492,25 +497,21 @@ const styles = {
     boxSizing: 'border-box',
   },
   overlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.45)',
-    zIndex: 1,
+    display: 'none',
   },
   card: {
     backgroundColor: '#fff',
-    padding: '35px 40px',
+    padding: '45px 50px 30px 50px',
     width: '100%',
-    maxWidth: '440px',
+    maxWidth: '580px',
+    minHeight: '440px',
     borderRadius: '0',
-    boxShadow: '0 15px 35px rgba(0,0,0,0.2)',
+    boxShadow: '0 15px 35px rgba(0,0,0,0.15)',
     zIndex: 2,
     boxSizing: 'border-box',
     display: 'flex',
     flexDirection: 'column',
+    justifyContent: 'space-between',
   },
   cardHeader: {
     textAlign: 'center',

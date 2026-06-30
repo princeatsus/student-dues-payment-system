@@ -424,7 +424,8 @@ const styles = {
     marginBottom: '10px',
   },
   logoImage: {
-    maxWidth: '220px',
+    width: '100%',
+    maxWidth: '290px',
     height: 'auto',
     marginBottom: '8px',
   },

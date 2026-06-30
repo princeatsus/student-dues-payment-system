@@ -11,91 +11,73 @@ const getEmailHash = (email) => {
 // LOGIN / AUTHENTICATE WITH GOOGLE OR MOCK
 const login = async (req, res) => {
   try {
-    const { credential, isMock, mockEmail, mockName, mockRole, mockLevel, mockClassGroup } = req.body;
+    const { credential } = req.body;
 
     let googleSub = '';
     let email = '';
     let fullName = '';
 
-    // 1. Check if Mock Auth or Real Google OAuth
-    if (isMock) {
-      // Developer Mode: Mock Login
-      if (!mockEmail) {
-        return res.status(400).json({ message: 'Mock email is required' });
-      }
-      email = mockEmail.toLowerCase().trim();
-      fullName = mockName || 'Mock Developer';
-      googleSub = `mock_sub_${getEmailHash(email)}`;
-    } else {
-      // Production Mode: Verify Google ID Token
-      if (!credential) {
-        return res.status(400).json({ message: 'Google credential token is required' });
+    // Production Mode: Verify Google ID Token
+    if (!credential) {
+      return res.status(400).json({ message: 'Google credential token is required' });
+    }
+
+    try {
+      const verifyUrl = `https://oauth2.googleapis.com/tokeninfo?id_token=${credential}`;
+      const response = await fetch(verifyUrl);
+      
+      if (!response.ok) {
+        return res.status(401).json({ message: 'Google authentication failed' });
       }
 
-      try {
-        const verifyUrl = `https://oauth2.googleapis.com/tokeninfo?id_token=${credential}`;
-        const response = await fetch(verifyUrl);
-        
-        if (!response.ok) {
-          return res.status(401).json({ message: 'Google authentication failed' });
-        }
-
-        const payload = await response.json();
-        googleSub = payload.sub;
-        email = payload.email.toLowerCase().trim();
-        fullName = payload.name;
-      } catch (err) {
-        console.error('Google token verification error:', err.message);
-        return res.status(500).json({ message: 'Google Auth Service Unavailable' });
-      }
+      const payload = await response.json();
+      googleSub = payload.sub;
+      email = payload.email.toLowerCase().trim();
+      fullName = payload.name;
+    } catch (err) {
+      console.error('Google token verification error:', err.message);
+      return res.status(500).json({ message: 'Google Auth Service Unavailable' });
     }
 
     // 2. Domain Restriction Check (NFR-SEC-04 Compliance)
-    const isStudentEmail = email.endsWith('@indexnumber.htu.edu.gh') || email.endsWith('.indexnumber.htu.edu.gh');
-    const isStaffEmail = email.endsWith('@htu.edu.gh');
+    const isStudentDomain = email.endsWith('@indexnumber.htu.edu.gh') || email.endsWith('.indexnumber.htu.edu.gh');
+    const isMainDomain = email.endsWith('@htu.edu.gh');
 
-    if (!isStudentEmail && !isStaffEmail) {
+    if (!isStudentDomain && !isMainDomain) {
       return res.status(403).json({ 
         message: 'Access Denied. Only htu.edu.gh and indexnumber.htu.edu.gh domains are permitted.' 
       });
     }
 
-    // 3. Extract Index Number or Staff ID
+    // 3. Extract Index Number or Staff ID & Determine Role
     let indexNumber = '';
     let defaultRole = 'STUDENT';
-    let level = mockLevel || 100;
-    let classGroup = mockClassGroup || 'A';
+    let level = 100;
+    let classGroup = 'A';
 
-    if (isStudentEmail) {
-      // Extract the digits (e.g. 0123456789) from indexnumber@indexnumber.htu.edu.gh
-      const emailName = email.split('@')[0];
-      const match = emailName.match(/\d{10}/); // look for 10 consecutive digits
-      
-      if (!match) {
-        return res.status(400).json({ message: 'Invalid student email format. 10-digit index number not found.' });
-      }
-      indexNumber = match[0];
+    const emailPrefix = email.split('@')[0];
+    const indexMatch = emailPrefix.match(/\d{10}/); // look for 10 consecutive digits
+
+    if (indexMatch) {
+      // If the email has a 10-digit number anywhere in the prefix (e.g. 0324080147@htu.edu.gh), it is a Student
+      indexNumber = indexMatch[0];
       defaultRole = 'STUDENT';
-    } else {
-      // Staff email
-      const staffUsername = email.split('@')[0];
-      indexNumber = `STAFF_${staffUsername.toUpperCase().slice(0, 4)}`; // Unique non-student ID
+    } else if (isMainDomain) {
+      // Staff email (no 10-digit number in username)
+      indexNumber = `STAFF_${emailPrefix.toUpperCase().slice(0, 4)}`; // Unique non-student ID
       
-      // Auto-assign staff roles based on email content for easy testing/pitching
-      if (email.includes('accountant') || (isMock && mockRole === 'ACCOUNTANT')) {
+      // Auto-assign staff roles based on email content keywords
+      if (emailPrefix.includes('accountant')) {
         defaultRole = 'ACCOUNTANT';
-      } else if (email.includes('hod') || (isMock && mockRole === 'HOD')) {
+      } else if (emailPrefix.includes('hod')) {
         defaultRole = 'HOD';
-      } else if (email.includes('admin') || (isMock && mockRole === 'ADMIN')) {
+      } else if (emailPrefix.includes('admin')) {
         defaultRole = 'ADMIN';
       } else {
         defaultRole = 'ACCOUNTANT'; // default staff fallback
       }
-    }
-
-    // Override role if explicitly selected in Mock Mode
-    if (isMock && mockRole) {
-      defaultRole = mockRole;
+    } else {
+      return res.status(400).json({ message: 'Invalid email format. Student index number not found.' });
     }
 
     const emailHash = getEmailHash(email);
@@ -170,7 +152,7 @@ const login = async (req, res) => {
     await pool.query(
       `INSERT INTO audit_logs (actor_id, action, target_type, target_id, new_value)
        VALUES ($1, $2, $3, $4, $5)`,
-      [student.id, 'USER_LOGIN', 'STUDENT', student.id, JSON.stringify({ email: emailHash, isMock })]
+      [student.id, 'USER_LOGIN', 'STUDENT', student.id, JSON.stringify({ email: emailHash, isMock: false })]
     );
 
     res.status(200).json({

@@ -6,71 +6,8 @@ import htuLogo from '../assets/sdms_logo.png';
 import htuCampus from '../assets/htu_campus.png';
 
 // We can define pre-configured presets to make live hackathon demos seamless
-const PRESETS = [
-  {
-    label: '🎓 Student Preset (Level 300)',
-    email: '1234567890@indexnumber.htu.edu.gh',
-    name: 'Maxwell Owusu',
-    role: 'STUDENT',
-    level: 300,
-    classGroup: 'A'
-  },
-  {
-    label: '📢 Course Rep Preset (Level 200B)',
-    email: '2026123456@indexnumber.htu.edu.gh',
-    name: 'Zadiq Issaha',
-    role: 'COURSE_REP',
-    level: 200,
-    classGroup: 'B'
-  },
-  {
-    label: '💼 Accountant Preset',
-    email: 'accountant@htu.edu.gh',
-    name: 'Madam Beatrice (Finance)',
-    role: 'ACCOUNTANT',
-    level: 100,
-    classGroup: 'A'
-  },
-  {
-    label: '🏛️ HOD Preset (Computer Science Dept)',
-    email: 'hod@htu.edu.gh',
-    name: 'Dr. Joseph Darko',
-    role: 'HOD',
-    level: 100,
-    classGroup: 'A'
-  }
-];
-
 const Login = () => {
-  const showDemoSwitcher = new URLSearchParams(window.location.search).get('demo') === 'true';
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-  const [isDeveloperMode, setIsDeveloperMode] = useState(false); // Default to secure Google Auth mode
-  const [isMockUnlocked, setIsMockUnlocked] = useState(false);
-  const [passcode, setPasscode] = useState('');
-  const [passcodeError, setPasscodeError] = useState('');
-  const [portalEmail, setPortalEmail] = useState('');
-  const [portalPassword, setPortalPassword] = useState('');
-  const [customUsers, setCustomUsers] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('mock_users') || '[]');
-    } catch (e) {
-      return [];
-    }
-  });
-  const [showRolesGuide, setShowRolesGuide] = useState(false);
-  const [showAccountChooser, setShowAccountChooser] = useState(false);
-  const [showCredentialsForm, setShowCredentialsForm] = useState(false);
-
-  const handleVerifyPasscode = (e) => {
-    e.preventDefault();
-    if (passcode === 'htu2026') {
-      setIsMockUnlocked(true);
-      setPasscodeError('');
-    } else {
-      setPasscodeError('Invalid passcode. Access Denied.');
-    }
-  };
-
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleScriptLoaded, setGoogleScriptLoaded] = useState(false);
@@ -109,18 +46,22 @@ const Login = () => {
 
   // Initialize Google Sign In Button
   useEffect(() => {
-    if (googleScriptLoaded && !isDeveloperMode) {
+    if (googleScriptLoaded) {
       try {
         /* global google */
         if (typeof google !== 'undefined') {
+          const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '9876543210-mockclientid.apps.googleusercontent.com';
           google.accounts.id.initialize({
-            client_id: '9876543210-mockclientid.apps.googleusercontent.com', // Replace with real Client ID if needed
+            client_id: clientId,
             callback: handleGoogleLoginResponse
           });
-          google.accounts.id.renderButton(
-            document.getElementById('google-signin-btn'),
-            { theme: 'outline', size: 'large', width: '100%', text: 'signin_with' }
-          );
+          const btnParent = document.getElementById('google-signin-btn');
+          if (btnParent) {
+            google.accounts.id.renderButton(
+              btnParent,
+              { theme: 'outline', size: 'large', width: '100%', text: 'signin_with' }
+            );
+          }
         } else {
           setError('Authentication Service Unavailable. Please try again in 5 minutes. If the issue persists, contact IT Support.');
         }
@@ -129,101 +70,20 @@ const Login = () => {
         setError('Authentication Service Unavailable. Please try again in 5 minutes. If the issue persists, contact IT Support.');
       }
     }
-  }, [googleScriptLoaded, isDeveloperMode]);
+  }, [googleScriptLoaded]);
 
   const handleGoogleLoginResponse = async (googleResponse) => {
     setLoading(true);
     setError('');
     try {
       const response = await login({
-        credential: googleResponse.credential,
-        isMock: false
+        credential: googleResponse.credential
       });
       handleAuthSuccess(response.data);
     } catch (err) {
-      // NFR-REL-02 requirement: Clear Google OAuth unavailable fallbacks
       setError(err.response?.data?.message || 'Authentication Service Unavailable. Please try again in 5 minutes. If the issue persists, contact IT Support.');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handlePortalLoginSubmit = async (e) => {
-    if (e) e.preventDefault();
-    setLoading(true);
-    setError('');
-
-    const presets = {
-      '1026002202': { email: 'maxwell@indexnumber.htu.edu.gh', password: 'student123', name: 'Maxwell Owusu', role: 'STUDENT', level: 200, group: 'B' },
-      '1026002201': { email: 'kojo@indexnumber.htu.edu.gh', password: 'rep123', name: 'Kojo Mensah', role: 'COURSE_REP', level: 200, group: 'B' },
-      'maxwell@indexnumber.htu.edu.gh': { email: 'maxwell@indexnumber.htu.edu.gh', password: 'student123', name: 'Maxwell Owusu', role: 'STUDENT', level: 200, group: 'B' },
-      'kojo@indexnumber.htu.edu.gh': { email: 'kojo@indexnumber.htu.edu.gh', password: 'rep123', name: 'Kojo Mensah', role: 'COURSE_REP', level: 200, group: 'B' },
-      'francis@htu.edu.gh': { email: 'francis@htu.edu.gh', password: 'accountant123', name: 'Francis Dogbey', role: 'ACCOUNTANT', level: 100, group: 'A' },
-      'joseph@htu.edu.gh': { email: 'joseph@htu.edu.gh', password: 'hod123', name: 'Dr. Joseph Darko', role: 'HOD', level: 100, group: 'A' },
-      'joseph': { email: 'joseph@htu.edu.gh', password: 'hod123', name: 'Dr. Joseph Darko', role: 'HOD', level: 100, group: 'A' },
-      'francis': { email: 'francis@htu.edu.gh', password: 'accountant123', name: 'Francis Dogbey', role: 'ACCOUNTANT', level: 100, group: 'A' },
-    };
-
-    const inputKey = portalEmail.toLowerCase().trim();
-
-    if (showDemoSwitcher && isMockUnlocked) {
-      let matchedUser = null;
-      if (presets[inputKey] && presets[inputKey].password === portalPassword) {
-        matchedUser = presets[inputKey];
-      } else {
-        const found = customUsers.find(u => (u.email.toLowerCase().trim() === inputKey || u.indexNumber === inputKey) && u.password === portalPassword);
-        if (found) {
-          matchedUser = found;
-        }
-      }
-
-      if (matchedUser) {
-        try {
-          const response = await login({
-            isMock: true,
-            mockEmail: matchedUser.email,
-            mockName: matchedUser.name,
-            mockRole: matchedUser.role,
-            mockLevel: parseInt(matchedUser.level),
-            mockClassGroup: matchedUser.group
-          });
-          handleAuthSuccess(response.data);
-          return;
-        } catch (err) {
-          setError(err.response?.data?.message || 'Mock login failed.');
-          setLoading(false);
-          return;
-        }
-      }
-    }
-
-    setError('Traditional Index Number / Password login is restricted in production. Please use the "Google" login button below to authenticate with your official HTU email address.');
-    setLoading(false);
-  };
-
-  const handleQuickMockLogin = (email, password) => {
-    setPortalEmail(email);
-    setPortalPassword(password);
-  };
-
-  const handleAccountSelect = async (preset) => {
-    setLoading(true);
-    setError('');
-    try {
-      const response = await login({
-        isMock: true,
-        mockEmail: preset.email,
-        mockName: preset.name,
-        mockRole: preset.role,
-        mockLevel: parseInt(preset.level),
-        mockClassGroup: preset.classGroup || preset.group || 'A'
-      });
-      handleAuthSuccess(response.data);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Mock login failed.');
-    } finally {
-      setLoading(false);
-      setShowAccountChooser(false);
     }
   };
 
@@ -238,6 +98,7 @@ const Login = () => {
     else if (user.role === 'COURSE_REP') navigate('/expenses');
     else navigate('/');
   };
+
   return (
     <div style={styles.page}>
       {/* Centered Login Card Container */}
@@ -256,156 +117,24 @@ const Login = () => {
               </div>
             )}
 
-            {/* If showDemoSwitcher is active and Developer mode is locked, show passcode lock */}
-            {showDemoSwitcher && !isMockUnlocked ? (
-              <form onSubmit={handleVerifyPasscode} style={styles.form}>
-                <p style={{ ...styles.oauthNote, fontSize: '13px', margin: '0 0 10px 0', textAlign: 'center' }}>
-                  🔑 Enter Developer Passcode to unlock presets:
-                </p>
-                
-                <div style={styles.inputGroup}>
-                  <input
-                    type="password"
-                    placeholder="Enter passcode"
-                    value={passcode}
-                    onChange={(e) => setPasscode(e.target.value)}
-                    style={styles.input}
-                    required
-                  />
+            {/* Main Login Card - Enforces real Google OAuth */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={styles.dividerLine} />
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center', width: '100%' }}>
+                <div style={{ fontSize: '15px', color: '#1e293b', fontWeight: '600', alignSelf: 'flex-start' }}>
+                  Log in using your official HTU email account:
                 </div>
-
-                {passcodeError && (
-                  <p style={{ color: '#e53e3e', fontSize: '11px', margin: '0', textAlign: 'center' }}>
-                    ❌ {passcodeError}
-                  </p>
-                )}
-
-                <button type="submit" style={styles.submitBtn}>
-                  Unlock Presets
-                </button>
-              </form>
-            ) : showCredentialsForm ? (
-              /* Traditional login form if they clicked 'Use another account' */
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                <div style={styles.welcomeText}>Welcome, please login to register.</div>
-
-                <form onSubmit={handlePortalLoginSubmit} style={styles.form}>
-                  <div style={styles.inputGroup}>
-                    <div style={styles.inputWrapper}>
-                      <span style={styles.inputIcon}>✏️</span>
-                      <input
-                        type="text"
-                        placeholder="Enter Index Number"
-                        value={portalEmail}
-                        onChange={(e) => setPortalEmail(e.target.value)}
-                        style={styles.portalInput}
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div style={styles.inputGroup}>
-                    <div style={styles.inputWrapper}>
-                      <span style={styles.inputIcon}>🔒</span>
-                      <input
-                        type="password"
-                        placeholder="Enter Password"
-                        value={portalPassword}
-                        onChange={(e) => setPortalPassword(e.target.value)}
-                        style={styles.portalInput}
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div style={styles.rememberRow}>
-                    <label style={styles.checkboxLabel}>
-                      <input type="checkbox" style={{ marginRight: '6px' }} /> Remember me
-                    </label>
-                    <a href="#forgot" style={styles.forgotLink}>Forgot Details</a>
-                  </div>
-
-                  <div style={styles.buttonRow}>
-                    <button type="button" style={styles.enquiriesBtn} onClick={() => setShowCredentialsForm(false)}>Back</button>
-                    <button type="submit" style={styles.loginBtn} disabled={loading}>
-                      {loading ? 'Login...' : 'Login'}
-                    </button>
-                  </div>
-                </form>
-              </div>
-            ) : (
-              /* Main LMS-style Login Card - Matches the screenshot exactly! */
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div style={styles.dividerLine} />
                 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'flex-start', width: '100%' }}>
-                  <div style={{ fontSize: '15px', color: '#1e293b', fontWeight: '600' }}>
-                    Log in using your account on:
-                  </div>
-                  
-                  <button 
-                    type="button" 
-                    onClick={() => setShowAccountChooser(true)} 
-                    style={styles.customGoogleBtn}
-                    disabled={loading}
-                  >
-                    <svg viewBox="0 0 24 24" width="18" height="18" style={styles.googleIconSvg}>
-                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
-                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
-                    </svg>
-                    <span>Login with HTU Email</span>
-                  </button>
-                </div>
+                <div id="google-signin-btn" style={{ width: '100%', minHeight: '44px', marginTop: '8px' }}></div>
               </div>
-            )}
+            </div>
           </div>
 
           {/* Bottom Section (Cookies notice) */}
-          {(!showDemoSwitcher || isMockUnlocked) && !showCredentialsForm && (
-            <div style={styles.cookiesNotice}>
-              <a href="#cookies" style={styles.cookiesLink}>COOKIES NOTICE</a>
-            </div>
-          )}
-
-          {/* Compact Quick Presets Links */}
-          {showDemoSwitcher && isMockUnlocked && (
-            <div style={{ ...styles.compactPresets, borderTop: '1px solid #eaeaea', paddingTop: '10px', marginTop: '10px' }}>
-              <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '500' }}>Presets: </span>
-              <button
-                type="button"
-                style={styles.presetLink}
-                onClick={() => handleAccountSelect(PRESETS[0])}
-              >
-                Student
-              </button>
-              <span style={{ fontSize: '11px', color: '#cbd5e1' }}>|</span>
-              <button
-                type="button"
-                style={styles.presetLink}
-                onClick={() => handleAccountSelect(PRESETS[1])}
-              >
-                Rep
-              </button>
-              <span style={{ fontSize: '11px', color: '#cbd5e1' }}>|</span>
-              <button
-                type="button"
-                style={styles.presetLink}
-                onClick={() => handleAccountSelect(PRESETS[2])}
-              >
-                Accountant
-              </button>
-              <span style={{ fontSize: '11px', color: '#cbd5e1' }}>|</span>
-              <button
-                type="button"
-                style={styles.presetLink}
-                onClick={() => handleAccountSelect(PRESETS[3])}
-              >
-                HOD
-              </button>
-            </div>
-          )}
+          <div style={styles.cookiesNotice}>
+            <a href="#cookies" style={styles.cookiesLink}>COOKIES NOTICE</a>
+          </div>
 
         </div>
 
@@ -414,63 +143,6 @@ const Login = () => {
           ©2026 Ho Technical University · info@htu.edu.gh
         </div>
       </div>
-
-      {/* Google Account Chooser Modal Overlay */}
-      {showAccountChooser && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.modalCard}>
-            <div style={styles.modalHeader}>
-              <svg viewBox="0 0 24 24" width="24" height="24" style={{ marginBottom: '12px' }}>
-                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
-                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
-              </svg>
-              <h2 style={styles.modalTitle}>Choose an account</h2>
-              <p style={styles.modalSubtitle}>to continue to HTU Student Dues Payment System</p>
-            </div>
-            
-            <div style={styles.accountsList}>
-              {PRESETS.map((preset, idx) => {
-                const initials = preset.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
-                const colors = ['#1a73e8', '#c26401', '#0f9d58', '#db4437'];
-                const bgColor = colors[idx % colors.length];
-
-                return (
-                  <div 
-                    key={idx} 
-                    onClick={() => handleAccountSelect(preset)} 
-                    style={styles.accountRow}
-                  >
-                    <div style={{ ...styles.avatarCircle, backgroundColor: bgColor }}>
-                      {initials}
-                    </div>
-                    <div style={styles.accountInfo}>
-                      <div style={styles.accountName}>{preset.name}</div>
-                      <div style={styles.accountEmail}>{preset.email}</div>
-                    </div>
-                  </div>
-                );
-              })}
-              
-              <div 
-                onClick={() => {
-                  setShowAccountChooser(false);
-                  setShowCredentialsForm(true);
-                }} 
-                style={styles.accountRow}
-              >
-                <div style={{ ...styles.avatarCircle, backgroundColor: '#f1f3f4', color: '#5f6368', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  👤
-                </div>
-                <div style={styles.accountInfo}>
-                  <div style={{ ...styles.accountName, color: '#1a73e8', fontWeight: '600' }}>Use another account</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

@@ -47,8 +47,8 @@ const verifyAlumni = async (req, res) => {
         full_name: student.full_name,
         index_number: student.index_number,
         graduation_year: graduation_year,
-        message: `Status: VERIFIED - CLEARED. This student was in good financial standing with the Electrical Department for the ${parseInt(graduation_year) - 1}/${graduation_year} Academic Year.`,
-        watermark: 'VERIFIED - PAID IN FULL - HTU ELECTRICAL DEPT.'
+        message: `Status: VERIFIED - CLEARED. This student was in good financial standing with the Computer Science Department for the ${parseInt(graduation_year) - 1}/${graduation_year} Academic Year.`,
+        watermark: 'VERIFIED - PAID IN FULL - HTU COMPSSA DEPT.'
       });
     } else {
       return res.status(200).json({

@@ -32,7 +32,7 @@ const PRESETS = [
     classGroup: 'A'
   },
   {
-    label: '🏛️ HOD Preset (Electrical Dept)',
+    label: '🏛️ HOD Preset (Computer Science Dept)',
     email: 'hod@htu.edu.gh',
     name: 'Dr. Joseph Darko',
     role: 'HOD',

@@ -67,7 +67,7 @@ const AccountantDashboard = () => {
     <div style={styles.container}>
       {/* Navbar */}
       <div style={styles.navbar}>
-        <h1 style={styles.navTitle}>HTU Electrical — Accountant Dashboard</h1>
+        <h1 style={styles.navTitle}>HTU Computer Science — Accountant Dashboard</h1>
         <div style={styles.navRight}>
           <span style={styles.navUser}>👋 {user?.full_name}</span>
           {/* NEW: Expense navigation button */}

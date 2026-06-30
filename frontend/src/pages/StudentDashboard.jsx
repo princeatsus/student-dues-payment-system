@@ -260,7 +260,7 @@ const StudentDashboard = () => {
       doc.setTextColor(120, 120, 120);
       doc.setFontSize(9);
       doc.text(`Verification Ref: ${verCode}`, 105, 258, { align: 'center' });
-      doc.text('Verify clearance status at: https://dues.electrical.htu.edu.gh/verify', 105, 264, { align: 'center' });
+      doc.text('Verify clearance status at: https://dues.compssa.htu.edu.gh/verify', 105, 264, { align: 'center' });
       doc.setTextColor(180, 180, 180);
       doc.text('This is an immutable system clearance certificate generated via OAuth credentials.', 105, 272, { align: 'center' });
 

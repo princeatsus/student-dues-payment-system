@@ -95,7 +95,7 @@ const HODDashboard = () => {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `Defaulters_List_HTU_Electrical.csv`);
+    link.setAttribute('download', `Defaulters_List_HTU_Computer_Science.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -112,7 +112,7 @@ const HODDashboard = () => {
     <div style={styles.container}>
       {/* Navbar */}
       <div style={styles.navbar}>
-        <h1 style={styles.navTitle}>HTU Electrical — HOD Dashboard</h1>
+        <h1 style={styles.navTitle}>HTU Computer Science — HOD Dashboard</h1>
         <div style={styles.navRight}>
           <span style={styles.navUser}>👋 {user?.full_name}</span>
           {/* NEW: Expense navigation button */}

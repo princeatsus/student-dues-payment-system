@@ -14,7 +14,7 @@ const IoTGate = () => {
   // Initialize hardware serial logs simulation
   useEffect(() => {
     addLog('ESP8266 boot sequence initiated...');
-    addLog('Connecting to HTU-WiFi (SSID: HTU_ELECTRICAL_STAFF)...');
+    addLog('Connecting to HTU-WiFi (SSID: HTU_COMPSSA_STAFF)...');
     setTimeout(() => {
       addLog('WiFi Connected. IP allocated: 192.168.4.120');
       addLog('Connecting to Supabase PG Direct Pool API (port: 5000)...');

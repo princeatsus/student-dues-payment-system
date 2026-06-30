@@ -47,7 +47,7 @@ const Verify = () => {
         <div style={styles.cardHeader}>
           <div style={styles.cardIcon}>🎓</div>
           <h2 style={styles.cardTitle}>Alumni Verification Portal</h2>
-          <p style={styles.cardSubtitle}>Ho Technical University · Electrical Department</p>
+          <p style={styles.cardSubtitle}>Ho Technical University · Computer Science Department</p>
         </div>
 
         {error && <div style={styles.errorBox}>⚠️ {error}</div>}

@@ -46,7 +46,7 @@ app.use('/api/public', publicRoutes);
 // Test route
 app.get('/', (req, res) => {
   res.json({ 
-    message: '🎓 HTU Electrical Dept - Student Dues Payment System API',
+    message: '🎓 HTU Computer Science Dept - Student Dues Payment System API',
     status: 'running'
   });
 });

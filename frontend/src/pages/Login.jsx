@@ -47,11 +47,25 @@ const Login = () => {
   const [passcode, setPasscode] = useState('');
   const [passcodeError, setPasscodeError] = useState('');
 
-  const [mockEmail, setMockEmail] = useState(PRESETS[0].email);
-  const [mockName, setMockName] = useState(PRESETS[0].name);
-  const [mockRole, setMockRole] = useState(PRESETS[0].role);
-  const [mockLevel, setMockLevel] = useState(PRESETS[0].level);
-  const [mockClassGroup, setMockClassGroup] = useState(PRESETS[0].classGroup);
+  const [mockFormMode, setMockFormMode] = useState('signin'); // 'signin' or 'signup'
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+
+  const [registerName, setRegisterName] = useState('');
+  const [registerEmail, setRegisterEmail] = useState('');
+  const [registerPassword, setRegisterPassword] = useState('');
+  const [registerRole, setRegisterRole] = useState('STUDENT');
+  const [registerLevel, setRegisterLevel] = useState('100');
+  const [registerGroup, setRegisterGroup] = useState('A');
+
+  const [customUsers, setCustomUsers] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('mock_users') || '[]');
+    } catch (e) {
+      return [];
+    }
+  });
+  const [showRolesGuide, setShowRolesGuide] = useState(false);
 
   const handleVerifyPasscode = (e) => {
     e.preventDefault();
@@ -140,18 +154,44 @@ const Login = () => {
     }
   };
 
-  const handleMockLoginSubmit = async (e) => {
+  const handleMockSignInSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+
+    const presets = {
+      'joseph@htu.edu.gh': { password: 'hod123', name: 'Dr. Joseph Darko', role: 'HOD', level: 100, group: 'A' },
+      'francis@htu.edu.gh': { password: 'accountant123', name: 'Francis Dogbey', role: 'ACCOUNTANT', level: 100, group: 'A' },
+      'kojo@indexnumber.htu.edu.gh': { password: 'rep123', name: 'Kojo Mensah', role: 'COURSE_REP', level: 200, group: 'B' },
+      'maxwell@indexnumber.htu.edu.gh': { password: 'student123', name: 'Maxwell Owusu', role: 'STUDENT', level: 200, group: 'B' },
+    };
+
+    let matchedUser = null;
+    const lowerEmail = loginEmail.toLowerCase().trim();
+
+    if (presets[lowerEmail] && presets[lowerEmail].password === loginPassword) {
+      matchedUser = presets[lowerEmail];
+    } else {
+      const found = customUsers.find(u => u.email.toLowerCase().trim() === lowerEmail && u.password === loginPassword);
+      if (found) {
+        matchedUser = found;
+      }
+    }
+
+    if (!matchedUser) {
+      setError('Invalid email or password.');
+      setLoading(false);
+      return;
+    }
+
     try {
       const response = await login({
         isMock: true,
-        mockEmail,
-        mockName,
-        mockRole,
-        mockLevel: parseInt(mockLevel),
-        mockClassGroup
+        mockEmail: lowerEmail,
+        mockName: matchedUser.name,
+        mockRole: matchedUser.role,
+        mockLevel: parseInt(matchedUser.level),
+        mockClassGroup: matchedUser.group
       });
       handleAuthSuccess(response.data);
     } catch (err) {
@@ -161,12 +201,49 @@ const Login = () => {
     }
   };
 
-  const handlePresetSelect = (preset) => {
-    setMockEmail(preset.email);
-    setMockName(preset.name);
-    setMockRole(preset.role);
-    setMockLevel(preset.level);
-    setMockClassGroup(preset.classGroup);
+  const handleMockSignUpSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    const lowerEmail = registerEmail.toLowerCase().trim();
+    const isStudentEmail = lowerEmail.endsWith('@indexnumber.htu.edu.gh') || lowerEmail.endsWith('.indexnumber.htu.edu.gh');
+    const isStaffEmail = lowerEmail.endsWith('@htu.edu.gh');
+
+    if (!isStudentEmail && !isStaffEmail) {
+      setError('Domain restricted. Please use @indexnumber.htu.edu.gh or @htu.edu.gh');
+      setLoading(false);
+      return;
+    }
+
+    const newUser = {
+      name: registerName,
+      email: lowerEmail,
+      password: registerPassword,
+      role: registerRole,
+      level: parseInt(registerLevel),
+      group: registerGroup
+    };
+
+    const newUsersList = [...customUsers, newUser];
+    setCustomUsers(newUsersList);
+    localStorage.setItem('mock_users', JSON.stringify(newUsersList));
+
+    try {
+      const response = await login({
+        isMock: true,
+        mockEmail: lowerEmail,
+        mockName: registerName,
+        mockRole: registerRole,
+        mockLevel: parseInt(registerLevel),
+        mockClassGroup: registerGroup
+      });
+      handleAuthSuccess(response.data);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Mock registration failed.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleAuthSuccess = (authData) => {
@@ -219,9 +296,9 @@ const Login = () => {
       <div style={{ ...styles.rightPanel, padding: isMobile ? '16px' : '40px' }}>
         <div style={{ ...styles.card, padding: isMobile ? '24px 16px' : '40px' }}>
           <div style={styles.cardHeader}>
-            <div style={styles.cardIcon}>🛡️</div>
-            <h2 style={styles.cardTitle}>Secured Portal Login</h2>
-            <p style={styles.cardSubtitle}>University OAuth Identity Gateway</p>
+            <div style={styles.cardIcon}>🎓</div>
+            <h2 style={styles.cardTitle}>COMPSSA Dues Portal</h2>
+            <p style={styles.cardSubtitle}>Ho Technical University · Computer Science Dept</p>
           </div>
 
           {error && (
@@ -294,108 +371,275 @@ const Login = () => {
                 Unlock Demo Presets →
               </button>
             </form>
-          ) : (
-            <form onSubmit={handleMockLoginSubmit} style={styles.form}>
-              <p style={styles.mockHelpText}>
-                Select a preset below to instantly simulate logging in as any role for the hackathon pitch:
-              </p>
-
-              {/* Presets List */}
-              <div style={styles.presetsGrid}>
-                {PRESETS.map((preset, index) => (
-                  <button
-                    key={index}
-                    type="button"
-                    style={{
-                      ...styles.presetBtn,
-                      ...(mockEmail === preset.email ? styles.activePresetBtn : {})
-                    }}
-                    onClick={() => handlePresetSelect(preset)}
-                  >
-                    {preset.label}
-                  </button>
-                ))}
-              </div>
-
-              <div style={styles.dividerLine} />
-
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Full Name</label>
-                <input
-                  type="text"
-                  value={mockName}
-                  onChange={(e) => setMockName(e.target.value)}
-                  style={styles.input}
-                  required
-                />
-              </div>
-
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Email Address</label>
-                <input
-                  type="email"
-                  value={mockEmail}
-                  onChange={(e) => setMockEmail(e.target.value)}
-                  style={styles.input}
-                  required
-                />
-              </div>
-
-              <div style={styles.row}>
-                <div style={{ ...styles.inputGroup, flex: 1 }}>
-                  <label style={styles.label}>System Role</label>
-                  <select
-                    value={mockRole}
-                    onChange={(e) => setMockRole(e.target.value)}
-                    style={styles.select}
-                  >
-                    <option value="STUDENT">Student</option>
-                    <option value="COURSE_REP">Course Rep</option>
-                    <option value="ACCOUNTANT">Accountant</option>
-                    <option value="HOD">HOD</option>
-                  </select>
+          ) : mockFormMode === 'signin' ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <form onSubmit={handleMockSignInSubmit} style={styles.form}>
+                <div style={styles.inputGroup}>
+                  <label style={styles.label}>Email Address</label>
+                  <input
+                    type="email"
+                    placeholder="Enter mock email (e.g. joseph@htu.edu.gh)"
+                    value={loginEmail}
+                    onChange={(e) => setLoginEmail(e.target.value)}
+                    style={styles.input}
+                    required
+                  />
                 </div>
 
-                {mockRole === 'STUDENT' && (
-                  <>
-                    <div style={{ ...styles.inputGroup, width: '90px' }}>
-                      <label style={styles.label}>Level</label>
-                      <select
-                        value={mockLevel}
-                        onChange={(e) => setMockLevel(e.target.value)}
-                        style={styles.select}
-                      >
-                        <option value="100">100</option>
-                        <option value="200">200</option>
-                        <option value="300">300</option>
-                        <option value="400">400</option>
-                      </select>
-                    </div>
+                <div style={styles.inputGroup}>
+                  <label style={styles.label}>Password</label>
+                  <input
+                    type="password"
+                    placeholder="Enter password (e.g. hod123)"
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    style={styles.input}
+                    required
+                  />
+                </div>
 
-                    <div style={{ ...styles.inputGroup, width: '90px' }}>
-                      <label style={styles.label}>Group</label>
-                      <select
-                        value={mockClassGroup}
-                        onChange={(e) => setMockClassGroup(e.target.value)}
-                        style={styles.select}
-                      >
-                        <option value="A">Class A</option>
-                        <option value="B">Class B</option>
-                      </select>
-                    </div>
-                  </>
-                )}
+                <button
+                  type="submit"
+                  style={loading ? { ...styles.submitBtn, opacity: 0.7 } : styles.submitBtn}
+                  disabled={loading}
+                >
+                  {loading ? '⏳ Logging in...' : 'Sign In →'}
+                </button>
+              </form>
+
+              <div style={{ textAlign: 'center', marginTop: '10px' }}>
+                <span style={{ fontSize: '13px', color: '#627d98' }}>
+                  Don't have an account?{' '}
+                  <button
+                    type="button"
+                    style={{ background: 'none', border: 'none', color: '#3b82f6', fontWeight: 'bold', cursor: 'pointer', padding: 0 }}
+                    onClick={() => { setMockFormMode('signup'); setError(''); }}
+                  >
+                    Register / Sign Up
+                  </button>
+                </span>
               </div>
 
-              <button
-                type="submit"
-                style={loading ? { ...styles.submitBtn, opacity: 0.7 } : styles.submitBtn}
-                disabled={loading}
-              >
-                {loading ? '⏳ Logging in...' : 'Sign In as Mock Persona →'}
-              </button>
-            </form>
+              {/* Presets List */}
+              <div style={{
+                marginTop: '16px',
+                padding: '12px',
+                backgroundColor: '#f8fafc',
+                borderRadius: '8px',
+                border: '1px dashed #cbd5e1'
+              }}>
+                <h5 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#475569', fontWeight: '600' }}>
+                  🔑 Pitch Preset Accounts (Click to Auto-fill):
+                </h5>
+                <div style={styles.presetsGrid}>
+                  <button
+                    type="button"
+                    style={styles.presetBtn}
+                    onClick={() => {
+                      setLoginEmail('joseph@htu.edu.gh');
+                      setLoginPassword('hod123');
+                    }}
+                  >
+                    🏛️ HOD (Joseph)
+                  </button>
+                  <button
+                    type="button"
+                    style={styles.presetBtn}
+                    onClick={() => {
+                      setLoginEmail('francis@htu.edu.gh');
+                      setLoginPassword('accountant123');
+                    }}
+                  >
+                    💼 Accountant (Francis)
+                  </button>
+                  <button
+                    type="button"
+                    style={styles.presetBtn}
+                    onClick={() => {
+                      setLoginEmail('kojo@indexnumber.htu.edu.gh');
+                      setLoginPassword('rep123');
+                    }}
+                  >
+                    📢 Course Rep (Kojo)
+                  </button>
+                  <button
+                    type="button"
+                    style={styles.presetBtn}
+                    onClick={() => {
+                      setLoginEmail('maxwell@indexnumber.htu.edu.gh');
+                      setLoginPassword('student123');
+                    }}
+                  >
+                    🎓 Student (Maxwell)
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <form onSubmit={handleMockSignUpSubmit} style={styles.form}>
+                <div style={styles.inputGroup}>
+                  <label style={styles.label}>Full Name</label>
+                  <input
+                    type="text"
+                    placeholder="Enter full name (e.g. Patricia Kpor)"
+                    value={registerName}
+                    onChange={(e) => setRegisterName(e.target.value)}
+                    style={styles.input}
+                    required
+                  />
+                </div>
+
+                <div style={styles.inputGroup}>
+                  <label style={styles.label}>Email Address</label>
+                  <input
+                    type="email"
+                    placeholder="Enter @htu.edu.gh or @indexnumber.htu.edu.gh"
+                    value={registerEmail}
+                    onChange={(e) => setRegisterEmail(e.target.value)}
+                    style={styles.input}
+                    required
+                  />
+                </div>
+
+                <div style={styles.inputGroup}>
+                  <label style={styles.label}>Password</label>
+                  <input
+                    type="password"
+                    placeholder="Choose a password"
+                    value={registerPassword}
+                    onChange={(e) => setRegisterPassword(e.target.value)}
+                    style={styles.input}
+                    required
+                  />
+                </div>
+
+                <div style={styles.row}>
+                  <div style={{ ...styles.inputGroup, flex: 1 }}>
+                    <label style={styles.label}>System Role</label>
+                    <select
+                      value={registerRole}
+                      onChange={(e) => setRegisterRole(e.target.value)}
+                      style={styles.select}
+                    >
+                      <option value="STUDENT">Student</option>
+                      <option value="COURSE_REP">Course Rep</option>
+                      <option value="ACCOUNTANT">Accountant</option>
+                      <option value="HOD">HOD</option>
+                    </select>
+                  </div>
+
+                  {registerRole === 'STUDENT' && (
+                    <>
+                      <div style={{ ...styles.inputGroup, width: '90px' }}>
+                        <label style={styles.label}>Level</label>
+                        <select
+                          value={registerLevel}
+                          onChange={(e) => setRegisterLevel(e.target.value)}
+                          style={styles.select}
+                        >
+                          <option value="100">100</option>
+                          <option value="200">200</option>
+                          <option value="300">300</option>
+                          <option value="400">400</option>
+                        </select>
+                      </div>
+
+                      <div style={{ ...styles.inputGroup, width: '90px' }}>
+                        <label style={styles.label}>Group</label>
+                        <select
+                          value={registerGroup}
+                          onChange={(e) => setRegisterGroup(e.target.value)}
+                          style={styles.select}
+                        >
+                          <option value="A">Class A</option>
+                          <option value="B">Class B</option>
+                        </select>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                <button
+                  type="submit"
+                  style={loading ? { ...styles.submitBtn, opacity: 0.7 } : styles.submitBtn}
+                  disabled={loading}
+                >
+                  {loading ? '⏳ Registering...' : 'Register & Log In →'}
+                </button>
+              </form>
+
+              <div style={{ textAlign: 'center', marginTop: '10px' }}>
+                <span style={{ fontSize: '13px', color: '#627d98' }}>
+                  Already have an account?{' '}
+                  <button
+                    type="button"
+                    style={{ background: 'none', border: 'none', color: '#3b82f6', fontWeight: 'bold', cursor: 'pointer', padding: 0 }}
+                    onClick={() => { setMockFormMode('signin'); setError(''); }}
+                  >
+                    Sign In here
+                  </button>
+                </span>
+              </div>
+            </div>
           )}
+
+          {/* Clickable Roles Guide Accordion */}
+          <div style={{ marginTop: '24px', borderTop: '1px solid #eaeaea', paddingTop: '16px' }}>
+            <button
+              type="button"
+              onClick={() => setShowRolesGuide(!showRolesGuide)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                width: '100%',
+                background: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                borderRadius: '8px',
+                padding: '12px 16px',
+                fontSize: '13px',
+                fontWeight: '600',
+                color: '#334e68',
+                cursor: 'pointer',
+                textAlign: 'left'
+              }}
+            >
+              <span>System Roles & Portal Overview</span>
+              <span>{showRolesGuide ? '▲' : '▼'}</span>
+            </button>
+
+            {showRolesGuide && (
+              <div style={{
+                marginTop: '8px',
+                backgroundColor: '#ffffff',
+                border: '1px solid #e2e8f0',
+                borderRadius: '8px',
+                padding: '16px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px',
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'
+              }}>
+                <div style={{ fontSize: '12.5px', lineHeight: '1.5', color: '#475569' }}>
+                  <strong style={{ color: '#1e3a8a' }}>🎓 Student Portal</strong>
+                  <div style={{ paddingLeft: '8px', marginTop: '2px' }}>View dues balance, make payments via simulated MoMo, and download watermarked clearance slip PDFs with verification QRs.</div>
+                </div>
+                <div style={{ fontSize: '12.5px', lineHeight: '1.5', color: '#475569' }}>
+                  <strong style={{ color: '#1e3a8a' }}>📢 Course Rep Portal</strong>
+                  <div style={{ paddingLeft: '8px', marginTop: '2px' }}>Track class payment rosters (Paid vs Owing), send bulk defaulter email notifications, and submit project expense requests.</div>
+                </div>
+                <div style={{ fontSize: '12.5px', lineHeight: '1.5', color: '#475569' }}>
+                  <strong style={{ color: '#1e3a8a' }}>💼 Accountant Portal</strong>
+                  <div style={{ paddingLeft: '8px', marginTop: '2px' }}>Upload MoMo payment statement CSV files for auto-reconciliation, audit transaction logs, and edit level dues prices.</div>
+                </div>
+                <div style={{ fontSize: '12.5px', lineHeight: '1.5', color: '#475569' }}>
+                  <strong style={{ color: '#1e3a8a' }}>🏛️ HOD Portal</strong>
+                  <div style={{ paddingLeft: '8px', marginTop: '2px' }}>View collection efficiency and budget spend widgets, authorize exam hall overrides, and sign off on rep expenses.</div>
+                </div>
+              </div>
+            )}
+          </div>
 
           <div style={styles.footerNote}>
             🔒 Secured with AES-256 Database Encryption.

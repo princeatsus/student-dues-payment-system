@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { login } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
+import htuLogo from '../assets/logo.png';
+import htuCampus from '../assets/htu_campus.png';
 
 // We can define pre-configured presets to make live hackathon demos seamless
 const PRESETS = [
@@ -47,16 +49,8 @@ const Login = () => {
   const [passcode, setPasscode] = useState('');
   const [passcodeError, setPasscodeError] = useState('');
 
-  const [mockFormMode, setMockFormMode] = useState('signin'); // 'signin' or 'signup'
-  const [loginEmail, setLoginEmail] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
-
-  const [registerName, setRegisterName] = useState('');
-  const [registerEmail, setRegisterEmail] = useState('');
-  const [registerPassword, setRegisterPassword] = useState('');
-  const [registerRole, setRegisterRole] = useState('STUDENT');
-  const [registerLevel, setRegisterLevel] = useState('100');
-  const [registerGroup, setRegisterGroup] = useState('A');
+  const [portalEmail, setPortalEmail] = useState('');
+  const [portalPassword, setPortalPassword] = useState('');
 
   const [customUsers, setCustomUsers] = useState(() => {
     try {
@@ -154,96 +148,57 @@ const Login = () => {
     }
   };
 
-  const handleMockSignInSubmit = async (e) => {
+  const handlePortalLoginSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
     const presets = {
-      'joseph@htu.edu.gh': { password: 'hod123', name: 'Dr. Joseph Darko', role: 'HOD', level: 100, group: 'A' },
-      'francis@htu.edu.gh': { password: 'accountant123', name: 'Francis Dogbey', role: 'ACCOUNTANT', level: 100, group: 'A' },
-      'kojo@indexnumber.htu.edu.gh': { password: 'rep123', name: 'Kojo Mensah', role: 'COURSE_REP', level: 200, group: 'B' },
-      'maxwell@indexnumber.htu.edu.gh': { password: 'student123', name: 'Maxwell Owusu', role: 'STUDENT', level: 200, group: 'B' },
+      '1026002202': { email: 'maxwell@indexnumber.htu.edu.gh', password: 'student123', name: 'Maxwell Owusu', role: 'STUDENT', level: 200, group: 'B' },
+      '1026002201': { email: 'kojo@indexnumber.htu.edu.gh', password: 'rep123', name: 'Kojo Mensah', role: 'COURSE_REP', level: 200, group: 'B' },
+      'maxwell@indexnumber.htu.edu.gh': { email: 'maxwell@indexnumber.htu.edu.gh', password: 'student123', name: 'Maxwell Owusu', role: 'STUDENT', level: 200, group: 'B' },
+      'kojo@indexnumber.htu.edu.gh': { email: 'kojo@indexnumber.htu.edu.gh', password: 'rep123', name: 'Kojo Mensah', role: 'COURSE_REP', level: 200, group: 'B' },
+      'francis@htu.edu.gh': { email: 'francis@htu.edu.gh', password: 'accountant123', name: 'Francis Dogbey', role: 'ACCOUNTANT', level: 100, group: 'A' },
+      'joseph@htu.edu.gh': { email: 'joseph@htu.edu.gh', password: 'hod123', name: 'Dr. Joseph Darko', role: 'HOD', level: 100, group: 'A' },
+      'joseph': { email: 'joseph@htu.edu.gh', password: 'hod123', name: 'Dr. Joseph Darko', role: 'HOD', level: 100, group: 'A' },
+      'francis': { email: 'francis@htu.edu.gh', password: 'accountant123', name: 'Francis Dogbey', role: 'ACCOUNTANT', level: 100, group: 'A' },
     };
 
-    let matchedUser = null;
-    const lowerEmail = loginEmail.toLowerCase().trim();
+    const inputKey = portalEmail.toLowerCase().trim();
 
-    if (presets[lowerEmail] && presets[lowerEmail].password === loginPassword) {
-      matchedUser = presets[lowerEmail];
-    } else {
-      const found = customUsers.find(u => u.email.toLowerCase().trim() === lowerEmail && u.password === loginPassword);
-      if (found) {
-        matchedUser = found;
+    if (showDemoSwitcher && isMockUnlocked) {
+      let matchedUser = null;
+      if (presets[inputKey] && presets[inputKey].password === portalPassword) {
+        matchedUser = presets[inputKey];
+      } else {
+        const found = customUsers.find(u => (u.email.toLowerCase().trim() === inputKey || u.indexNumber === inputKey) && u.password === portalPassword);
+        if (found) {
+          matchedUser = found;
+        }
+      }
+
+      if (matchedUser) {
+        try {
+          const response = await login({
+            isMock: true,
+            mockEmail: matchedUser.email,
+            mockName: matchedUser.name,
+            mockRole: matchedUser.role,
+            mockLevel: parseInt(matchedUser.level),
+            mockClassGroup: matchedUser.group
+          });
+          handleAuthSuccess(response.data);
+          return;
+        } catch (err) {
+          setError(err.response?.data?.message || 'Mock login failed.');
+          setLoading(false);
+          return;
+        }
       }
     }
 
-    if (!matchedUser) {
-      setError('Invalid email or password.');
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const response = await login({
-        isMock: true,
-        mockEmail: lowerEmail,
-        mockName: matchedUser.name,
-        mockRole: matchedUser.role,
-        mockLevel: parseInt(matchedUser.level),
-        mockClassGroup: matchedUser.group
-      });
-      handleAuthSuccess(response.data);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Mock login failed.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleMockSignUpSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-
-    const lowerEmail = registerEmail.toLowerCase().trim();
-    const isStudentEmail = lowerEmail.endsWith('@indexnumber.htu.edu.gh') || lowerEmail.endsWith('.indexnumber.htu.edu.gh');
-    const isStaffEmail = lowerEmail.endsWith('@htu.edu.gh');
-
-    if (!isStudentEmail && !isStaffEmail) {
-      setError('Domain restricted. Please use @indexnumber.htu.edu.gh or @htu.edu.gh');
-      setLoading(false);
-      return;
-    }
-
-    const newUser = {
-      name: registerName,
-      email: lowerEmail,
-      password: registerPassword,
-      role: registerRole,
-      level: parseInt(registerLevel),
-      group: registerGroup
-    };
-
-    const newUsersList = [...customUsers, newUser];
-    setCustomUsers(newUsersList);
-    localStorage.setItem('mock_users', JSON.stringify(newUsersList));
-
-    try {
-      const response = await login({
-        isMock: true,
-        mockEmail: lowerEmail,
-        mockName: registerName,
-        mockRole: registerRole,
-        mockLevel: parseInt(registerLevel),
-        mockClassGroup: registerGroup
-      });
-      handleAuthSuccess(response.data);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Mock registration failed.');
-    } finally {
-      setLoading(false);
-    }
+    setError('Traditional Index Number / Password login is restricted in production. Please use the "Google" login button below to authenticate with your official HTU email address.');
+    setLoading(false);
   };
 
   const handleAuthSuccess = (authData) => {
@@ -259,391 +214,212 @@ const Login = () => {
   };
 
   return (
-    <div style={{ ...styles.page, flexDirection: isMobile ? 'column' : 'row' }}>
-      {/* Left Panel */}
-      {!isMobile && (
-        <div style={styles.leftPanel}>
-          <div style={styles.leftContent}>
-            <div style={styles.badgeRow}>
-              <span style={styles.deptBadge}>🎓 COMPSSA · HTU</span>
-            </div>
-            <h1 style={styles.leftTitle}>Ho Technical University</h1>
-            <h2 style={styles.leftSubtitle}>Department of Computer Science</h2>
-            <p style={styles.tagline}>— Excellence in Technology & Innovation —</p>
-            <div style={styles.divider} />
-            <p style={styles.leftDesc}>
-              Secured Student Dues Payment & Expense Management System
+    <div style={styles.page}>
+      <div style={styles.overlay} />
+      
+      {/* Centered Login Card */}
+      <div style={styles.card}>
+        <div style={styles.cardHeader}>
+          <img src={htuLogo} alt="HTU Logo" style={styles.logoImage} />
+          <p style={styles.cardSubtitle}>COMPSSA Student Dues & Expense Portal</p>
+        </div>
+
+        {error && (
+          <div style={styles.errorBox}>
+            ⚠️ {error}
+          </div>
+        )}
+
+        {/* If showDemoSwitcher is active and Developer mode is locked, show passcode lock */}
+        {showDemoSwitcher && !isMockUnlocked ? (
+          <form onSubmit={handleVerifyPasscode} style={styles.form}>
+            <p style={styles.mockHelpText}>
+              🔑 <strong>Developer Mode Locked</strong>
+            </p>
+            <p style={{ ...styles.oauthNote, fontSize: '13px', margin: '4px 0 16px 0' }}>
+              Please enter the Developer Passcode to unlock the demo presets for this submission:
             </p>
             
-            <div style={styles.featureList}>
-              <div style={styles.feature}>🔒 Restricted to @indexnumber.htu.edu.gh domains</div>
-              <div style={styles.feature}>📊 Real-time class dues collections & audits</div>
-              <div style={styles.feature}>💳 Simulated MoMo prompt and reference generator</div>
-              <div style={styles.feature}>📄 Secure watermarked departmental clearance slips</div>
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>Developer Passcode</label>
+              <input
+                type="password"
+                placeholder="Enter passcode"
+                value={passcode}
+                onChange={(e) => setPasscode(e.target.value)}
+                style={styles.input}
+                required
+              />
             </div>
 
-            <div style={styles.hackathonBadge}>
-              ⚡ COMPSSA Hackathon 2026 Submission
-            </div>
-          </div>
-          <div style={styles.leftFooterGroup}>
-            <p style={styles.leftFooter}>Computer Science Dept © 2026</p>
-          </div>
-        </div>
-      )}
-
-      {/* Right Panel */}
-      <div style={{ ...styles.rightPanel, padding: isMobile ? '16px' : '40px' }}>
-        <div style={{ ...styles.card, padding: isMobile ? '24px 16px' : '40px' }}>
-          <div style={styles.cardHeader}>
-            <div style={styles.cardIcon}>🎓</div>
-            <h2 style={styles.cardTitle}>COMPSSA Dues Portal</h2>
-            <p style={styles.cardSubtitle}>Ho Technical University · Computer Science Dept</p>
-          </div>
-
-          {error && (
-            <div style={styles.errorBox}>
-              ⚠️ {error}
-            </div>
-          )}
-
-          {/* Mode Switcher */}
-          {showDemoSwitcher && (
-            <div style={styles.modeTabs}>
-              <button 
-                style={{ ...styles.tab, ...(isDeveloperMode ? {} : styles.activeTab) }}
-                onClick={() => { setIsDeveloperMode(false); setError(''); }}
-              >
-                Google Auth
-              </button>
-              <button 
-                style={{ ...styles.tab, ...(isDeveloperMode ? styles.activeTab : {}) }}
-                onClick={() => { setIsDeveloperMode(true); setError(''); }}
-              >
-                🔧 Demo Mock Mode
-              </button>
-            </div>
-          )}
-
-          {!isDeveloperMode ? (
-            <div style={styles.oauthContainer}>
-              <p style={styles.oauthNote}>
-                Log in securely using your official HTU student or staff Google account.
+            {passcodeError && (
+              <p style={{ color: '#e53e3e', fontSize: '12px', margin: '0' }}>
+                ❌ {passcodeError}
               </p>
-              
-              <div id="google-signin-btn" style={styles.googleBtn}></div>
-              
-              <div style={styles.domainWarning}>
-                Only domains ending in <code>indexnumber.htu.edu.gh</code> or <code>htu.edu.gh</code> will be authorized.
-              </div>
-            </div>
-          ) : !isMockUnlocked ? (
-            <form onSubmit={handleVerifyPasscode} style={styles.form}>
-              <p style={styles.mockHelpText}>
-                🔑 <strong>Developer Mode Locked</strong>
-              </p>
-              <p style={{ ...styles.oauthNote, fontSize: '13px', margin: '4px 0 16px 0' }}>
-                Please enter the Developer Passcode to unlock the demo presets for this submission:
-              </p>
-              
+            )}
+
+            <button type="submit" style={styles.submitBtn}>
+              Unlock Demo Presets →
+            </button>
+          </form>
+        ) : (
+          /* Main Portal Login Form */
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <form onSubmit={handlePortalLoginSubmit} style={styles.form}>
               <div style={styles.inputGroup}>
-                <label style={styles.label}>Developer Passcode</label>
-                <input
-                  type="password"
-                  placeholder="Enter passcode"
-                  value={passcode}
-                  onChange={(e) => setPasscode(e.target.value)}
-                  style={styles.input}
-                  required
-                />
-              </div>
-
-              {passcodeError && (
-                <p style={{ color: '#e53e3e', fontSize: '12px', margin: '0' }}>
-                  ❌ {passcodeError}
-                </p>
-              )}
-
-              <button
-                type="submit"
-                style={styles.submitBtn}
-              >
-                Unlock Demo Presets →
-              </button>
-            </form>
-          ) : mockFormMode === 'signin' ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <form onSubmit={handleMockSignInSubmit} style={styles.form}>
-                <div style={styles.inputGroup}>
-                  <label style={styles.label}>Email Address</label>
-                  <input
-                    type="email"
-                    placeholder="Enter mock email (e.g. joseph@htu.edu.gh)"
-                    value={loginEmail}
-                    onChange={(e) => setLoginEmail(e.target.value)}
-                    style={styles.input}
-                    required
-                  />
-                </div>
-
-                <div style={styles.inputGroup}>
-                  <label style={styles.label}>Password</label>
-                  <input
-                    type="password"
-                    placeholder="Enter password (e.g. hod123)"
-                    value={loginPassword}
-                    onChange={(e) => setLoginPassword(e.target.value)}
-                    style={styles.input}
-                    required
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  style={loading ? { ...styles.submitBtn, opacity: 0.7 } : styles.submitBtn}
-                  disabled={loading}
-                >
-                  {loading ? '⏳ Logging in...' : 'Sign In →'}
-                </button>
-              </form>
-
-              <div style={{ textAlign: 'center', marginTop: '10px' }}>
-                <span style={{ fontSize: '13px', color: '#627d98' }}>
-                  Don't have an account?{' '}
-                  <button
-                    type="button"
-                    style={{ background: 'none', border: 'none', color: '#3b82f6', fontWeight: 'bold', cursor: 'pointer', padding: 0 }}
-                    onClick={() => { setMockFormMode('signup'); setError(''); }}
-                  >
-                    Register / Sign Up
-                  </button>
-                </span>
-              </div>
-
-              {/* Presets List */}
-              <div style={{
-                marginTop: '16px',
-                padding: '12px',
-                backgroundColor: '#f8fafc',
-                borderRadius: '8px',
-                border: '1px dashed #cbd5e1'
-              }}>
-                <h5 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#475569', fontWeight: '600' }}>
-                  🔑 Pitch Preset Accounts (Click to Auto-fill):
-                </h5>
-                <div style={styles.presetsGrid}>
-                  <button
-                    type="button"
-                    style={styles.presetBtn}
-                    onClick={() => {
-                      setLoginEmail('joseph@htu.edu.gh');
-                      setLoginPassword('hod123');
-                    }}
-                  >
-                    🏛️ HOD (Joseph)
-                  </button>
-                  <button
-                    type="button"
-                    style={styles.presetBtn}
-                    onClick={() => {
-                      setLoginEmail('francis@htu.edu.gh');
-                      setLoginPassword('accountant123');
-                    }}
-                  >
-                    💼 Accountant (Francis)
-                  </button>
-                  <button
-                    type="button"
-                    style={styles.presetBtn}
-                    onClick={() => {
-                      setLoginEmail('kojo@indexnumber.htu.edu.gh');
-                      setLoginPassword('rep123');
-                    }}
-                  >
-                    📢 Course Rep (Kojo)
-                  </button>
-                  <button
-                    type="button"
-                    style={styles.presetBtn}
-                    onClick={() => {
-                      setLoginEmail('maxwell@indexnumber.htu.edu.gh');
-                      setLoginPassword('student123');
-                    }}
-                  >
-                    🎓 Student (Maxwell)
-                  </button>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <form onSubmit={handleMockSignUpSubmit} style={styles.form}>
-                <div style={styles.inputGroup}>
-                  <label style={styles.label}>Full Name</label>
+                <label style={styles.label}>Enter Index Number or Email</label>
+                <div style={styles.inputWrapper}>
+                  <span style={styles.inputIcon}>✏️</span>
                   <input
                     type="text"
-                    placeholder="Enter full name (e.g. Patricia Kpor)"
-                    value={registerName}
-                    onChange={(e) => setRegisterName(e.target.value)}
-                    style={styles.input}
+                    placeholder="Enter Index Number / Email"
+                    value={portalEmail}
+                    onChange={(e) => setPortalEmail(e.target.value)}
+                    style={styles.portalInput}
                     required
                   />
                 </div>
+              </div>
 
-                <div style={styles.inputGroup}>
-                  <label style={styles.label}>Email Address</label>
-                  <input
-                    type="email"
-                    placeholder="Enter @htu.edu.gh or @indexnumber.htu.edu.gh"
-                    value={registerEmail}
-                    onChange={(e) => setRegisterEmail(e.target.value)}
-                    style={styles.input}
-                    required
-                  />
-                </div>
-
-                <div style={styles.inputGroup}>
-                  <label style={styles.label}>Password</label>
+              <div style={styles.inputGroup}>
+                <label style={styles.label}>Enter Password</label>
+                <div style={styles.inputWrapper}>
+                  <span style={styles.inputIcon}>🔒</span>
                   <input
                     type="password"
-                    placeholder="Choose a password"
-                    value={registerPassword}
-                    onChange={(e) => setRegisterPassword(e.target.value)}
-                    style={styles.input}
+                    placeholder="Enter Password"
+                    value={portalPassword}
+                    onChange={(e) => setPortalPassword(e.target.value)}
+                    style={styles.portalInput}
                     required
                   />
                 </div>
+              </div>
 
-                <div style={styles.row}>
-                  <div style={{ ...styles.inputGroup, flex: 1 }}>
-                    <label style={styles.label}>System Role</label>
-                    <select
-                      value={registerRole}
-                      onChange={(e) => setRegisterRole(e.target.value)}
-                      style={styles.select}
-                    >
-                      <option value="STUDENT">Student</option>
-                      <option value="COURSE_REP">Course Rep</option>
-                      <option value="ACCOUNTANT">Accountant</option>
-                      <option value="HOD">HOD</option>
-                    </select>
-                  </div>
+              <div style={styles.rememberRow}>
+                <label style={styles.checkboxLabel}>
+                  <input type="checkbox" style={{ marginRight: '6px' }} /> Remember me
+                </label>
+                <a href="#forgot" style={styles.forgotLink}>Forgot Details</a>
+              </div>
 
-                  {registerRole === 'STUDENT' && (
-                    <>
-                      <div style={{ ...styles.inputGroup, width: '90px' }}>
-                        <label style={styles.label}>Level</label>
-                        <select
-                          value={registerLevel}
-                          onChange={(e) => setRegisterLevel(e.target.value)}
-                          style={styles.select}
-                        >
-                          <option value="100">100</option>
-                          <option value="200">200</option>
-                          <option value="300">300</option>
-                          <option value="400">400</option>
-                        </select>
-                      </div>
-
-                      <div style={{ ...styles.inputGroup, width: '90px' }}>
-                        <label style={styles.label}>Group</label>
-                        <select
-                          value={registerGroup}
-                          onChange={(e) => setRegisterGroup(e.target.value)}
-                          style={styles.select}
-                        >
-                          <option value="A">Class A</option>
-                          <option value="B">Class B</option>
-                        </select>
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                <button
-                  type="submit"
-                  style={loading ? { ...styles.submitBtn, opacity: 0.7 } : styles.submitBtn}
-                  disabled={loading}
-                >
-                  {loading ? '⏳ Registering...' : 'Register & Log In →'}
+              <div style={styles.buttonRow}>
+                <button type="button" style={styles.enquiriesBtn}>Enquiries</button>
+                <button type="submit" style={styles.loginBtn} disabled={loading}>
+                  {loading ? 'Logging in...' : 'Login'}
                 </button>
-              </form>
+              </div>
+            </form>
 
-              <div style={{ textAlign: 'center', marginTop: '10px' }}>
-                <span style={{ fontSize: '13px', color: '#627d98' }}>
-                  Already have an account?{' '}
-                  <button
-                    type="button"
-                    style={{ background: 'none', border: 'none', color: '#3b82f6', fontWeight: 'bold', cursor: 'pointer', padding: 0 }}
-                    onClick={() => { setMockFormMode('signin'); setError(''); }}
-                  >
-                    Sign In here
-                  </button>
-                </span>
+            <div style={styles.orDivider}>
+              <span style={styles.orLine} />
+              <span style={styles.orText}>OR</span>
+              <span style={styles.orLine} />
+            </div>
+
+            {/* Google Sign In Button */}
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <div id="google-signin-btn" style={styles.googleBtn}></div>
+            </div>
+            
+            <div style={styles.domainWarning}>
+              Only domains ending in <code>indexnumber.htu.edu.gh</code> or <code>htu.edu.gh</code> will be authorized.
+            </div>
+          </div>
+        )}
+
+        {/* Pitch Auto-Fill Helpers - ONLY if showDemoSwitcher is true AND unlocked! */}
+        {showDemoSwitcher && isMockUnlocked && (
+          <div style={{
+            marginTop: '16px',
+            padding: '12px',
+            backgroundColor: '#f8fafc',
+            borderRadius: '8px',
+            border: '1px dashed #cbd5e1'
+          }}>
+            <h5 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#475569', fontWeight: '600' }}>
+              🔑 Pitch Presets (Click to Auto-fill):
+            </h5>
+            <div style={styles.presetsGrid}>
+              <button
+                type="button"
+                style={styles.presetBtn}
+                onClick={() => {
+                  setPortalEmail('1026002202');
+                  setPortalPassword('student123');
+                }}
+              >
+                🎓 Student (Maxwell)
+              </button>
+              <button
+                type="button"
+                style={styles.presetBtn}
+                onClick={() => {
+                  setPortalEmail('1026002201');
+                  setPortalPassword('rep123');
+                }}
+              >
+                📢 Course Rep (Kojo)
+              </button>
+              <button
+                type="button"
+                style={styles.presetBtn}
+                onClick={() => {
+                  setPortalEmail('francis@htu.edu.gh');
+                  setPortalPassword('accountant123');
+                }}
+              >
+                💼 Accountant (Francis)
+              </button>
+              <button
+                type="button"
+                style={styles.presetBtn}
+                onClick={() => {
+                  setPortalEmail('joseph@htu.edu.gh');
+                  setPortalPassword('hod123');
+                }}
+              >
+                🏛️ HOD (Joseph)
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Expandable Overview Guide */}
+        <div style={{ marginTop: '20px', borderTop: '1px solid #eaeaea', paddingTop: '12px' }}>
+          <button
+            type="button"
+            onClick={() => setShowRolesGuide(!showRolesGuide)}
+            style={styles.accordionBtn}
+          >
+            <span>System Roles & Portal Overview</span>
+            <span>{showRolesGuide ? '▲' : '▼'}</span>
+          </button>
+
+          {showRolesGuide && (
+            <div style={styles.accordionContent}>
+              <div style={styles.guideItem}>
+                <strong style={{ color: '#002060' }}>🎓 Student Portal</strong>
+                <div>View dues balance, make payments via simulated MoMo, and download watermarked clearance slip PDFs.</div>
+              </div>
+              <div style={styles.guideItem}>
+                <strong style={{ color: '#002060' }}>📢 Course Rep Portal</strong>
+                <div>Track class payment rosters (Paid vs Owing), send bulk defaulter email notifications, and submit project expense requests.</div>
+              </div>
+              <div style={styles.guideItem}>
+                <strong style={{ color: '#002060' }}>💼 Accountant Portal</strong>
+                <div>Upload MoMo payment statement CSV files for auto-reconciliation, audit transaction logs, and edit level dues prices.</div>
+              </div>
+              <div style={styles.guideItem}>
+                <strong style={{ color: '#002060' }}>🏛️ HOD Portal</strong>
+                <div>View collection efficiency and budget spend widgets, authorize exam hall overrides, and sign off on rep expenses.</div>
               </div>
             </div>
           )}
+        </div>
 
-          {/* Clickable Roles Guide Accordion */}
-          <div style={{ marginTop: '24px', borderTop: '1px solid #eaeaea', paddingTop: '16px' }}>
-            <button
-              type="button"
-              onClick={() => setShowRolesGuide(!showRolesGuide)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                width: '100%',
-                background: '#f8fafc',
-                border: '1px solid #e2e8f0',
-                borderRadius: '8px',
-                padding: '12px 16px',
-                fontSize: '13px',
-                fontWeight: '600',
-                color: '#334e68',
-                cursor: 'pointer',
-                textAlign: 'left'
-              }}
-            >
-              <span>System Roles & Portal Overview</span>
-              <span>{showRolesGuide ? '▲' : '▼'}</span>
-            </button>
-
-            {showRolesGuide && (
-              <div style={{
-                marginTop: '8px',
-                backgroundColor: '#ffffff',
-                border: '1px solid #e2e8f0',
-                borderRadius: '8px',
-                padding: '16px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '12px',
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'
-              }}>
-                <div style={{ fontSize: '12.5px', lineHeight: '1.5', color: '#475569' }}>
-                  <strong style={{ color: '#1e3a8a' }}>🎓 Student Portal</strong>
-                  <div style={{ paddingLeft: '8px', marginTop: '2px' }}>View dues balance, make payments via simulated MoMo, and download watermarked clearance slip PDFs with verification QRs.</div>
-                </div>
-                <div style={{ fontSize: '12.5px', lineHeight: '1.5', color: '#475569' }}>
-                  <strong style={{ color: '#1e3a8a' }}>📢 Course Rep Portal</strong>
-                  <div style={{ paddingLeft: '8px', marginTop: '2px' }}>Track class payment rosters (Paid vs Owing), send bulk defaulter email notifications, and submit project expense requests.</div>
-                </div>
-                <div style={{ fontSize: '12.5px', lineHeight: '1.5', color: '#475569' }}>
-                  <strong style={{ color: '#1e3a8a' }}>💼 Accountant Portal</strong>
-                  <div style={{ paddingLeft: '8px', marginTop: '2px' }}>Upload MoMo payment statement CSV files for auto-reconciliation, audit transaction logs, and edit level dues prices.</div>
-                </div>
-                <div style={{ fontSize: '12.5px', lineHeight: '1.5', color: '#475569' }}>
-                  <strong style={{ color: '#1e3a8a' }}>🏛️ HOD Portal</strong>
-                  <div style={{ paddingLeft: '8px', marginTop: '2px' }}>View collection efficiency and budget spend widgets, authorize exam hall overrides, and sign off on rep expenses.</div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div style={styles.footerNote}>
-            🔒 Secured with AES-256 Database Encryption.
-          </div>
+        <div style={styles.footerNote}>
+          ©2026 HTU — E-mail: info@htu.edu.gh
         </div>
       </div>
     </div>
@@ -653,131 +429,60 @@ const Login = () => {
 const styles = {
   page: {
     display: 'flex',
-    minHeight: '100vh',
-    fontFamily: "'Segoe UI', -apple-system, sans-serif",
-    backgroundColor: '#f4f6fc',
-  },
-  leftPanel: {
-    flex: 1.1,
-    background: 'linear-gradient(135deg, #0a2540 0%, #003087 100%)',
-    color: '#fff',
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'space-between',
-    padding: '50px 40px',
-    position: 'relative',
-  },
-  leftContent: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '12px',
-  },
-  badgeRow: {
-    marginBottom: '10px'
-  },
-  deptBadge: {
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    padding: '6px 14px',
-    borderRadius: '30px',
-    fontSize: '13px',
-    fontWeight: 'bold',
-    letterSpacing: '0.5px'
-  },
-  leftTitle: {
-    fontSize: '32px',
-    fontWeight: 'bold',
-    margin: '10px 0 0 0',
-  },
-  leftSubtitle: {
-    fontSize: '20px',
-    fontWeight: '400',
-    margin: '0',
-    opacity: 0.9,
-  },
-  tagline: {
-    fontSize: '13px',
-    fontWeight: '300',
-    opacity: 0.7,
-    margin: '-4px 0 0 0',
-    fontStyle: 'italic',
-  },
-  divider: {
-    width: '60px',
-    height: '4px',
-    backgroundColor: '#3b82f6',
-    margin: '10px 0',
-  },
-  leftDesc: {
-    fontSize: '15px',
-    opacity: 0.85,
-    margin: '0 0 20px 0',
-    lineHeight: '1.6',
-  },
-  featureList: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '10px',
-  },
-  feature: {
-    fontSize: '13px',
-    opacity: 0.9,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderLeft: '4px solid #3b82f6',
-    padding: '10px 14px',
-    borderRadius: '0 6px 6px 0',
-  },
-  hackathonBadge: {
-    marginTop: '30px',
-    backgroundColor: '#1d4ed8',
-    color: '#fff',
-    alignSelf: 'flex-start',
-    padding: '8px 16px',
-    borderRadius: '6px',
-    fontSize: '12px',
-    fontWeight: 'bold',
-    boxShadow: '0 4px 12px rgba(29, 78, 216, 0.4)'
-  },
-  leftFooterGroup: {
-    marginTop: '40px'
-  },
-  leftFooter: {
-    fontSize: '12px',
-    opacity: 0.5,
-    margin: 0,
-  },
-  rightPanel: {
-    flex: 1,
-    display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: '40px',
+    minHeight: '100vh',
+    width: '100vw',
+    backgroundImage: `url(${htuCampus})`,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    backgroundRepeat: 'no-repeat',
+    fontFamily: "'Segoe UI', -apple-system, sans-serif",
+    position: 'relative',
+    padding: '20px',
+    boxSizing: 'border-box',
+  },
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    zIndex: 1,
   },
   card: {
     backgroundColor: '#fff',
-    padding: '40px',
+    padding: '30px 40px',
     width: '100%',
     maxWidth: '460px',
-    borderRadius: '16px',
-    boxShadow: '0 10px 30px rgba(0,0,0,0.05)',
+    borderRadius: '12px',
+    boxShadow: '0 15px 35px rgba(0,0,0,0.2)',
+    zIndex: 2,
+    boxSizing: 'border-box',
+    display: 'flex',
+    flexDirection: 'column',
   },
   cardHeader: {
     textAlign: 'center',
-    marginBottom: '24px',
+    marginBottom: '20px',
   },
-  cardIcon: {
-    fontSize: '44px',
-    marginBottom: '8px',
+  logoImage: {
+    maxWidth: '240px',
+    height: 'auto',
+    marginBottom: '12px',
   },
   cardTitle: {
-    fontSize: '24px',
+    fontSize: '20px',
     fontWeight: 'bold',
-    color: '#0a2540',
+    color: '#334e68',
     margin: '0 0 4px 0',
   },
   cardSubtitle: {
-    fontSize: '14px',
+    fontSize: '13px',
     color: '#627d98',
     margin: 0,
+    fontWeight: '500',
   },
   errorBox: {
     backgroundColor: '#fff5f5',
@@ -788,90 +493,12 @@ const styles = {
     marginBottom: '20px',
     fontSize: '13px',
     lineHeight: '1.5',
-  },
-  modeTabs: {
-    display: 'flex',
-    backgroundColor: '#f0f4f8',
-    padding: '4px',
-    borderRadius: '10px',
-    marginBottom: '24px',
-  },
-  tab: {
-    flex: 1,
-    border: 'none',
-    background: 'none',
-    padding: '10px',
-    fontSize: '13px',
-    fontWeight: '600',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    color: '#627d98',
-    transition: 'all 0.2s',
-  },
-  activeTab: {
-    backgroundColor: '#fff',
-    color: '#003087',
-    boxShadow: '0 2px 6px rgba(0,0,0,0.05)',
-  },
-  oauthContainer: {
-    textAlign: 'center',
-    padding: '10px 0',
-  },
-  oauthNote: {
-    fontSize: '14px',
-    color: '#486581',
-    lineHeight: '1.5',
-    marginBottom: '24px',
-  },
-  googleBtn: {
-    minHeight: '44px',
-    marginBottom: '24px',
-  },
-  domainWarning: {
-    fontSize: '11px',
-    color: '#829ab1',
-    backgroundColor: '#f0f4f8',
-    padding: '8px 12px',
-    borderRadius: '6px',
-    lineHeight: '1.4',
+    zIndex: 3,
   },
   form: {
     display: 'flex',
     flexDirection: 'column',
     gap: '16px',
-  },
-  mockHelpText: {
-    fontSize: '12px',
-    color: '#627d98',
-    margin: '0 0 -8px 0',
-  },
-  presetsGrid: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: '8px',
-    marginBottom: '10px',
-  },
-  presetBtn: {
-    padding: '8px',
-    border: '1px solid #d9e2ec',
-    borderRadius: '8px',
-    backgroundColor: '#fff',
-    fontSize: '11px',
-    color: '#334e68',
-    textAlign: 'left',
-    cursor: 'pointer',
-    transition: 'all 0.2s',
-  },
-  activePresetBtn: {
-    borderColor: '#3b82f6',
-    backgroundColor: '#eff6ff',
-    color: '#1d4ed8',
-    fontWeight: '600',
-  },
-  dividerLine: {
-    height: '1px',
-    backgroundColor: '#eaeaea',
-    margin: '4px 0',
   },
   inputGroup: {
     display: 'flex',
@@ -879,39 +506,180 @@ const styles = {
     gap: '6px',
   },
   label: {
-    fontSize: '12px',
+    fontSize: '12.5px',
     fontWeight: '600',
-    color: '#334e68',
+    color: '#475569',
   },
-  input: {
-    padding: '10px 14px',
-    border: '1.5px solid #d9e2ec',
-    borderRadius: '8px',
+  inputWrapper: {
+    display: 'flex',
+    alignItems: 'center',
+    border: '1.5px solid #cbd5e1',
+    borderRadius: '6px',
+    padding: '2px 10px',
+    backgroundColor: '#f8fafc',
+    transition: 'border-color 0.2s',
+  },
+  inputIcon: {
     fontSize: '14px',
-    outline: 'none',
-    color: '#102a43',
-    '&:focus': {
-      borderColor: '#3b82f6',
-    }
+    marginRight: '8px',
+    color: '#94a3b8',
   },
-  select: {
-    padding: '10px 14px',
-    border: '1.5px solid #d9e2ec',
-    borderRadius: '8px',
+  portalInput: {
+    flex: 1,
+    padding: '10px 4px',
+    border: 'none',
+    outline: 'none',
     fontSize: '14px',
-    outline: 'none',
-    backgroundColor: '#fff',
-    color: '#102a43',
+    backgroundColor: 'transparent',
+    color: '#1e293b',
   },
-  row: {
+  rememberRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    fontSize: '12.5px',
+    color: '#64748b',
+    marginTop: '4px',
+  },
+  checkboxLabel: {
+    display: 'flex',
+    alignItems: 'center',
+    cursor: 'pointer',
+  },
+  forgotLink: {
+    color: '#3b82f6',
+    textDecoration: 'none',
+    fontWeight: '500',
+  },
+  buttonRow: {
     display: 'flex',
     gap: '12px',
+    marginTop: '8px',
+  },
+  enquiriesBtn: {
+    flex: 1,
+    padding: '12px',
+    border: '1.5px solid #ff7a00',
+    borderRadius: '6px',
+    backgroundColor: '#fff',
+    color: '#ff7a00',
+    fontSize: '14px',
+    fontWeight: '600',
+    cursor: 'pointer',
+    textAlign: 'center',
+    transition: 'background-color 0.2s',
+  },
+  loginBtn: {
+    flex: 1.5,
+    padding: '12px',
+    border: 'none',
+    borderRadius: '6px',
+    backgroundColor: '#002060',
+    color: '#fff',
+    fontSize: '14px',
+    fontWeight: '600',
+    cursor: 'pointer',
+    textAlign: 'center',
+    transition: 'opacity 0.2s',
+  },
+  orDivider: {
+    display: 'flex',
+    alignItems: 'center',
+    margin: '16px 0',
+  },
+  orLine: {
+    flex: 1,
+    height: '1px',
+    backgroundColor: '#cbd5e1',
+  },
+  orText: {
+    padding: '0 12px',
+    fontSize: '12px',
+    fontWeight: 'bold',
+    color: '#94a3b8',
+  },
+  googleBtn: {
+    minHeight: '44px',
+    width: '100%',
+    display: 'flex',
+    justifyContent: 'center',
+  },
+  domainWarning: {
+    fontSize: '11px',
+    color: '#64748b',
+    backgroundColor: '#f1f5f9',
+    padding: '8px 12px',
+    borderRadius: '6px',
+    lineHeight: '1.4',
+    textAlign: 'center',
+  },
+  presetsGrid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: '8px',
+    marginTop: '6px',
+  },
+  presetBtn: {
+    padding: '8px',
+    border: '1px solid #cbd5e1',
+    borderRadius: '6px',
+    backgroundColor: '#fff',
+    fontSize: '11px',
+    color: '#334e68',
+    textAlign: 'left',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
+    '&:hover': {
+      backgroundColor: '#f1f5f9',
+    }
+  },
+  accordionBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    background: '#f8fafc',
+    border: '1px solid #cbd5e1',
+    borderRadius: '6px',
+    padding: '10px 14px',
+    fontSize: '12.5px',
+    fontWeight: '600',
+    color: '#475569',
+    cursor: 'pointer',
+    textAlign: 'left',
+  },
+  accordionContent: {
+    marginTop: '8px',
+    backgroundColor: '#ffffff',
+    border: '1px solid #cbd5e1',
+    borderRadius: '6px',
+    padding: '12px 14px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '10px',
+    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)',
+  },
+  guideItem: {
+    fontSize: '12px',
+    lineHeight: '1.4',
+    color: '#475569',
+  },
+  footerNote: {
+    textAlign: 'center',
+    fontSize: '11px',
+    color: '#94a3b8',
+    marginTop: '20px',
+  },
+  mockHelpText: {
+    fontSize: '12px',
+    color: '#627d98',
+    margin: '0 0 -8px 0',
   },
   submitBtn: {
-    background: 'linear-gradient(135deg, #003087 0%, #1d4ed8 100%)',
+    background: 'linear-gradient(135deg, #002060 0%, #1d4ed8 100%)',
     color: '#fff',
-    padding: '14px',
-    borderRadius: '8px',
+    padding: '12px',
+    borderRadius: '6px',
     border: 'none',
     fontSize: '14px',
     fontWeight: '600',
@@ -919,11 +687,11 @@ const styles = {
     marginTop: '10px',
     transition: 'opacity 0.2s',
   },
-  footerNote: {
-    textAlign: 'center',
-    fontSize: '11px',
-    color: '#bcccdc',
-    marginTop: '24px',
+  oauthNote: {
+    fontSize: '13px',
+    color: '#475569',
+    lineHeight: '1.5',
+    marginBottom: '16px',
   }
 };
 

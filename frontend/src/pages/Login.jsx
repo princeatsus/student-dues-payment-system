@@ -222,9 +222,6 @@ const Login = () => {
       {/* Centered Login Card Container */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 2, width: '100%', maxWidth: '460px' }}>
         <div style={styles.card}>
-          <div style={styles.cardHeader}>
-            <img src={htuLogo} alt="HTU Logo" style={styles.logoImage} />
-          </div>
 
           {error && (
             <div style={styles.errorBox}>

@@ -3,12 +3,20 @@ const { decrypt } = require('../utils/encryption');
 const { sendEmail } = require('../utils/mailer');
 
 // Helper to get Course Rep's assignment
-const getRepAssignment = async (studentId) => {
+const getRepAssignment = async (req) => {
+  // If the request contains the values in the decoded token (e.g. from the role switcher), use them as fallback!
+  if (req.user && req.user.assigned_level && req.user.assigned_class_group) {
+    return {
+      assigned_level: req.user.assigned_level,
+      assigned_class_group: req.user.assigned_class_group
+    };
+  }
+
   const result = await pool.query(
     `SELECT assigned_level, assigned_class_group 
      FROM student_roles 
      WHERE student_id = $1 AND assigned_level IS NOT NULL`,
-    [studentId]
+    [req.user.id]
   );
   if (result.rows.length === 0) {
     throw new Error('User is not assigned as a Course Representative');
@@ -19,8 +27,7 @@ const getRepAssignment = async (studentId) => {
 // GET /api/rep/class-roster - View list of students in rep's class (US-2.1)
 const getClassRoster = async (req, res) => {
   try {
-    const repId = req.user.id;
-    const assignment = await getRepAssignment(repId);
+    const assignment = await getRepAssignment(req);
     
     // Get active session
     const sessionResult = await pool.query(
@@ -83,9 +90,7 @@ const getClassRoster = async (req, res) => {
 const sendReminderEmail = async (req, res) => {
   try {
     const { student_id } = req.body;
-    const repId = req.user.id;
-
-    const repAssignment = await getRepAssignment(repId);
+    const repAssignment = await getRepAssignment(req);
 
     // Get active session
     const sessionResult = await pool.query(

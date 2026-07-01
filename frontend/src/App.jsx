@@ -50,7 +50,7 @@ const DemoRoleSwitcher = () => {
       const res = await switchRole({ targetRole });
       loginUser(res.data.user, res.data.token);
       setIsOpen(false);
-      navigate(path);
+      window.location.href = path;
     } catch (err) {
       console.error('Demo switch error:', err);
       alert('Failed to switch role in demo mode');

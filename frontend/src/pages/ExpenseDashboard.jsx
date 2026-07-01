@@ -15,6 +15,18 @@ const ExpenseDashboard = () => {
   // File Preview Modal
   const [previewImage, setPreviewImage] = useState(null);
 
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+      if (window.innerWidth > 768) setMenuOpen(false);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const [formData, setFormData] = useState({
     item_description: '',
     amount: '',
@@ -160,24 +172,64 @@ const ExpenseDashboard = () => {
     <div style={styles.container}>
       {/* Navbar */}
       <div style={styles.navbar}>
-        <h1 style={styles.navTitle}>💰 Expense Management</h1>
-        <div style={styles.navRight}>
-          <span style={styles.navUser}>👋 {user?.full_name} ({user?.role})</span>
-          {isHOD && (
-            <button onClick={() => navigate('/hod')} style={styles.navBtn}>📋 HOD Dashboard</button>
-          )}
-          {isAccountant && (
-            <button onClick={() => navigate('/accountant')} style={styles.navBtn}>📊 Accountant Dashboard</button>
-          )}
-          {isCourseRep && (
-            <>
-              <button onClick={() => navigate('/roster')} style={styles.navBtn}>📋 Class Roster</button>
-              <button onClick={() => navigate('/student')} style={styles.navBtn}>🎓 Student Dashboard</button>
-            </>
-          )}
-          <button onClick={handleLogout} style={styles.logoutBtn}>Logout</button>
-        </div>
+        <h1 style={styles.navTitle}>💰 {isMobile ? 'Expenses' : 'Expense Management'}</h1>
+        
+        {isMobile ? (
+          <button onClick={() => setMenuOpen(!menuOpen)} style={styles.hamburgerBtn}>
+            {menuOpen ? '✕' : '☰'}
+          </button>
+        ) : (
+          <div style={styles.navRight}>
+            <span style={styles.navUser}>👋 {user?.full_name} ({user?.role})</span>
+            {isHOD && (
+              <button onClick={() => navigate('/hod')} style={styles.navBtn}>📋 HOD Dashboard</button>
+            )}
+            {isAccountant && (
+              <button onClick={() => navigate('/accountant')} style={styles.navBtn}>📊 Accountant Dashboard</button>
+            )}
+            {isCourseRep && (
+              <>
+                <button onClick={() => navigate('/roster')} style={styles.navBtn}>📋 Class Roster</button>
+                <button onClick={() => navigate('/student')} style={styles.navBtn}>🎓 Student Dashboard</button>
+              </>
+            )}
+            <button onClick={handleLogout} style={styles.logoutBtn}>Logout</button>
+          </div>
+        )}
       </div>
+
+      {/* Mobile Drawer */}
+      {isMobile && menuOpen && (
+        <div style={styles.mobileDrawer}>
+          <div style={styles.drawerUser}>
+            <div style={styles.avatarCircle}>
+              {user?.full_name ? user.full_name.charAt(0).toUpperCase() : 'U'}
+            </div>
+            <div>
+              <p style={styles.drawerUserName}>{user?.full_name}</p>
+              <p style={styles.drawerUserRole}>{user?.role?.replace('_', ' ')}</p>
+            </div>
+          </div>
+          
+          <div style={styles.drawerDivider} />
+
+          <div style={styles.drawerLinks}>
+            {isHOD && (
+              <button onClick={() => { setMenuOpen(false); navigate('/hod'); }} style={styles.drawerBtn}>📋 HOD Dashboard</button>
+            )}
+            {isAccountant && (
+              <button onClick={() => { setMenuOpen(false); navigate('/accountant'); }} style={styles.drawerBtn}>📊 Accountant Dashboard</button>
+            )}
+            {isCourseRep && (
+              <>
+                <button onClick={() => { setMenuOpen(false); navigate('/roster'); }} style={styles.drawerBtn}>📋 Class Roster</button>
+                <button onClick={() => { setMenuOpen(false); navigate('/student'); }} style={styles.drawerBtn}>🎓 Student Dashboard</button>
+              </>
+            )}
+            <button onClick={handleLogout} style={{ ...styles.drawerBtn, ...styles.drawerLogout }}>Logout</button>
+          </div>
+        </div>
+      )}
 
       <div style={styles.content}>
         {error && <div style={styles.error}>{error}</div>}
@@ -577,7 +629,40 @@ const styles = {
     backgroundColor: '#1e293b', color: '#fff', padding: '14px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 'bold', fontSize: '13px'
   },
   closePreviewBtn: { border: 'none', background: 'transparent', color: '#fff', fontSize: '20px', cursor: 'pointer' },
-  previewImg: { width: '100%', maxHeight: '72vh', objectFit: 'contain', backgroundColor: '#f8fafc' }
+  previewImg: { width: '100%', maxHeight: '72vh', objectFit: 'contain', backgroundColor: '#f8fafc' },
+  hamburgerBtn: {
+    backgroundColor: 'transparent',
+    border: 'none',
+    fontSize: '24px',
+    cursor: 'pointer',
+    color: '#1e293b',
+    padding: '4px 8px'
+  },
+  mobileDrawer: {
+    backgroundColor: '#ffffff',
+    borderBottom: '1px solid #f1f5f9',
+    padding: '20px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '16px',
+    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'
+  },
+  drawerUser: { display: 'flex', alignItems: 'center', gap: '12px' },
+  avatarCircle: {
+    width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#1a56db', color: '#fff',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '16px'
+  },
+  drawerUserName: { margin: 0, fontWeight: '700', color: '#1e293b', fontSize: '14px' },
+  drawerUserRole: { margin: 0, fontSize: '12px', color: '#64748b', fontWeight: '600' },
+  drawerDivider: { height: '1px', backgroundColor: '#f1f5f9' },
+  drawerLinks: { display: 'flex', flexDirection: 'column', gap: '10px' },
+  drawerBtn: {
+    width: '100%', padding: '12px', borderRadius: '8px', border: 'none', backgroundColor: '#f1f5f9',
+    color: '#475569', fontSize: '13px', fontWeight: '600', textAlign: 'left', cursor: 'pointer'
+  },
+  drawerLogout: {
+    backgroundColor: '#fee2e2', color: '#ef4444'
+  }
 };
 
 export default ExpenseDashboard;

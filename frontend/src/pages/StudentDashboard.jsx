@@ -119,20 +119,22 @@ const StudentDashboard = () => {
       amount: amountInPesewas,
       currency: 'GHS',
       ref: refCode,
-      callback: async (response) => {
-        try {
-          setPayLoading(true);
-          await confirmPayment(transactionId, {
-            payment_method: 'MOMO_MTN',
-            notes: `Paystack Ref: ${response.reference}`
-          });
+      callback: function(response) {
+        setPayLoading(true);
+        confirmPayment(transactionId, {
+          payment_method: 'MOMO_MTN',
+          notes: `Paystack Ref: ${response.reference}`
+        })
+        .then(() => {
           alert('🎉 Dues paid successfully! Your account is now cleared.');
-          await fetchData();
-        } catch (err) {
+          fetchData();
+        })
+        .catch((err) => {
           alert('⚠️ Error confirming transaction with backend: ' + (err.response?.data?.message || err.message));
-        } finally {
+        })
+        .finally(() => {
           setPayLoading(false);
-        }
+        });
       },
       onClose: () => {
         alert('❌ Payment cancelled.');

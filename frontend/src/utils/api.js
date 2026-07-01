@@ -20,6 +20,7 @@ export const gateVerify = (index) => API.get(`/public/gate-verify/${index}`);
 // Auth
 export const register = (data) => API.post('/auth/register', data);
 export const login = (data) => API.post('/auth/login', data);
+export const switchRole = (data) => API.post('/auth/switch-role', data);
 
 // Dues
 export const getBalance = () => API.get('/dues/balance');

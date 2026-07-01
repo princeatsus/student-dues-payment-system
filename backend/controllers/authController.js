@@ -182,4 +182,66 @@ const register = async (req, res) => {
   });
 };
 
-module.exports = { login, register };
+// ROLE SWITCHER FOR DEMO/JUDGES WORKFLOW (FR-AUTH-03)
+const switchRole = async (req, res) => {
+  try {
+    const { targetRole } = req.body;
+    const userId = req.user.id;
+
+    const validRoles = ['STUDENT', 'COURSE_REP', 'ACCOUNTANT', 'HOD', 'ADMIN'];
+    if (!validRoles.includes(targetRole)) {
+      return res.status(400).json({ message: 'Invalid role request' });
+    }
+
+    // Load actual student record
+    const studentRes = await pool.query('SELECT * FROM students WHERE id = $1', [userId]);
+    if (studentRes.rows.length === 0) {
+      return res.status(404).json({ message: 'User record not found' });
+    }
+    const student = studentRes.rows[0];
+
+    // Determine target classes/levels for Course Rep
+    const level = student.current_level || 100;
+    const classGroup = student.class_group || 'A';
+
+    // Generate a fresh session token with the new targetRole
+    const token = jwt.sign(
+      { 
+        id: student.id, 
+        role: targetRole,
+        index_number: student.index_number,
+        assigned_level: level,
+        assigned_class_group: classGroup
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '1d' }
+    );
+
+    // Audit log this switch
+    await pool.query(
+      `INSERT INTO audit_logs (actor_id, action, target_type, target_id, new_value)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [student.id, 'ROLE_SWITCHED_DEMO', 'STUDENT', student.id, JSON.stringify({ oldRole: req.user.role, newRole: targetRole })]
+    );
+
+    res.status(200).json({
+      message: `Switched role view to ${targetRole}`,
+      token,
+      user: {
+        id: student.id,
+        index_number: student.index_number,
+        full_name: student.full_name,
+        email: decrypt(student.email),
+        role: targetRole,
+        current_level: student.current_level,
+        class_group: student.class_group
+      }
+    });
+
+  } catch (err) {
+    console.error('Role switch error:', err.message);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+module.exports = { login, register, switchRole };

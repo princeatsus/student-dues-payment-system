@@ -388,7 +388,7 @@ const ClassRoster = () => {
                     <th style={{ ...styles.th, textAlign: 'right' }}>Dues Configured</th>
                     <th style={{ ...styles.th, textAlign: 'right' }}>Paid</th>
                     <th style={{ ...styles.th, textAlign: 'right' }}>Outstanding</th>
-                    <th style={styles.th}>Status</th>
+                    <th style={{ ...styles.th, textAlign: 'center' }}>Status</th>
                     <th style={{ ...styles.th, textAlign: 'center' }}>Actions</th>
                   </tr>
                 </thead>
@@ -403,7 +403,7 @@ const ClassRoster = () => {
                       <td style={{ ...styles.td, textAlign: 'right', color: student.outstanding > 0 ? '#f43f5e' : '#0f172a', fontWeight: student.outstanding > 0 ? 'bold' : 'normal' }}>
                         ₵{student.outstanding.toFixed(2)}
                       </td>
-                      <td style={styles.td}>
+                      <td style={{ ...styles.td, textAlign: 'center' }}>
                         <span style={student.status === 'PAID' ? styles.badgePaid : styles.badgeOwing}>
                           {student.status}
                         </span>
@@ -835,7 +835,8 @@ const styles = {
   },
   td: {
     padding: '12px 14px',
-    color: '#334155'
+    color: '#334155',
+    textAlign: 'left'
   },
   badgePaid: {
     backgroundColor: '#d1fae5',

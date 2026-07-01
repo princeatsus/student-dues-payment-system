@@ -11,7 +11,9 @@ import {
   CheckCircle, 
   AlertCircle, 
   Search, 
-  Bell 
+  Bell,
+  Menu,
+  X 
 } from 'lucide-react';
 
 const ClassRoster = () => {
@@ -23,12 +25,18 @@ const ClassRoster = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('ALL');
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [menuOpen, setMenuOpen] = useState(false);
   const { user, logoutUser } = useAuth();
   const navigate = useNavigate();
 
   // Handle window resize for responsive layout
   useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+      if (window.innerWidth >= 768) {
+        setMenuOpen(false); // Auto-close menu on resize to desktop
+      }
+    };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
@@ -148,18 +156,49 @@ const ClassRoster = () => {
             <p style={styles.navSubtitle}>Ho Technical University</p>
           </div>
         </div>
-        <div style={styles.navActions}>
-          <span style={styles.navUser}>👋 Rep: <strong>{user?.full_name}</strong></span>
-          <button onClick={() => navigate('/expenses')} style={styles.expensesBtn}>
-            <DollarSign size={14} style={{ marginRight: '4px' }} />
-            Expenses
+
+        {/* Desktop Navigation Links */}
+        {!isMobile && (
+          <div style={styles.navActions}>
+            <span style={styles.navUser}>👋 Rep: <strong>{user?.full_name}</strong></span>
+            <button onClick={() => navigate('/expenses')} style={styles.expensesBtn}>
+              <DollarSign size={14} style={{ marginRight: '4px' }} />
+              Expenses
+            </button>
+            <button onClick={handleLogout} style={styles.logoutBtn}>
+              <LogOut size={13} style={{ marginRight: '4px' }} />
+              Logout
+            </button>
+          </div>
+        )}
+
+        {/* Mobile Hamburger Toggle Button */}
+        {isMobile && (
+          <button onClick={() => setMenuOpen(!menuOpen)} style={styles.menuToggleBtn}>
+            {menuOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
-          <button onClick={handleLogout} style={styles.logoutBtn}>
-            <LogOut size={13} style={{ marginRight: '4px' }} />
+        )}
+      </div>
+
+      {/* Mobile Drawer Dropdown Menu */}
+      {isMobile && menuOpen && (
+        <div style={styles.mobileMenu}>
+          <div style={styles.mobileMenuHeader}>
+            <span style={styles.mobileMenuUser}>👋 Rep: <strong>{user?.full_name}</strong></span>
+          </div>
+          <button 
+            onClick={() => { setMenuOpen(false); navigate('/expenses'); }} 
+            style={styles.mobileMenuBtn}
+          >
+            <DollarSign size={16} style={{ marginRight: '8px' }} />
+            Expenses Dashboard
+          </button>
+          <button onClick={handleLogout} style={styles.mobileMenuLogoutBtn}>
+            <LogOut size={14} style={{ marginRight: '8px' }} />
             Logout
           </button>
         </div>
-      </div>
+      )}
 
       {/* Main Content Body */}
       <div style={styles.content}>
@@ -425,8 +464,7 @@ const styles = {
     justifyContent: 'space-between',
     alignItems: 'center',
     boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-    flexWrap: 'wrap',
-    gap: '12px'
+    position: 'relative'
   },
   navBrand: {
     display: 'flex',
@@ -456,8 +494,7 @@ const styles = {
   navActions: {
     display: 'flex',
     alignItems: 'center',
-    gap: '12px',
-    flexWrap: 'wrap'
+    gap: '12px'
   },
   navUser: {
     fontSize: '13px',
@@ -489,6 +526,65 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     transition: 'all 0.2s ease'
+  },
+  menuToggleBtn: {
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    border: 'none',
+    color: '#fff',
+    width: '36px',
+    height: '36px',
+    borderRadius: '8px',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    cursor: 'pointer',
+    transition: 'background-color 0.2s'
+  },
+  mobileMenu: {
+    backgroundColor: '#1e1b4b',
+    borderBottom: '1px solid #312e81',
+    padding: '16px 24px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '12px',
+    animation: 'slideDown 0.2s ease-out'
+  },
+  mobileMenuHeader: {
+    borderBottom: '1px solid #312e81',
+    paddingBottom: '8px',
+    marginBottom: '4px'
+  },
+  mobileMenuUser: {
+    color: '#cbd5e1',
+    fontSize: '14px'
+  },
+  mobileMenuBtn: {
+    backgroundColor: '#6366f1',
+    color: '#fff',
+    border: 'none',
+    padding: '10px 16px',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontSize: '13px',
+    fontWeight: '600',
+    display: 'flex',
+    alignItems: 'center',
+    width: '100%',
+    justifyContent: 'center'
+  },
+  mobileMenuLogoutBtn: {
+    backgroundColor: 'transparent',
+    border: '1px solid #475569',
+    color: '#cbd5e1',
+    padding: '10px 16px',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontSize: '13px',
+    fontWeight: '500',
+    display: 'flex',
+    alignItems: 'center',
+    width: '100%',
+    justifyContent: 'center'
   },
   content: {
     maxWidth: '1140px',

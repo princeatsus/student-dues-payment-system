@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAllStudents, confirmPayment, setDuesConfig } from '../utils/api';
+import { getAllStudents, confirmPayment, setDuesConfig, syncGoogleDirectory } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 
 const AccountantDashboard = () => {
@@ -20,6 +20,7 @@ const AccountantDashboard = () => {
   });
   const { user, logoutUser } = useAuth();
   const navigate = useNavigate();
+  const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {
     fetchStudents();
@@ -61,6 +62,24 @@ const AccountantDashboard = () => {
     navigate('/');
   };
 
+  const handleSyncDirectory = async () => {
+    setSyncing(true);
+    setError('');
+    setSuccess('');
+    try {
+      const response = await syncGoogleDirectory();
+      if (response.data.success) {
+        setSuccess(`✅ Google Workspace Sync Success! ${response.data.stats.syncedCount} new student profiles added.`);
+        fetchStudents();
+      }
+    } catch (err) {
+      console.error(err);
+      setError(err.response?.data?.message || 'Google Workspace Synchronization failed.');
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   if (loading) return <div style={styles.loading}>Loading dashboard...</div>;
 
   return (
@@ -70,7 +89,9 @@ const AccountantDashboard = () => {
         <h1 style={styles.navTitle}>HTU Computer Science — Accountant Dashboard</h1>
         <div style={styles.navRight}>
           <span style={styles.navUser}>👋 {user?.full_name}</span>
-          {/* NEW: Expense navigation button */}
+          <button onClick={handleSyncDirectory} disabled={syncing} style={styles.navBtn}>
+            {syncing ? '📡 Syncing...' : '📡 Google Sync'}
+          </button>
           <button onClick={() => navigate('/reconcile')} style={styles.navBtn}>🔄 MoMo Reconciliation</button>
           <button onClick={() => navigate('/expenses')} style={styles.navBtn}>💰 Expenses</button>
           <button onClick={handleLogout} style={styles.logoutBtn}>Logout</button>

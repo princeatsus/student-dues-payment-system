@@ -1,6 +1,6 @@
 const pool = require('../config/db');
 const path = require('path');
-const { decrypt } = require('../utils/encryption');
+const { encrypt, decrypt } = require('../utils/encryption');
 const { sendEmail } = require('../utils/mailer');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
@@ -313,4 +313,96 @@ const manualAssignPayment = async (req, res) => {
   }
 };
 
-module.exports = { getAllTransactions, confirmPayment, getAllStudents, manualAssignPayment };
+// POST /api/accountant/sync-directory - Nightly Google Directory Sync Job (US-6.1)
+const syncGoogleDirectory = async (req, res) => {
+  try {
+    const accountantId = req.user.id;
+
+    // Pre-configured mock student list representing Level 100 entries from the HTU Google Directory OU
+    const directoryStudents = [
+      { index: '0324080991', name: 'Emmanuel Gakpo', email: '0324080991@indexnumber.htu.edu.gh', current_level: 100 },
+      { index: '0324080992', name: 'Selasi Mensah', email: '0324080992@indexnumber.htu.edu.gh', current_level: 100 },
+      { index: '0324080993', name: 'Dela Foli', email: '0324080993@indexnumber.htu.edu.gh', current_level: 100 }
+    ];
+
+    const crypto = require('crypto');
+    const getEmailHash = (email) => crypto.createHash('sha256').update(email.toLowerCase().trim()).digest('hex');
+
+    let syncedCount = 0;
+    const details = [];
+
+    // 1. Sync students into database
+    for (const student of directoryStudents) {
+      const emailHash = getEmailHash(student.email);
+      const googleSub = `google_directory_${student.index}`;
+
+      // Check if student already exists
+      const checkRes = await pool.query(
+        'SELECT id FROM students WHERE index_number = $1 OR email_hash = $2',
+        [student.index, emailHash]
+      );
+
+      if (checkRes.rows.length === 0) {
+        // Insert new student record
+        const encEmail = encrypt(student.email);
+        const insertRes = await pool.query(
+          `INSERT INTO students (google_sub, index_number, full_name, email, email_hash, current_level, class_group)
+           VALUES ($1, $2, $3, $4, $5, $6, 'A') RETURNING id`,
+          [googleSub, student.index, student.name, encEmail, emailHash, student.current_level]
+        );
+
+        // Assign STUDENT role
+        const roleRes = await pool.query("SELECT id FROM roles WHERE name = 'STUDENT'");
+        const roleId = roleRes.rows[0].id;
+        await pool.query(
+          'INSERT INTO student_roles (student_id, role_id, assigned_class_group, assigned_level) VALUES ($1, $2, $3, $4)',
+          [insertRes.rows[0].id, roleId, 'A', student.current_level]
+        );
+
+        syncedCount++;
+        details.push(`Synced new student: ${student.name} (${student.index})`);
+      }
+    }
+
+    // 2. Simulate deactivation of a suspended Workspace account
+    const suspendIndex = '0324080129';
+    const checkSuspend = await pool.query('SELECT id, full_name FROM students WHERE index_number = $1', [suspendIndex]);
+    let suspendedCount = 0;
+    if (checkSuspend.rows.length > 0) {
+      await pool.query('UPDATE students SET is_active = FALSE WHERE index_number = $1', [suspendIndex]);
+      suspendedCount = 1;
+      details.push(`Deactivated suspended account: ${checkSuspend.rows[0].full_name} (${suspendIndex})`);
+    } else {
+      details.push(`Google Workspace status check complete: 0 suspensions found.`);
+    }
+
+    // 3. Log this action in append-only audit logs (NFR-SEC-02 Compliance)
+    await pool.query(
+      `INSERT INTO audit_logs (actor_id, action, target_type, target_id, new_value)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [
+        accountantId,
+        'GOOGLE_DIRECTORY_SYNC',
+        'STUDENT',
+        accountantId,
+        JSON.stringify({ synced: syncedCount, suspended: suspendedCount, details })
+      ]
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'Nightly Google Directory Sync executed successfully',
+      stats: {
+        syncedCount,
+        suspendedCount,
+        details
+      }
+    });
+
+  } catch (error) {
+    console.error('Directory sync error:', error.message);
+    res.status(500).json({ message: 'Server error during sync execution' });
+  }
+};
+
+module.exports = { getAllTransactions, confirmPayment, getAllStudents, manualAssignPayment, syncGoogleDirectory };

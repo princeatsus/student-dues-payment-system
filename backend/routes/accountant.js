@@ -18,4 +18,7 @@ router.post('/reconcile/upload', protect, authorize('ACCOUNTANT', 'ADMIN'), reco
 router.post('/reconcile/confirm', protect, authorize('ACCOUNTANT', 'ADMIN'), reconcileController.confirmReconciliation);
 router.post('/reconcile/manual-assign', protect, authorize('ACCOUNTANT', 'ADMIN'), accountantController.manualAssignPayment);
 
+// Google Directory Sync Cron endpoint
+router.post('/sync-directory', protect, authorize('ACCOUNTANT', 'ADMIN', 'HOD'), accountantController.syncGoogleDirectory);
+
 module.exports = router;

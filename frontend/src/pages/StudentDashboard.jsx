@@ -9,6 +9,24 @@ import {
 } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import jsPDF from 'jspdf';
+import { 
+  Menu, 
+  X, 
+  Bell, 
+  User, 
+  BookOpen, 
+  FileText, 
+  CheckCircle, 
+  AlertCircle,
+  Download,
+  DollarSign,
+  QrCode,
+  ArrowRight,
+  TrendingUp,
+  Inbox,
+  Search,
+  MessageSquare
+} from 'lucide-react';
 
 const StudentDashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
@@ -31,8 +49,25 @@ const StudentDashboard = () => {
   const [momoStep, setMomoStep] = useState(1); // 1 = Input, 2 = Pin Prompt, 3 = Success
   const [momoPin, setMomoPin] = useState('');
 
+  // Hamburger Menu Mobile Toggle
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [darkMode, setDarkMode] = useState(false);
+
   const { user, logoutUser } = useAuth();
   const navigate = useNavigate();
+
+  // Handle window resize for mobile navigation
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+      if (window.innerWidth >= 768) {
+        setMenuOpen(false);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     fetchData();
@@ -106,7 +141,6 @@ const StudentDashboard = () => {
     }
     setPayLoading(true);
     try {
-      // Reconcile/Confirm payment using the Accountant confirmPayment endpoint in simulated gateway
       await confirmPayment(reference.id, {
         payment_method: momoProvider,
         notes: `Simulated Online Payment via ${momoProvider} (${momoNumber})`
@@ -165,7 +199,6 @@ const StudentDashboard = () => {
       const doc = new jsPDF('p', 'mm', 'a4');
       const student = dashboardData.student;
       const session = dashboardData.session;
-      const balance = dashboardData.balance;
 
       const verCode = `HTU-ELE-${new Date().getFullYear()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
@@ -279,7 +312,6 @@ const StudentDashboard = () => {
     try {
       const doc = new jsPDF('p', 'mm', 'a4');
       const student = dashboardData.student;
-      const balance = dashboardData.balance;
 
       // Letterhead
       doc.setFillColor(10, 37, 64);
@@ -298,215 +330,400 @@ const StudentDashboard = () => {
       doc.setFontSize(10);
       doc.setFont('Helvetica', 'normal');
       doc.text(`Student: ${student.full_name} (${student.index_number})`, 20, 56);
-      doc.text(`Academic Level: Level ${student.level} Class ${student.class_group}`, 20, 62);
-      doc.text(`Total Lifetime Paid: ${balance.total_paid}`, 20, 68);
-      doc.text(`Date Exported: ${new Date().toLocaleDateString('en-GB')}`, 140, 56);
+      doc.text(`Level / Group: Level ${student.level} Class ${student.class_group}`, 20, 62);
+      doc.text(`Statement Generated: ${new Date().toLocaleDateString('en-GB')}`, 20, 68);
 
-      // Ledger Table Headers
-      doc.setFillColor(230, 235, 245);
-      doc.rect(20, 78, 170, 8, 'F');
+      // Table Headers
+      doc.setFillColor(240, 244, 248);
+      doc.rect(20, 78, 170, 10, 'F');
+      doc.setTextColor(10, 37, 64);
       doc.setFont('Helvetica', 'bold');
-      doc.text('Date', 25, 83);
-      doc.text('Reference', 55, 83);
-      doc.text('Semester/Year', 95, 83);
-      doc.text('Method', 135, 83);
-      doc.text('Amount', 170, 83);
+      doc.text('Date', 25, 84);
+      doc.text('Reference Code', 55, 84);
+      doc.text('Semester/Year', 95, 84);
+      doc.text('Payment Method', 135, 84);
+      doc.text('Amount', 170, 84);
 
-      // Ledger Rows
-      let yOffset = 93;
+      // Table Rows
+      let yOffset = 96;
       doc.setFont('Helvetica', 'normal');
+      doc.setTextColor(80, 80, 80);
+
       history.forEach((tx) => {
-        const dateStr = new Date(tx.created_at).toLocaleDateString('en-GB');
-        doc.text(dateStr, 25, yOffset);
+        if (yOffset > 270) {
+          doc.addPage();
+          yOffset = 30;
+        }
+        doc.text(new Date(tx.created_at).toLocaleDateString('en-GB'), 25, yOffset);
         doc.text(tx.payment_reference, 55, yOffset);
         doc.text(`${tx.academic_year} Sem ${tx.semester}`, 95, yOffset);
-        doc.text(tx.payment_method || 'CASH', 135, yOffset);
-        doc.text(`₵${parseFloat(tx.amount).toFixed(2)}`, 170, yOffset);
-        
-        doc.setDrawColor(240, 240, 240);
-        doc.line(20, yOffset + 3, 190, yOffset + 3);
+        doc.text(tx.payment_method?.replace('MOMO_', '') || 'MoMo', 135, yOffset);
+        doc.text(`GHS ${parseFloat(tx.amount).toFixed(2)}`, 170, yOffset);
         yOffset += 10;
       });
-
-      // Total Paid Summary at bottom
-      doc.setFont('Helvetica', 'bold');
-      doc.text(`Total Paid: ${balance.total_paid}`, 150, yOffset + 5);
 
       doc.save(`HTU_Dues_Statement_${student.index_number}.pdf`);
     } catch (err) {
       console.error(err);
-      setError('Failed to generate statement PDF.');
+      setError('Failed to generate statement of payment history.');
     } finally {
       setStatementLoading(false);
     }
   };
 
-  if (loading) return <div style={styles.loading}>Loading student portal...</div>;
-
-  const balance = dashboardData?.balance;
   const student = dashboardData?.student;
   const session = dashboardData?.session;
+  const balance = dashboardData?.balance;
+
+  const hasOutstanding = balance && parseFloat(balance.total_outstanding.replace('₵', '')) > 0;
+  const isCleared = balance?.status === 'CLEARED' || balance?.has_override;
+
+  if (loading) {
+    return (
+      <div style={styles.loadingContainer}>
+        <div style={styles.spinner}></div>
+        <div style={{ marginTop: '16px', fontSize: '15px', color: '#1a56db', fontWeight: '600' }}>
+          Loading LMS dashboard...
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={styles.container}>
-      {/* Navbar */}
+      {/* Official HTU LMS Style Header */}
       <div style={styles.navbar}>
-        <div>
-          <h1 style={styles.navTitle}>HTU Computer Science — Student Portal</h1>
+        <div style={styles.navLeft}>
+          {isMobile && (
+            <button onClick={() => setMenuOpen(!menuOpen)} style={styles.menuBtn}>
+              {menuOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
+          )}
+          <div style={styles.logoContainer}>
+            <div style={styles.htuBadgeWrapper}>
+              <div style={styles.htuBadgeCircle}>
+                <span style={{ fontSize: '10px', color: '#1e3a8a', fontWeight: 'bold' }}>HTU</span>
+              </div>
+            </div>
+            <span style={styles.lmsText}>LMS</span>
+          </div>
         </div>
+
         <div style={styles.navRight}>
-          <span style={styles.navUser}>👋 {student?.full_name}</span>
-          <button onClick={handleLogout} style={styles.logoutBtn}>Logout</button>
+          {/* Notification Bell with Badge */}
+          <div style={styles.bellWrapper}>
+            <Bell size={20} style={{ color: '#475569' }} />
+            {hasOutstanding && (
+              <span style={styles.bellBadge}>1</span>
+            )}
+          </div>
+
+          {/* Chat Icon */}
+          <div style={styles.chatWrapper}>
+            <MessageSquare size={20} style={{ color: '#475569' }} />
+          </div>
+
+          {/* Student Profile Initial Circle */}
+          <div style={styles.profileCircle}>
+            {student?.full_name?.charAt(0).toUpperCase()}
+          </div>
+
+          {/* Styled Dark Mode Toggle Mockup */}
+          <div 
+            onClick={() => setDarkMode(!darkMode)}
+            style={{ 
+              ...styles.toggleTrack, 
+              backgroundColor: darkMode ? '#10b981' : '#cbd5e1' 
+            }}
+          >
+            <div 
+              style={{ 
+                ...styles.toggleThumb, 
+                transform: darkMode ? 'translateX(16px)' : 'translateX(0px)' 
+              }}
+            ></div>
+          </div>
         </div>
       </div>
 
-      {/* Main Grid Layout */}
-      <div style={styles.content}>
-        {error && <div style={styles.error}>{error}</div>}
-        {successMsg && <div style={styles.success}>{successMsg}</div>}
+      {/* Mobile Drawer Dropdown Menu */}
+      {isMobile && menuOpen && (
+        <div style={styles.mobileMenu}>
+          <div style={styles.mobileMenuHeader}>
+            <span style={styles.mobileMenuUser}>👋 student: <strong>{student?.full_name}</strong></span>
+            <span style={styles.mobileMenuIndex}>{student?.index_number}</span>
+          </div>
+          <button onClick={handleLogout} style={styles.mobileMenuLogoutBtn}>
+            <LogOut size={14} style={{ marginRight: '8px' }} />
+            Logout from LMS
+          </button>
+        </div>
+      )}
 
-        {/* Welcome Banner */}
-        <div style={styles.welcomeCard}>
+      {/* Main Content Body */}
+      <div style={styles.content}>
+        {/* Page Title */}
+        <div style={styles.titleContainer}>
+          <h2 style={styles.dashboardTitle}>Dashboard</h2>
+        </div>
+
+        {error && <div style={styles.errorBox}>⚠️ {error}</div>}
+        {successMsg && <div style={styles.successBox}>✅ {successMsg}</div>}
+
+        {/* Welcome Card Banner */}
+        <div style={styles.welcomeBanner}>
           <div style={styles.welcomeInfo}>
-            <h2 style={styles.welcomeTitle}>Welcome back, {student?.full_name}!</h2>
-            <p style={styles.welcomeSub}>
-              Level {student?.level} Class {student?.class_group} | {session?.academic_year} Semester {session?.semester}
+            <h3 style={styles.welcomeUserTitle}>Welcome back, {student?.full_name}!</h3>
+            <p style={styles.welcomeUserSub}>
+              Level {student?.level} Class Group {student?.class_group} · Current Semester: {session?.academic_year} Semester {session?.semester}
             </p>
           </div>
-          <div style={styles.clearanceBadgeWrapper}>
-            <span style={balance?.status === 'CLEARED' || balance?.has_override ? styles.badgeCleared : styles.badgeOwing}>
-              {balance?.status === 'CLEARED' ? '✅ FULLY CLEARED' : balance?.has_override ? 'ℹ️ EXAM CLEARANCE GRANTED' : '⚠️ OUTSTANDING BALANCE'}
+          <div style={styles.welcomeStatus}>
+            <span style={isCleared ? styles.badgeCleared : styles.badgeOwing}>
+              {isCleared ? '✅ FULLY CLEARED' : '⚠️ OUTSTANDING BALANCE'}
             </span>
           </div>
         </div>
 
-        {/* Dues Breakdown Grid (US-8.1.4) */}
-        <div style={styles.gridRow}>
-          <div style={styles.duesBreakdownCard}>
-            <h3 style={styles.cardSectionTitle}>Semester Dues Ledger</h3>
-            <div style={styles.ledgerRow}>
-              <span>Current Semester Dues:</span>
-              <strong style={styles.ledgerAmount}>{balance?.current_dues}</strong>
+        {/* Timeline / Dues Action Card (LMS STYLE WITH BLUE TOP BORDER) */}
+        <div style={styles.lmsCard}>
+          <div style={styles.lmsCardHeader}>
+            <h3 style={styles.lmsCardTitle}>Timeline</h3>
+          </div>
+          
+          {/* Timeline Mock Filters matching screenshot */}
+          <div style={styles.timelineFilters}>
+            <div style={styles.filterDropdowns}>
+              <select style={styles.lmsSelect} disabled>
+                <option>Next 7 days</option>
+              </select>
+              <select style={styles.lmsSelect} disabled>
+                <option>Sort by dates</option>
+              </select>
             </div>
-            <div style={styles.ledgerRow}>
-              <span>Previous Carryover Balance:</span>
-              <strong style={{ ...styles.ledgerAmount, color: parseFloat(balance?.previous_balance.replace('₵', '')) > 0 ? '#e53e3e' : '#2d3748' }}>
-                {balance?.previous_balance}
-              </strong>
+            <div style={styles.timelineSearchWrapper}>
+              <Search size={13} style={styles.timelineSearchIcon} />
+              <input 
+                type="text" 
+                placeholder="Search by activity type or name" 
+                style={styles.timelineSearch} 
+                disabled 
+              />
             </div>
-            <div style={styles.ledgerDivider} />
-            <div style={{ ...styles.ledgerRow, ...styles.ledgerTotal }}>
-              <span>Total Outstanding Dues:</span>
-              <strong style={styles.ledgerAmountTotal}>{balance?.total_outstanding}</strong>
-            </div>
+          </div>
 
-            {balance?.has_override && (
-              <div style={styles.overrideAlert}>
-                <strong>Compassionate Exam Exception Active</strong>
-                <p style={styles.overrideReason}>Reason: "{balance.override_reason}"</p>
-                <span style={styles.overrideNotice}>* Note: Outstanding financial balance remains unchanged on the ledger.</span>
-              </div>
-            )}
+          <div style={styles.timelineContent}>
+            {/* If Student is fully cleared, show the official LMS empty state look! */}
+            {isCleared ? (
+              <div style={styles.lmsEmptyState}>
+                <div style={styles.emptyIconWrapper}>
+                  <FileText size={36} style={{ color: '#94a3b8' }} />
+                </div>
+                <h4 style={styles.emptyStateTitle}>No activities require action</h4>
+                <p style={styles.emptyStateSub}>You are fully cleared for exams this semester. You can download your clearance slip below.</p>
+                
+                {balance?.has_override && (
+                  <div style={styles.overrideAlert}>
+                    <strong>Compassionate Exam Exception Active</strong>
+                    <p style={styles.overrideReason}>Reason: "{balance.override_reason}"</p>
+                    <span style={styles.overrideNotice}>* Note: Outstanding financial balance remains unchanged on the ledger.</span>
+                  </div>
+                )}
 
-            {/* Clearance Certificate Action (US-1.2) */}
-            {(balance?.status === 'CLEARED' || balance?.has_override) ? (
-              <div style={styles.actionBlock}>
                 <button
                   onClick={generateCertificate}
                   style={styles.certBtn}
                   disabled={certLoading}
                 >
-                  {certLoading ? '⏳ Generating Certificate...' : '📄 Download Clearance Certificate'}
+                  {certLoading ? '⏳ Generating Certificate...' : '📄 Download Clearance Certificate (PDF)'}
                 </button>
               </div>
             ) : (
-              <div style={styles.actionBlock}>
-                <button
-                  onClick={handlePayRequest}
-                  style={payLoading ? { ...styles.payBtn, opacity: 0.7 } : styles.payBtn}
-                  disabled={payLoading}
-                >
-                  {payLoading ? '⏳ Generating...' : '💳 Pay Dues Now'}
-                </button>
-                <p style={styles.cardHelpNote}>Generates reference and opens MoMo prompt</p>
+              /* If student owes, show dues ledger breakdown */
+              <div style={styles.duesActiveTimeline}>
+                <div style={styles.timelineAlertBadge}>⚠️ ACTION REQUIRED: OUTSTANDING DUES</div>
+                
+                <div style={styles.ledgerCard}>
+                  <div style={styles.ledgerRow}>
+                    <span>Current Semester Dues:</span>
+                    <strong style={styles.ledgerAmount}>{balance?.current_dues}</strong>
+                  </div>
+                  <div style={styles.ledgerRow}>
+                    <span>Previous Carryover Balance:</span>
+                    <strong style={{ ...styles.ledgerAmount, color: parseFloat(balance?.previous_balance.replace('₵', '')) > 0 ? '#f43f5e' : '#0f172a' }}>
+                      {balance?.previous_balance}
+                    </strong>
+                  </div>
+                  <div style={styles.ledgerDivider} />
+                  <div style={{ ...styles.ledgerRow, ...styles.ledgerTotalRow }}>
+                    <span>Total Outstanding Balance:</span>
+                    <strong style={styles.ledgerTotalAmount}>{balance?.total_outstanding}</strong>
+                  </div>
+                </div>
+
+                <div style={styles.paymentActionsBlock}>
+                  <button
+                    onClick={handlePayRequest}
+                    style={payLoading ? { ...styles.payBtn, opacity: 0.7 } : styles.payBtn}
+                    disabled={payLoading}
+                  >
+                    {payLoading ? '⏳ Initiating Payment...' : '💳 Pay Semester Dues Now'}
+                  </button>
+                  <p style={styles.cardHelpNote}>Generates unique reference code and opens Mobile Money Gateway prompt</p>
+                </div>
               </div>
             )}
           </div>
+        </div>
 
-          {/* Reference display if pending */}
-          {reference && (
-            <div style={styles.referenceCard}>
-              <h3 style={styles.refTitle}>Momo Reference Info</h3>
-              <div style={styles.refCode}>{reference.reference}</div>
-              <p style={styles.refAmount}>Amount: {reference.amount}</p>
-              
-              {/* QR Code for scanning (AC 1.1.3 Requirement) */}
-              <div style={{ textAlign: 'center', margin: '14px 0' }}>
-                <span style={{ fontSize: '11px', fontWeight: '600', color: '#718096', display: 'block', marginBottom: '6px' }}>Scan QR to Pay:</span>
+        {/* Mobile USSD / QR Code display if reference is active */}
+        {reference && !isCleared && (
+          <div style={styles.lmsCard}>
+            <div style={styles.lmsCardHeader}>
+              <h3 style={styles.lmsCardTitle}>Mobile Money Reference Info</h3>
+            </div>
+            <div style={styles.refInfoContent}>
+              <p style={styles.refCodeSub}>Your generated reference code:</p>
+              <div style={styles.refCodeValue}>{reference.reference}</div>
+              <p style={styles.refAmountVal}>Amount to Pay: <strong>{reference.amount}</strong></p>
+
+              {/* QR Code */}
+              <div style={styles.qrBlock}>
+                <span style={styles.qrTitle}>Scan QR Code to Pay:</span>
                 <img 
                   src={`https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=${encodeURIComponent(reference.reference)}`} 
                   alt="Payment QR Code" 
-                  style={{ width: '110px', height: '110px', border: '1px solid #e2e8f0', padding: '4px', borderRadius: '8px', backgroundColor: '#fff', display: 'inline-block' }} 
+                  style={styles.qrImg} 
                 />
               </div>
 
               <div style={styles.refDivider} />
-              
+
               <button 
                 onClick={() => { setMomoStep(1); setShowMomoModal(true); }}
-                style={styles.simulatePayBtn}
+                style={styles.momoGateBtn}
               >
                 📱 Open MoMo Payment Interface
               </button>
 
-              <div style={styles.usdsBlock}>
-                <span style={styles.usdTitle}>Offline Manual USSD Code:</span>
-                <code>{reference.instructions}</code>
+              <div style={styles.ussdCodeBox}>
+                <span style={styles.ussdTitle}>Offline Manual USSD Code:</span>
+                <code style={styles.ussdCode}>{reference.instructions}</code>
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
-        {/* Class Fund Transparency Widget (US-7.2) */}
+        {/* Class Fund Transparency Dashboard (LMS STYLE WITH BLUE TOP BORDER) */}
         {classFund && (
-          <div style={styles.transparencyCard}>
-            <h3 style={styles.cardSectionTitle}>📊 Class Fund Transparency Dashboard (Level {student?.level})</h3>
-            <div style={styles.transparencyGrid}>
-              <div style={styles.transpBox}>
-                <span style={styles.transpLabel}>Total Dues Collected</span>
-                <strong style={styles.transpVal}>₵{parseFloat(classFund.total_collected).toFixed(2)}</strong>
+          <div style={styles.lmsCard}>
+            <div style={styles.lmsCardHeader}>
+              <h3 style={styles.lmsCardTitle}>Class Fund Transparency Dashboard (Level {student?.level})</h3>
+            </div>
+            <div style={styles.transpContent}>
+              <div style={styles.transpGrid}>
+                <div style={styles.transpBox}>
+                  <span style={styles.transpLabel}>Total Dues Collected</span>
+                  <strong style={styles.transpVal}>₵{parseFloat(classFund.total_collected).toFixed(2)}</strong>
+                </div>
+                <div style={styles.transpBox}>
+                  <span style={styles.transpLabel}>Total Expenses Disbursed</span>
+                  <strong style={{ ...styles.transpVal, color: '#f43f5e' }}>₵{parseFloat(classFund.total_spent).toFixed(2)}</strong>
+                </div>
+                <div style={styles.transpBox}>
+                  <span style={styles.transpLabel}>Current Fund Balance</span>
+                  <strong style={{ ...styles.transpVal, color: '#1e3a8a' }}>₵{parseFloat(classFund.current_balance).toFixed(2)}</strong>
+                </div>
               </div>
-              <div style={styles.transpBox}>
-                <span style={styles.transpLabel}>Total Expenses Disbursed</span>
-                <strong style={{ ...styles.transpVal, color: '#e53e3e' }}>₵{parseFloat(classFund.total_spent).toFixed(2)}</strong>
-              </div>
-              <div style={styles.transpBox}>
-                <span style={styles.transpLabel}>Current Fund Balance</span>
-                <strong style={{ ...styles.transpVal, color: '#2b6cb0' }}>₵{parseFloat(classFund.current_balance).toFixed(2)}</strong>
-              </div>
+
+              <h4 style={styles.tableHeading}>Approved Department Expenses / Projects</h4>
+              {classFund.recent_expenses.length === 0 ? (
+                <p style={styles.noDataText}>No expenditures have been approved yet this semester.</p>
+              ) : (
+                <div style={styles.tableWrapper}>
+                  <table style={styles.table}>
+                    <thead>
+                      <tr style={styles.tableHeaderRow}>
+                        <th style={{ ...styles.th, textAlign: 'left' }}>Date</th>
+                        <th style={{ ...styles.th, textAlign: 'left' }}>Description</th>
+                        <th style={{ ...styles.th, textAlign: 'left' }}>Approved By</th>
+                        <th style={{ ...styles.th, textAlign: 'right' }}>Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {classFund.recent_expenses.map((expense, idx) => (
+                        <tr key={idx} style={styles.tableRow}>
+                          <td style={{ ...styles.td, textAlign: 'left' }}>{new Date(expense.date).toLocaleDateString('en-GB')}</td>
+                          <td style={{ ...styles.td, textAlign: 'left' }}>{expense.description}</td>
+                          <td style={{ ...styles.td, textAlign: 'left' }}>{expense.approved_by || 'Dr. Joseph Darko'}</td>
+                          <td style={{ ...styles.td, textAlign: 'right', fontWeight: 'bold', color: '#0f172a' }}>₵{parseFloat(expense.amount).toFixed(2)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Dues Payment History Log (LMS STYLE WITH BLUE TOP BORDER) */}
+        <div style={styles.lmsCard}>
+          <div style={styles.lmsCardHeaderWithAction}>
+            <h3 style={styles.lmsCardTitle}>Dues Payment History</h3>
+            <button 
+              onClick={generateStatement}
+              style={styles.statementBtn}
+              disabled={statementLoading}
+            >
+              📥 Download Statement (PDF)
+            </button>
+          </div>
+
+          <div style={styles.historyContent}>
+            <div style={styles.filterBar}>
+              {['All', 'Level 100', 'Level 200', 'Level 300', 'Level 400'].map((filter) => (
+                <button
+                  key={filter}
+                  onClick={() => handleHistoryFilterChange(filter)}
+                  style={{
+                    ...styles.filterBtn,
+                    ...(historyFilter === filter ? styles.activeFilterBtn : {})
+                  }}
+                >
+                  {filter}
+                </button>
+              ))}
             </div>
 
-            <h4 style={styles.subSectionTitle}>Approved Class Projects / Expenditures</h4>
-            {classFund.recent_expenses.length === 0 ? (
-              <p style={styles.noExpensesText}>No expenses disbursed yet for Level {student?.level} this semester.</p>
+            {history.length === 0 ? (
+              <p style={styles.noDataText}>No transactions logged for the selected academic level.</p>
             ) : (
               <div style={styles.tableWrapper}>
                 <table style={styles.table}>
                   <thead>
                     <tr style={styles.tableHeaderRow}>
-                      <th style={styles.th}>Date</th>
-                      <th style={styles.th}>Project / Item Description</th>
-                      <th style={styles.th}>Approved By</th>
+                      <th style={{ ...styles.th, textAlign: 'left' }}>Date</th>
+                      <th style={{ ...styles.th, textAlign: 'left' }}>Reference Code</th>
+                      <th style={{ ...styles.th, textAlign: 'left' }}>Academic Semester</th>
+                      <th style={{ ...styles.th, textAlign: 'left' }}>Method</th>
+                      <th style={{ ...styles.th, textAlign: 'center' }}>Status</th>
                       <th style={{ ...styles.th, textAlign: 'right' }}>Amount</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {classFund.recent_expenses.map((expense, idx) => (
-                      <tr key={idx} style={styles.tableRow}>
-                        <td style={styles.td}>{new Date(expense.date).toLocaleDateString('en-GB')}</td>
-                        <td style={styles.td}>{expense.description}</td>
-                        <td style={styles.td}>{expense.approved_by || 'Dr. Joseph Darko'}</td>
-                        <td style={{ ...styles.td, textAlign: 'right', fontWeight: 'bold' }}>₵{parseFloat(expense.amount).toFixed(2)}</td>
+                    {history.map((tx) => (
+                      <tr key={tx.id} style={styles.tableRow}>
+                        <td style={{ ...styles.td, textAlign: 'left' }}>{new Date(tx.created_at).toLocaleDateString('en-GB')}</td>
+                        <td style={{ ...styles.td, textAlign: 'left' }}><code>{tx.payment_reference}</code></td>
+                        <td style={{ ...styles.td, textAlign: 'left' }}>{tx.academic_year} Sem {tx.semester}</td>
+                        <td style={{ ...styles.td, textAlign: 'left' }}>{tx.payment_method?.replace('MOMO_', '') || 'MoMo'}</td>
+                        <td style={{ ...styles.td, textAlign: 'center' }}>
+                          <span style={tx.status === 'RECONCILED' || tx.status === 'PAID' ? styles.statusBadgePaid : styles.statusBadgePending}>
+                            {tx.status}
+                          </span>
+                        </td>
+                        <td style={{ ...styles.td, textAlign: 'right', fontWeight: 'bold', color: '#0f172a' }}>₵{parseFloat(tx.amount).toFixed(2)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -514,70 +731,6 @@ const StudentDashboard = () => {
               </div>
             )}
           </div>
-        )}
-
-        {/* Payment History and Filters (US-8.2) */}
-        <div style={styles.historyCard}>
-          <div style={styles.historyHeader}>
-            <h3 style={styles.cardSectionTitle}>📋 Dues Payment History</h3>
-            <button 
-              onClick={generateStatement}
-              style={styles.statementBtn}
-              disabled={statementLoading}
-            >
-              {statementLoading ? 'Generating...' : '📥 Download Full Statement (PDF)'}
-            </button>
-          </div>
-
-          <div style={styles.filterBar}>
-            {['All', 'Level 100', 'Level 200', 'Level 300', 'Level 400'].map((filter) => (
-              <button
-                key={filter}
-                onClick={() => handleHistoryFilterChange(filter)}
-                style={{
-                  ...styles.filterBtn,
-                  ...(historyFilter === filter ? styles.activeFilterBtn : {})
-                }}
-              >
-                {filter}
-              </button>
-            ))}
-          </div>
-
-          {history.length === 0 ? (
-            <p style={styles.noHistoryText}>No payments logged for the selected filter.</p>
-          ) : (
-            <div style={styles.tableWrapper}>
-              <table style={styles.table}>
-                <thead>
-                  <tr style={styles.tableHeaderRow}>
-                    <th style={styles.th}>Date</th>
-                    <th style={styles.th}>Reference Code</th>
-                    <th style={styles.th}>Academic Semester</th>
-                    <th style={styles.th}>Payment Method</th>
-                    <th style={styles.th}>Status</th>
-                    <th style={{ ...styles.th, textAlign: 'right' }}>Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {history.map((tx) => (
-                    <tr key={tx.id} style={styles.tableRow}>
-                      <td style={styles.td}>{new Date(tx.created_at).toLocaleDateString('en-GB')}</td>
-                      <td style={styles.td}><code>{tx.payment_reference}</code></td>
-                      <td style={styles.td}>{tx.academic_year} Sem {tx.semester}</td>
-                      <td style={styles.td}>{tx.payment_method?.replace('MOMO_', '') || 'MoMo'}</td>
-                      <td style={styles.td}>
-                        <span style={tx.status === 'RECONCILED' || tx.status === 'PAID' ? styles.statusBadgePaid : styles.statusBadgePending}>
-                          {tx.status}
-                        </span>
-                      </td>
-                      <td style={{ ...styles.td, textAlign: 'right', fontWeight: 'bold' }}>₵{parseFloat(tx.amount).toFixed(2)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
         </div>
       </div>
 
@@ -641,7 +794,7 @@ const StudentDashboard = () => {
                     <input
                       type="password"
                       maxLength={4}
-                      placeholder="Enter 4-Digit Wallet PIN"
+                      placeholder="PIN"
                       value={momoPin}
                       onChange={(e) => setMomoPin(e.target.value)}
                       style={styles.phonePinInput}
@@ -688,231 +841,883 @@ const StudentDashboard = () => {
 };
 
 const styles = {
-  container: { minHeight: '100vh', backgroundColor: '#f0f4f8' },
-  loading: { display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontSize: '16px', color: '#003087', fontWeight: 'bold' },
+  container: { 
+    minHeight: '100vh', 
+    backgroundColor: '#f1f5f9',
+    fontFamily: "'Inter', sans-serif" 
+  },
+  loadingContainer: { 
+    display: 'flex', 
+    flexDirection: 'column',
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    height: '100vh',
+    backgroundColor: '#f1f5f9'
+  },
+  spinner: {
+    width: '40px',
+    height: '40px',
+    border: '4px solid #f3f3f3',
+    borderTop: '4px solid #1a56db',
+    borderRadius: '50%',
+    animation: 'spin 1s linear infinite'
+  },
   navbar: {
-    backgroundColor: '#0a2540', color: '#fff',
-    padding: '16px 30px', display: 'flex',
-    justifyContent: 'space-between', alignItems: 'center',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+    backgroundColor: '#ffffff', 
+    color: '#0f172a',
+    padding: '12px 24px', 
+    display: 'flex',
+    justifyContent: 'space-between', 
+    alignItems: 'center',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+    borderBottom: '1px solid #e2e8f0'
   },
-  navTitle: { margin: 0, fontSize: '18px', fontWeight: 'bold', letterSpacing: '0.3px' },
-  navRight: { display: 'flex', alignItems: 'center', gap: '16px' },
-  navUser: { fontSize: '14px', fontWeight: '500' },
-  logoutBtn: {
-    backgroundColor: 'transparent', border: '1px solid rgba(255,255,255,0.4)',
-    color: '#fff', padding: '6px 14px', borderRadius: '6px',
-    cursor: 'pointer', fontSize: '13px', transition: 'all 0.2s',
+  navLeft: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px'
   },
-  content: { maxWidth: '1100px', margin: '0 auto', padding: '30px' },
-  error: {
-    backgroundColor: '#fff5f5', border: '1px solid #feb2b2',
-    color: '#c53030', padding: '14px', borderRadius: '8px', marginBottom: '20px', fontSize: '14px'
+  menuBtn: {
+    backgroundColor: 'transparent',
+    border: 'none',
+    color: '#475569',
+    cursor: 'pointer',
+    padding: '4px',
+    display: 'flex',
+    alignItems: 'center'
   },
-  success: {
-    backgroundColor: '#f0fff4', border: '1px solid #c6f6d5',
-    color: '#22543d', padding: '14px', borderRadius: '8px', marginBottom: '20px', fontSize: '14px'
+  logoContainer: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px'
   },
-  welcomeCard: {
-    backgroundColor: '#fff', borderRadius: '12px',
-    padding: '28px', marginBottom: '24px',
-    boxShadow: '0 4px 20px rgba(0,0,0,0.03)',
-    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-    flexWrap: 'wrap', gap: '20px'
+  htuBadgeWrapper: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
   },
-  welcomeInfo: { display: 'flex', flexDirection: 'column', gap: '6px' },
-  welcomeTitle: { margin: '0', color: '#0a2540', fontSize: '24px', fontWeight: 'bold' },
-  welcomeSub: { margin: 0, color: '#627d98', fontSize: '14px' },
-  clearanceBadgeWrapper: {},
+  htuBadgeCircle: {
+    width: '32px',
+    height: '32px',
+    borderRadius: '50%',
+    backgroundColor: '#eff6ff',
+    border: '1.5px solid #1e3a8a',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  lmsText: {
+    fontSize: '20px',
+    fontWeight: '800',
+    color: '#1e3a8a',
+    letterSpacing: '0.5px'
+  },
+  navRight: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '16px'
+  },
+  bellWrapper: {
+    position: 'relative',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center'
+  },
+  bellBadge: {
+    position: 'absolute',
+    top: '-6px',
+    right: '-6px',
+    backgroundColor: '#ef4444',
+    color: '#ffffff',
+    fontSize: '9px',
+    fontWeight: 'bold',
+    width: '15px',
+    height: '15px',
+    borderRadius: '50%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  chatWrapper: {
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center'
+  },
+  profileCircle: {
+    width: '32px',
+    height: '32px',
+    borderRadius: '50%',
+    backgroundColor: '#ec4899',
+    color: '#ffffff',
+    fontWeight: 'bold',
+    fontSize: '14px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer'
+  },
+  toggleTrack: {
+    width: '36px',
+    height: '20px',
+    borderRadius: '10px',
+    cursor: 'pointer',
+    padding: '2px',
+    display: 'flex',
+    alignItems: 'center',
+    transition: 'background-color 0.2s'
+  },
+  toggleThumb: {
+    width: '16px',
+    height: '16px',
+    borderRadius: '50%',
+    backgroundColor: '#ffffff',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+    transition: 'transform 0.2s'
+  },
+  mobileMenu: {
+    backgroundColor: '#1e3a8a',
+    borderBottom: '1px solid #172554',
+    padding: '16px 24px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '12px'
+  },
+  mobileMenuHeader: {
+    borderBottom: '1px solid #1d4ed8',
+    paddingBottom: '8px',
+    display: 'flex',
+    flexDirection: 'column'
+  },
+  mobileMenuUser: {
+    color: '#ffffff',
+    fontSize: '14px',
+    fontWeight: '600'
+  },
+  mobileMenuIndex: {
+    color: '#93c5fd',
+    fontSize: '12px'
+  },
+  mobileMenuLogoutBtn: {
+    backgroundColor: '#ef4444',
+    color: '#ffffff',
+    border: 'none',
+    padding: '8px 16px',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontSize: '12px',
+    fontWeight: '600',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  content: {
+    maxWidth: '1100px',
+    margin: '0 auto',
+    padding: '20px 16px 40px 16px'
+  },
+  titleContainer: {
+    borderBottom: '2px solid #e2e8f0',
+    paddingBottom: '8px',
+    marginBottom: '20px'
+  },
+  dashboardTitle: {
+    margin: 0,
+    fontSize: '28px',
+    fontWeight: '700',
+    color: '#0f172a'
+  },
+  errorBox: {
+    backgroundColor: '#fef2f2',
+    border: '1px solid #fca5a5',
+    color: '#b91c1c',
+    padding: '12px 16px',
+    borderRadius: '8px',
+    marginBottom: '20px',
+    fontSize: '13px',
+    fontWeight: '500'
+  },
+  successBox: {
+    backgroundColor: '#f0fdf4',
+    border: '1px solid #86efac',
+    color: '#15803d',
+    padding: '12px 16px',
+    borderRadius: '8px',
+    marginBottom: '20px',
+    fontSize: '13px',
+    fontWeight: '500'
+  },
+  welcomeBanner: {
+    backgroundColor: '#ffffff',
+    borderRadius: '8px',
+    padding: '20px',
+    marginBottom: '20px',
+    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: '16px',
+    border: '1px solid #e2e8f0'
+  },
+  welcomeInfo: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '4px'
+  },
+  welcomeUserTitle: {
+    margin: 0,
+    fontSize: '18px',
+    fontWeight: '700',
+    color: '#0f172a'
+  },
+  welcomeUserSub: {
+    margin: 0,
+    fontSize: '12px',
+    color: '#475569'
+  },
+  welcomeStatus: {},
   badgeCleared: {
-    backgroundColor: '#e6fffa', color: '#234e52',
-    padding: '8px 18px', borderRadius: '30px',
-    fontWeight: 'bold', fontSize: '13px',
-    border: '1.5px solid #b2f5ea',
-    letterSpacing: '0.3px'
+    backgroundColor: '#d1fae5',
+    color: '#065f46',
+    padding: '6px 14px',
+    borderRadius: '20px',
+    fontWeight: '700',
+    fontSize: '11px',
+    letterSpacing: '0.3px',
+    display: 'inline-block'
   },
   badgeOwing: {
-    backgroundColor: '#fff5f5', color: '#742a2a',
-    padding: '8px 18px', borderRadius: '30px',
-    fontWeight: 'bold', fontSize: '13px',
-    border: '1.5px solid #fed7d7',
-    letterSpacing: '0.3px'
+    backgroundColor: '#ffe4e6',
+    color: '#9f1239',
+    padding: '6px 14px',
+    borderRadius: '20px',
+    fontWeight: '700',
+    fontSize: '11px',
+    letterSpacing: '0.3px',
+    display: 'inline-block'
   },
-  gridRow: { display: 'flex', gap: '24px', marginBottom: '24px', flexWrap: 'wrap' },
-  duesBreakdownCard: {
-    flex: 1.2, minWidth: '320px', backgroundColor: '#fff',
-    borderRadius: '12px', padding: '24px',
-    boxShadow: '0 4px 20px rgba(0,0,0,0.03)',
+  lmsCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: '8px',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+    border: '1px solid #e2e8f0',
+    borderTop: '3px solid #1a56db',
+    marginBottom: '20px',
+    overflow: 'hidden'
   },
-  cardSectionTitle: { margin: '0 0 16px 0', fontSize: '16px', fontWeight: 'bold', color: '#0a2540', borderBottom: '1px solid #f0f4f8', paddingBottom: '10px' },
-  ledgerRow: { display: 'flex', justifyContent: 'space-between', margin: '12px 0', fontSize: '14px', color: '#486581' },
-  ledgerAmount: { color: '#0a2540', fontWeight: '600' },
-  ledgerDivider: { height: '1px', backgroundColor: '#e2e8f0', margin: '14px 0' },
-  ledgerTotal: { fontSize: '16px', fontWeight: 'bold', color: '#0a2540', margin: '16px 0' },
-  ledgerAmountTotal: { fontSize: '18px', color: '#2b6cb0', fontWeight: 'bold' },
-  overrideAlert: {
-    backgroundColor: '#ebf8ff', border: '1px solid #bee3f8',
-    borderRadius: '8px', padding: '12px 16px', margin: '16px 0',
+  lmsCardHeader: {
+    padding: '16px 20px',
+    borderBottom: '1px solid #f1f5f9',
+    backgroundColor: '#fafafb'
   },
-  overrideReason: { fontSize: '13px', color: '#2b6cb0', margin: '4px 0', fontStyle: 'italic' },
-  overrideNotice: { fontSize: '11px', color: '#4a5568', opacity: 0.8 },
-  actionBlock: { marginTop: '20px', textAlign: 'center' },
+  lmsCardHeaderWithAction: {
+    padding: '14px 20px',
+    borderBottom: '1px solid #f1f5f9',
+    backgroundColor: '#fafafb',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: '12px'
+  },
+  lmsCardTitle: {
+    margin: 0,
+    fontSize: '15px',
+    fontWeight: '700',
+    color: '#1e3a8a'
+  },
+  timelineFilters: {
+    padding: '16px 20px 8px 20px',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: '12px',
+    borderBottom: '1px solid #f8fafc'
+  },
+  filterDropdowns: {
+    display: 'flex',
+    gap: '8px'
+  },
+  lmsSelect: {
+    backgroundColor: '#ffffff',
+    border: '1px solid #cbd5e1',
+    borderRadius: '4px',
+    padding: '5px 12px',
+    fontSize: '12px',
+    color: '#334155',
+    outline: 'none',
+    cursor: 'not-allowed'
+  },
+  timelineSearchWrapper: {
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center',
+    width: '100%',
+    maxWidth: '240px'
+  },
+  timelineSearchIcon: {
+    position: 'absolute',
+    left: '10px',
+    color: '#94a3b8'
+  },
+  timelineSearch: {
+    width: '100%',
+    padding: '5px 10px 5px 28px',
+    border: '1px solid #cbd5e1',
+    borderRadius: '4px',
+    fontSize: '12px',
+    outline: 'none',
+    cursor: 'not-allowed'
+  },
+  timelineContent: {
+    padding: '24px 20px'
+  },
+  lmsEmptyState: {
+    padding: '24px 0',
+    textAlign: 'center',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center'
+  },
+  emptyIconWrapper: {
+    width: '60px',
+    height: '60px',
+    borderRadius: '50%',
+    backgroundColor: '#f1f5f9',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: '14px'
+  },
+  emptyStateTitle: {
+    margin: 0,
+    fontSize: '16px',
+    fontWeight: '700',
+    color: '#0f172a'
+  },
+  emptyStateSub: {
+    margin: '6px 0 16px 0',
+    fontSize: '12px',
+    color: '#64748b',
+    maxWidth: '360px',
+    lineHeight: '1.5'
+  },
   certBtn: {
-    backgroundColor: '#003087', color: '#fff',
-    padding: '12px 30px', borderRadius: '8px',
-    border: 'none', fontSize: '14px', fontWeight: 'bold',
-    cursor: 'pointer', boxShadow: '0 4px 14px rgba(0, 48, 135, 0.3)',
-    width: '100%', transition: 'all 0.2s',
+    backgroundColor: '#1e3a8a',
+    color: '#ffffff',
+    border: 'none',
+    padding: '10px 24px',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontSize: '13px',
+    fontWeight: '600',
+    transition: 'all 0.2s',
+    boxShadow: '0 2px 4px rgba(30, 58, 138, 0.15)',
+    '&:hover': {
+      backgroundColor: '#172554'
+    }
+  },
+  overrideAlert: {
+    backgroundColor: '#eff6ff',
+    border: '1px solid #bfdbfe',
+    borderRadius: '6px',
+    padding: '12px',
+    marginBottom: '16px',
+    textAlign: 'left',
+    width: '100%',
+    maxWidth: '440px'
+  },
+  overrideReason: {
+    fontSize: '12px',
+    color: '#1e40af',
+    margin: '4px 0',
+    fontStyle: 'italic'
+  },
+  overrideNotice: {
+    fontSize: '10px',
+    color: '#64748b'
+  },
+  duesActiveTimeline: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '16px'
+  },
+  timelineAlertBadge: {
+    backgroundColor: '#fff1f2',
+    color: '#be123c',
+    padding: '8px 16px',
+    borderRadius: '6px',
+    fontSize: '12px',
+    fontWeight: '700',
+    alignSelf: 'flex-start',
+    border: '1px solid #fecdd3'
+  },
+  ledgerCard: {
+    backgroundColor: '#f8fafc',
+    border: '1px solid #e2e8f0',
+    borderRadius: '6px',
+    padding: '16px'
+  },
+  ledgerRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    padding: '6px 0',
+    fontSize: '13px',
+    color: '#334155'
+  },
+  ledgerAmount: {
+    fontWeight: '600',
+    color: '#0f172a'
+  },
+  ledgerDivider: {
+    height: '1px',
+    backgroundColor: '#e2e8f0',
+    margin: '8px 0'
+  },
+  ledgerTotalRow: {
+    fontWeight: '700',
+    fontSize: '14px',
+    color: '#1e3a8a',
+    paddingTop: '6px'
+  },
+  ledgerTotalAmount: {
+    fontSize: '16px',
+    color: '#1e3a8a'
+  },
+  paymentActionsBlock: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    gap: '6px'
   },
   payBtn: {
-    backgroundColor: '#2d6a4f', color: '#fff',
-    padding: '12px 30px', borderRadius: '8px',
-    border: 'none', fontSize: '14px', fontWeight: 'bold',
-    cursor: 'pointer', boxShadow: '0 4px 14px rgba(45, 106, 79, 0.3)',
-    width: '100%', transition: 'all 0.2s',
+    backgroundColor: '#10b981',
+    color: '#ffffff',
+    border: 'none',
+    padding: '12px 24px',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontSize: '13px',
+    fontWeight: '700',
+    boxShadow: '0 2px 4px rgba(16, 185, 129, 0.15)',
+    transition: 'all 0.2s',
+    '&:hover': {
+      backgroundColor: '#059669'
+    }
   },
-  cardHelpNote: { fontSize: '11px', color: '#829ab1', marginTop: '6px', margin: '6px 0 0 0' },
-  referenceCard: {
-    flex: 1, minWidth: '300px', backgroundColor: '#fff',
-    borderRadius: '12px', padding: '24px',
-    boxShadow: '0 4px 20px rgba(0,0,0,0.03)',
-    display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-    alignItems: 'center', border: '2px dashed #cbd5e0',
+  cardHelpNote: {
+    fontSize: '11px',
+    color: '#64748b',
+    margin: 0
   },
-  refTitle: { margin: '0', fontSize: '14px', fontWeight: 'bold', color: '#486581' },
-  refCode: {
-    fontSize: '26px', fontWeight: 'bold', color: '#003087',
-    backgroundColor: '#f7fafc', padding: '14px 24px', borderRadius: '8px',
-    margin: '12px 0', letterSpacing: '1px', border: '1px solid #e2e8f0',
+  refInfoContent: {
+    padding: '20px',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    textAlign: 'center'
   },
-  refAmount: { fontSize: '16px', fontWeight: 'bold', color: '#2e7d32', margin: '0' },
-  refDivider: { height: '1px', backgroundColor: '#e2e8f0', width: '100%', margin: '14px 0' },
-  simulatePayBtn: {
-    backgroundColor: '#1565c0', color: '#fff',
-    padding: '10px 18px', borderRadius: '6px',
-    border: 'none', fontSize: '13px', fontWeight: 'bold',
-    cursor: 'pointer', width: '100%', transition: 'all 0.2s',
+  refCodeSub: {
+    margin: 0,
+    fontSize: '12px',
+    color: '#64748b'
   },
-  usdsBlock: { width: '100%', textAlign: 'center', marginTop: '12px' },
-  usdTitle: { display: 'block', fontSize: '11px', color: '#718096', marginBottom: '4px' },
-  transparencyCard: {
-    backgroundColor: '#fff', borderRadius: '12px', padding: '24px',
-    boxShadow: '0 4px 20px rgba(0,0,0,0.03)', marginBottom: '24px',
+  refCodeValue: {
+    fontSize: '24px',
+    fontWeight: '800',
+    color: '#1e3a8a',
+    backgroundColor: '#f8fafc',
+    padding: '12px 24px',
+    borderRadius: '6px',
+    border: '1px solid #cbd5e1',
+    margin: '10px 0',
+    letterSpacing: '1px'
   },
-  transparencyGrid: { display: 'flex', gap: '16px', flexWrap: 'wrap', margin: '20px 0' },
+  refAmountVal: {
+    fontSize: '14px',
+    margin: 0,
+    color: '#0f172a'
+  },
+  qrBlock: {
+    margin: '16px 0',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '6px'
+  },
+  qrTitle: {
+    fontSize: '11px',
+    fontWeight: '600',
+    color: '#64748b'
+  },
+  qrImg: {
+    width: '110px',
+    height: '110px',
+    border: '1px solid #e2e8f0',
+    padding: '4px',
+    borderRadius: '8px',
+    backgroundColor: '#fff'
+  },
+  refDivider: {
+    height: '1px',
+    backgroundColor: '#e2e8f0',
+    width: '100%',
+    margin: '12px 0'
+  },
+  momoGateBtn: {
+    backgroundColor: '#1e3a8a',
+    color: '#ffffff',
+    border: 'none',
+    width: '100%',
+    maxWidth: '300px',
+    padding: '10px 16px',
+    borderRadius: '6px',
+    fontSize: '12px',
+    fontWeight: '600',
+    cursor: 'pointer',
+    transition: 'background-color 0.2s'
+  },
+  ussdCodeBox: {
+    marginTop: '12px',
+    textAlign: 'center'
+  },
+  ussdTitle: {
+    display: 'block',
+    fontSize: '10px',
+    color: '#64748b',
+    marginBottom: '2px'
+  },
+  ussdCode: {
+    fontSize: '11px',
+    color: '#0f172a',
+    fontWeight: '600',
+    backgroundColor: '#f1f5f9',
+    padding: '2px 8px',
+    borderRadius: '4px'
+  },
+  transpContent: {
+    padding: '20px'
+  },
+  transpGrid: {
+    display: 'flex',
+    gap: '14px',
+    flexWrap: 'wrap',
+    marginBottom: '20px'
+  },
   transpBox: {
-    flex: 1, minWidth: '160px', backgroundColor: '#f7fafc',
-    border: '1px solid #e2e8f0', borderRadius: '8px', padding: '16px',
+    flex: 1,
+    minWidth: '160px',
+    backgroundColor: '#f8fafc',
+    border: '1px solid #e2e8f0',
+    borderRadius: '6px',
+    padding: '14px'
   },
-  transpLabel: { fontSize: '11px', color: '#718096', fontWeight: 'bold', textTransform: 'uppercase', display: 'block', marginBottom: '6px' },
-  transpVal: { fontSize: '20px', color: '#2d6a4f', fontWeight: 'bold' },
-  subSectionTitle: { fontSize: '14px', fontWeight: 'bold', color: '#0a2540', margin: '20px 0 10px 0' },
-  noExpensesText: { fontSize: '13px', color: '#a0aec0', fontStyle: 'italic', margin: '10px 0' },
-  tableWrapper: { overflowX: 'auto', border: '1px solid #e2e8f0', borderRadius: '8px' },
-  table: { width: '100%', borderCollapse: 'collapse', fontSize: '13px' },
-  tableHeaderRow: { backgroundColor: '#f7fafc', borderBottom: '1.5px solid #e2e8f0' },
-  th: { padding: '12px 16px', textAlign: 'left', fontWeight: 'bold', color: '#4a5568' },
-  tableRow: { borderBottom: '1px solid #f0f4f8', transition: 'background-color 0.2s' },
-  td: { padding: '12px 16px', color: '#2d3748' },
-  historyCard: {
-    backgroundColor: '#fff', borderRadius: '12px', padding: '24px',
-    boxShadow: '0 4px 20px rgba(0,0,0,0.03)',
+  transpLabel: {
+    fontSize: '10px',
+    color: '#64748b',
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: '0.3px',
+    display: 'block',
+    marginBottom: '4px'
   },
-  historyHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' },
+  transpVal: {
+    fontSize: '18px',
+    fontWeight: '800'
+  },
+  tableHeading: {
+    fontSize: '13px',
+    fontWeight: '700',
+    color: '#1e3a8a',
+    margin: '20px 0 10px 0'
+  },
+  noDataText: {
+    fontSize: '12px',
+    color: '#64748b',
+    fontStyle: 'italic',
+    margin: '10px 0',
+    textAlign: 'center'
+  },
+  tableWrapper: {
+    overflowX: 'auto',
+    border: '1px solid #e2e8f0',
+    borderRadius: '6px'
+  },
+  table: {
+    width: '100%',
+    borderCollapse: 'collapse',
+    fontSize: '12px'
+  },
+  tableHeaderRow: {
+    backgroundColor: '#fafafb',
+    borderBottom: '1px solid #cbd5e1'
+  },
+  th: {
+    padding: '10px 14px',
+    fontWeight: '600',
+    color: '#475569',
+    textAlign: 'left'
+  },
+  tableRow: {
+    borderBottom: '1px solid #f1f5f9',
+    transition: 'background-color 0.2s'
+  },
+  td: {
+    padding: '10px 14px',
+    color: '#334155',
+    textAlign: 'left'
+  },
+  historyContent: {
+    padding: '20px'
+  },
   statementBtn: {
-    backgroundColor: '#f7fafc', border: '1.5px solid #cbd5e0',
-    color: '#4a5568', padding: '8px 16px', borderRadius: '6px',
-    cursor: 'pointer', fontSize: '12px', fontWeight: '600', transition: 'all 0.2s'
+    backgroundColor: '#ffffff',
+    border: '1px solid #cbd5e1',
+    color: '#334155',
+    padding: '6px 14px',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontSize: '11px',
+    fontWeight: '600',
+    display: 'flex',
+    alignItems: 'center',
+    transition: 'all 0.2s'
   },
-  filterBar: { display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' },
+  filterBar: {
+    display: 'flex',
+    gap: '6px',
+    marginBottom: '14px',
+    flexWrap: 'wrap'
+  },
   filterBtn: {
-    padding: '6px 14px', border: '1px solid #d9e2ec',
-    borderRadius: '20px', backgroundColor: '#fff',
-    fontSize: '12px', color: '#486581', cursor: 'pointer', transition: 'all 0.2s'
+    padding: '5px 12px',
+    border: '1px solid #cbd5e1',
+    borderRadius: '20px',
+    backgroundColor: '#ffffff',
+    fontSize: '11px',
+    color: '#475569',
+    cursor: 'pointer',
+    transition: 'all 0.2s'
   },
   activeFilterBtn: {
-    backgroundColor: '#003087', color: '#fff', borderColor: '#003087', fontWeight: 'bold'
+    backgroundColor: '#1e3a8a',
+    color: '#ffffff',
+    borderColor: '#1e3a8a',
+    fontWeight: '700'
   },
-  noHistoryText: { fontSize: '13px', color: '#a0aec0', fontStyle: 'italic', margin: '20px 0', textAlign: 'center' },
   statusBadgePaid: {
-    backgroundColor: '#c6f6d5', color: '#22543d', padding: '3px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold'
+    backgroundColor: '#d1fae5',
+    color: '#065f46',
+    padding: '3px 8px',
+    borderRadius: '12px',
+    fontSize: '10px',
+    fontWeight: '700',
+    display: 'inline-block'
   },
   statusBadgePending: {
-    backgroundColor: '#feebc8', color: '#744210', padding: '3px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold'
+    backgroundColor: '#fef3c7',
+    color: '#92400e',
+    padding: '3px 8px',
+    borderRadius: '12px',
+    fontSize: '10px',
+    fontWeight: '700',
+    display: 'inline-block'
   },
-  // Modal Styles
+
+  // MOMO MODAL STYLES
   modalOverlay: {
-    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: 'rgba(10, 37, 64, 0.65)', backdropFilter: 'blur(4px)',
-    display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000,
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+    backdropFilter: 'blur(4px)',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000
   },
   momoCard: {
-    backgroundColor: '#fff', width: '92%', maxWidth: '380px',
-    borderRadius: '16px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.15)',
+    backgroundColor: '#ffffff',
+    width: '92%',
+    maxWidth: '380px',
+    borderRadius: '12px',
+    overflow: 'hidden',
+    boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)'
   },
   momoHeader: {
-    backgroundColor: '#ffcc00', padding: '14px 20px', display: 'flex',
-    justifyContent: 'space-between', alignItems: 'center', fontWeight: 'bold',
-    color: '#000', fontSize: '14px',
+    backgroundColor: '#ffcc00',
+    padding: '12px 16px',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    fontWeight: '700',
+    color: '#000000',
+    fontSize: '13px'
   },
   closeModalBtn: {
-    border: 'none', background: 'transparent', fontSize: '20px', cursor: 'pointer', fontWeight: 'bold'
+    border: 'none',
+    background: 'transparent',
+    fontSize: '18px',
+    cursor: 'pointer',
+    fontWeight: '700'
   },
-  momoForm: { padding: '24px' },
-  momoPromptTitle: { margin: '0 0 10px 0', fontSize: '16px', color: '#0a2540', fontWeight: 'bold' },
-  momoText: { fontSize: '13px', color: '#627d98', lineHeight: '1.5', margin: '0 0 20px 0' },
-  providerRow: { display: 'flex', gap: '10px', marginBottom: '16px' },
+  momoForm: {
+    padding: '20px'
+  },
+  momoPromptTitle: {
+    margin: '0 0 6px 0',
+    fontSize: '15px',
+    color: '#0f172a',
+    fontWeight: '700'
+  },
+  momoText: {
+    fontSize: '12px',
+    color: '#64748b',
+    lineHeight: '1.5',
+    margin: '0 0 16px 0'
+  },
+  providerRow: {
+    display: 'flex',
+    gap: '8px',
+    marginBottom: '14px'
+  },
   providerBtn: {
-    flex: 1, padding: '10px', border: '1px solid #d9e2ec',
-    borderRadius: '8px', backgroundColor: '#fff', fontSize: '12px',
-    cursor: 'pointer', fontWeight: '600', color: '#627d98', transition: 'all 0.2s'
+    flex: 1,
+    padding: '8px',
+    border: '1px solid #cbd5e1',
+    borderRadius: '6px',
+    backgroundColor: '#ffffff',
+    fontSize: '11px',
+    cursor: 'pointer',
+    fontWeight: '600',
+    color: '#475569',
+    transition: 'all 0.2s'
   },
   activeMtn: {
-    backgroundColor: '#fff9db', borderColor: '#fab005', color: '#000'
+    backgroundColor: '#fffbeb',
+    borderColor: '#d97706',
+    color: '#78350f'
   },
   activeTelecel: {
-    backgroundColor: '#fff5f5', borderColor: '#fa5252', color: '#e53e3e'
+    backgroundColor: '#fef2f2',
+    borderColor: '#ef4444',
+    color: '#991b1b'
   },
-  momoLabel: { fontSize: '11px', fontWeight: 'bold', color: '#627d98', display: 'block', marginBottom: '6px' },
+  momoLabel: {
+    fontSize: '11px',
+    fontWeight: '600',
+    color: '#475569',
+    display: 'block',
+    marginBottom: '4px'
+  },
   momoInput: {
-    padding: '10px 14px', border: '1.5px solid #d9e2ec',
-    borderRadius: '8px', fontSize: '14px', outline: 'none', width: '100%', boxSizing: 'border-box'
+    padding: '8px 12px',
+    border: '1px solid #cbd5e1',
+    borderRadius: '6px',
+    fontSize: '13px',
+    outline: 'none',
+    width: '100%',
+    boxSizing: 'border-box'
   },
   momoSubmitBtn: {
-    backgroundColor: '#ffcc00', color: '#000', border: 'none',
-    width: '100%', padding: '12px', borderRadius: '8px', fontSize: '14px',
-    fontWeight: 'bold', cursor: 'pointer', marginTop: '16px', transition: 'opacity 0.2s'
+    backgroundColor: '#ffcc00',
+    color: '#000',
+    border: 'none',
+    width: '100%',
+    padding: '10px',
+    borderRadius: '6px',
+    fontSize: '13px',
+    fontWeight: '700',
+    cursor: 'pointer',
+    marginTop: '12px',
+    transition: 'opacity 0.2s'
   },
   simulatedPhoneScreen: {
-    backgroundColor: '#1a1a1a', borderRadius: '12px', padding: '20px',
-    color: '#fff', fontFamily: 'monospace', textAlign: 'center', boxShadow: 'inset 0 0 10px rgba(0,0,0,0.8)'
+    backgroundColor: '#18181b',
+    borderRadius: '8px',
+    padding: '16px',
+    color: '#ffffff',
+    fontFamily: 'monospace',
+    textAlign: 'center'
   },
   phoneHeader: {
-    fontSize: '11px', color: '#888', borderBottom: '1px solid #333', paddingBottom: '6px', marginBottom: '14px'
+    fontSize: '10px',
+    color: '#a1a1aa',
+    borderBottom: '1px solid #27272a',
+    paddingBottom: '4px',
+    marginBottom: '12px'
   },
-  phonePrompt: { fontSize: '12px', lineHeight: '1.6', color: '#ddd', marginBottom: '16px' },
+  phonePrompt: {
+    fontSize: '11px',
+    lineHeight: '1.5',
+    color: '#e4e4e7',
+    marginBottom: '14px'
+  },
   phonePinInput: {
-    backgroundColor: '#2a2a2a', border: '1px solid #444', color: '#fff',
-    padding: '8px', borderRadius: '6px', fontSize: '18px', textAlign: 'center',
-    width: '120px', letterSpacing: '4px', outline: 'none'
+    backgroundColor: '#27272a',
+    border: '1px solid #3f3f46',
+    color: '#ffffff',
+    padding: '6px',
+    borderRadius: '4px',
+    fontSize: '16px',
+    textAlign: 'center',
+    width: '100px',
+    letterSpacing: '3px',
+    outline: 'none'
   },
-  phoneActions: { display: 'flex', justifyContent: 'space-around', marginTop: '20px' },
+  phoneActions: {
+    display: 'flex',
+    justifyContent: 'space-around',
+    marginTop: '16px'
+  },
   phoneBtn: {
-    border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '13px', fontFamily: 'monospace'
+    border: 'none',
+    background: 'transparent',
+    cursor: 'pointer',
+    fontSize: '12px',
+    fontFamily: 'monospace'
   },
   momoSuccessState: {
-    padding: '30px 24px', textAlign: 'center'
+    padding: '24px 16px',
+    textAlign: 'center'
   },
   successIcon: {
-    width: '50px', height: '50px', borderRadius: '50%', backgroundColor: '#e6fffa',
-    color: '#38b2ac', fontSize: '24px', fontWeight: 'bold', display: 'flex',
-    justifyContent: 'center', alignItems: 'center', margin: '0 auto 16px auto'
+    width: '40px',
+    height: '40px',
+    borderRadius: '50%',
+    backgroundColor: '#d1fae5',
+    color: '#059669',
+    fontSize: '20px',
+    fontWeight: '700',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    margin: '0 auto 12px auto'
   },
-  successText: { margin: '0 0 8px 0', fontSize: '16px', color: '#0a2540', fontWeight: 'bold' },
-  successDesc: { fontSize: '13px', color: '#627d98', lineHeight: '1.5', margin: '0 0 20px 0' },
+  successText: {
+    margin: '0 0 6px 0',
+    fontSize: '15px',
+    color: '#0f172a',
+    fontWeight: '700'
+  },
+  successDesc: {
+    fontSize: '12px',
+    color: '#64748b',
+    lineHeight: '1.5',
+    margin: '0 0 16px 0'
+  },
   closeSuccessBtn: {
-    backgroundColor: '#003087', color: '#fff', border: 'none',
-    padding: '10px 24px', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer'
+    backgroundColor: '#1e3a8a',
+    color: '#ffffff',
+    border: 'none',
+    padding: '8px 20px',
+    borderRadius: '6px',
+    fontSize: '12px',
+    fontWeight: '600',
+    cursor: 'pointer'
   }
 };
 

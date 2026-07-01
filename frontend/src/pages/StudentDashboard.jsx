@@ -25,7 +25,8 @@ import {
   TrendingUp,
   Inbox,
   Search,
-  MessageSquare
+  MessageSquare,
+  LogOut
 } from 'lucide-react';
 
 const StudentDashboard = () => {

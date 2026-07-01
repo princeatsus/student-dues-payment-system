@@ -185,23 +185,23 @@ const ExpenseDashboard = () => {
 
         {/* Stats Row */}
         <div style={styles.cardsRow}>
-          <div style={styles.statCard}>
+          <div style={{ ...styles.statCard, borderTop: '4px solid #3b82f6' }}>
             <p style={styles.statLabel}>Total Requests</p>
             <p style={styles.statValue}>{expenses.length}</p>
           </div>
-          <div style={styles.statCard}>
+          <div style={{ ...styles.statCard, borderTop: '4px solid #f59e0b' }}>
             <p style={styles.statLabel}>Pending HOD</p>
             <p style={{ ...styles.statValue, color: '#d69e2e' }}>
               {expenses.filter(e => e.status === 'PENDING_HOD').length}
             </p>
           </div>
-          <div style={styles.statCard}>
+          <div style={{ ...styles.statCard, borderTop: '4px solid #8b5cf6' }}>
             <p style={styles.statLabel}>Pending Finance</p>
             <p style={{ ...styles.statValue, color: '#3182ce' }}>
               {expenses.filter(e => e.status === 'PENDING_FINANCE').length}
             </p>
           </div>
-          <div style={styles.statCard}>
+          <div style={{ ...styles.statCard, borderTop: '4px solid #10b981' }}>
             <p style={styles.statLabel}>Disbursed</p>
             <p style={{ ...styles.statValue, color: '#38a169' }}>
               {expenses.filter(e => e.status === 'DISBURSED').length}
@@ -220,7 +220,11 @@ const ExpenseDashboard = () => {
         <div style={styles.section}>
           <h2 style={styles.sectionTitle}>📋 All Expense Requests</h2>
           {expenses.length === 0 ? (
-            <p style={styles.empty}>No expense requests found.</p>
+            <div style={styles.emptyState}>
+              <div style={styles.emptyIcon}>📋</div>
+              <p style={styles.emptyText}>No expense requests found</p>
+              <p style={styles.emptySub}>All digital requisitions and reimbursement proofs will appear here.</p>
+            </div>
           ) : (
             <div style={styles.tableWrapper}>
               <table style={styles.table}>
@@ -476,89 +480,104 @@ const ExpenseDashboard = () => {
 };
 
 const styles = {
-  container: { minHeight: '100vh', backgroundColor: '#f0f4f8' },
-  loading: { display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontSize: '15px', color: '#003087', fontWeight: 'bold' },
+  container: { minHeight: '100vh', backgroundColor: '#f8fafc', fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" },
+  loading: { display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontSize: '15px', color: '#1a56db', fontWeight: 'bold' },
   navbar: {
-    backgroundColor: '#0a2540', color: '#fff',
-    padding: '16px 30px', display: 'flex',
+    backgroundColor: '#ffffff', color: '#1e293b',
+    padding: '14px 24px', display: 'flex',
     justifyContent: 'space-between', alignItems: 'center',
+    borderBottom: '1px solid #f1f5f9',
+    position: 'sticky', top: 0, zIndex: 100,
+    boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
   },
-  navTitle: { margin: 0, fontSize: '18px', fontWeight: 'bold' },
-  navRight: { display: 'flex', alignItems: 'center', gap: '12px' },
-  navUser: { fontSize: '13px' },
+  navTitle: { margin: 0, fontSize: '18px', fontWeight: '800', color: '#1e293b' },
+  navRight: { display: 'flex', alignItems: 'center', gap: '16px' },
+  navUser: { fontSize: '13px', color: '#64748b', fontWeight: '600' },
   navBtn: {
-    backgroundColor: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.3)',
-    padding: '6px 14px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', marginRight: '6px'
+    backgroundColor: '#f1f5f9', color: '#475569', border: 'none',
+    padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontSize: '12px', fontWeight: '600',
+    transition: 'all 0.2s ease', marginRight: '6px'
   },
   logoutBtn: {
-    backgroundColor: 'transparent', border: '1px solid #fff',
-    color: '#fff', padding: '6px 14px', borderRadius: '6px',
-    cursor: 'pointer', fontSize: '12px',
+    backgroundColor: '#fee2e2', border: 'none',
+    color: '#ef4444', padding: '8px 16px', borderRadius: '8px',
+    cursor: 'pointer', fontSize: '12px', fontWeight: '600',
+    transition: 'all 0.2s ease'
   },
-  content: { maxWidth: '1100px', margin: '0 auto', padding: '30px' },
+  content: { maxWidth: '1200px', margin: '0 auto', padding: '32px' },
   error: {
-    backgroundColor: '#fff5f5', border: '1px solid #feb2b2',
-    color: '#c53030', padding: '12px', borderRadius: '8px', marginBottom: '20px', fontSize: '13px'
+    backgroundColor: '#fef2f2', border: '1px solid #fca5a5',
+    color: '#b91c1c', padding: '14px', borderRadius: '12px', marginBottom: '24px', fontSize: '13px', fontWeight: '500'
   },
   success: {
-    backgroundColor: '#f0fff4', border: '1px solid #c6f6d5',
-    color: '#22543d', padding: '12px', borderRadius: '8px', marginBottom: '20px', fontSize: '13px'
+    backgroundColor: '#f0fdf4', border: '1px solid #86efac',
+    color: '#15803d', padding: '14px', borderRadius: '12px', marginBottom: '24px', fontSize: '13px', fontWeight: '500'
   },
-  cardsRow: { display: 'flex', gap: '16px', marginBottom: '24px', flexWrap: 'wrap' },
+  cardsRow: { display: 'flex', gap: '20px', marginBottom: '32px', flexWrap: 'wrap' },
   statCard: {
-    flex: 1, minWidth: '160px', backgroundColor: '#fff', borderRadius: '12px', padding: '20px',
-    boxShadow: '0 4px 20px rgba(0,0,0,0.03)'
+    flex: 1, minWidth: '200px', backgroundColor: '#fff', borderRadius: '16px', padding: '24px',
+    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
+    borderTop: '4px solid #3b82f6',
+    transition: 'transform 0.2s ease'
   },
-  statLabel: { margin: '0 0 6px 0', color: '#627d98', fontSize: '12px', fontWeight: '600' },
-  statValue: { margin: 0, fontSize: '22px', fontWeight: 'bold', color: '#0a2540' },
+  statLabel: { margin: '0 0 8px 0', color: '#64748b', fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' },
+  statValue: { margin: 0, fontSize: '28px', fontWeight: '800', color: '#1e293b' },
   submitBtn: {
-    backgroundColor: '#003087', color: '#fff', padding: '12px 24px', borderRadius: '8px',
-    border: 'none', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold', marginBottom: '24px'
+    backgroundColor: '#1a56db', color: '#fff', padding: '12px 24px', borderRadius: '10px',
+    border: 'none', cursor: 'pointer', fontSize: '14px', fontWeight: '700', marginBottom: '32px',
+    boxShadow: '0 4px 12px rgba(26, 86, 219, 0.2)', transition: 'all 0.2s ease'
   },
-  section: { backgroundColor: '#fff', borderRadius: '12px', padding: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' },
-  sectionTitle: { margin: '0 0 16px 0', fontSize: '16px', fontWeight: 'bold', color: '#0a2540' },
-  empty: { fontStyle: 'italic', color: '#a0aec0', fontSize: '13px' },
+  section: { 
+    backgroundColor: '#fff', borderRadius: '16px', padding: '28px', 
+    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
+    borderTop: '3px solid #1a56db'
+  },
+  sectionTitle: { margin: '0 0 20px 0', fontSize: '16px', fontWeight: '800', color: '#1e293b' },
+  emptyState: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 24px', textAlign: 'center' },
+  emptyIcon: { fontSize: '48px', marginBottom: '16px' },
+  emptyText: { margin: '0 0 6px 0', fontSize: '16px', fontWeight: '700', color: '#1e293b' },
+  emptySub: { margin: 0, fontSize: '13px', color: '#64748b' },
   tableWrapper: { overflowX: 'auto' },
   table: { width: '100%', borderCollapse: 'collapse', fontSize: '13px' },
-  tableHeader: { borderBottom: '2.5px solid #e2e8f0', backgroundColor: '#f7fafc' },
-  th: { padding: '12px 16px', color: '#4a5568', fontWeight: 'bold', textAlign: 'left' },
-  tableRow: { borderBottom: '1px solid #f0f4f8' },
-  td: { padding: '12px 16px', color: '#2d3748' },
+  tableHeader: { borderBottom: '2.5px solid #e2e8f0', backgroundColor: '#f8fafc' },
+  th: { padding: '14px 16px', color: '#475569', fontWeight: '700', textAlign: 'left', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' },
+  tableRow: { borderBottom: '1px solid #f1f5f9' },
+  td: { padding: '16px', color: '#334155', verticalAlign: 'middle' },
   previewBtn: {
-    backgroundColor: '#ebf8ff', border: '1px solid #90cdf4', color: '#2b6cb0',
-    padding: '3px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold'
+    backgroundColor: '#f1f5f9', border: '1px solid #e2e8f0', color: '#475569',
+    padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '11px', fontWeight: '600',
+    transition: 'all 0.2s'
   },
   statusBadge: {
-    padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold', textTransform: 'capitalize'
+    padding: '6px 12px', borderRadius: '9999px', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.03em'
   },
   actionBtn: {
-    color: '#fff', border: 'none', padding: '6px 14px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold'
+    color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '11px', fontWeight: '700', transition: 'all 0.2s'
   },
   modalOverlay: {
     position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
-    backgroundColor: 'rgba(10,37,64,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
+    backgroundColor: 'rgba(15, 23, 42, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
   },
-  modal: { backgroundColor: '#fff', borderRadius: '12px', padding: '28px', maxWidth: '500px', width: '90%', maxHeight: '90vh', overflowY: 'auto' },
-  modalTitle: { margin: '0 0 16px 0', color: '#0a2540' },
-  modalSub: { margin: '-8px 0 16px 0', color: '#627d98', fontSize: '13px' },
-  modalGroup: { marginBottom: '14px' },
-  modalLabel: { display: 'block', fontSize: '12px', fontWeight: '600', color: '#334e68', marginBottom: '6px' },
-  modalInput: { width: '100%', padding: '10px 14px', borderRadius: '6px', border: '1px solid #d9e2ec', fontSize: '13px', outline: 'none', boxSizing: 'border-box' },
-  modalTextarea: { width: '100%', padding: '10px 14px', borderRadius: '6px', border: '1px solid #d9e2ec', fontSize: '13px', outline: 'none', resize: 'vertical', boxSizing: 'border-box' },
-  modalSelect: { width: '100%', padding: '10px 14px', borderRadius: '6px', border: '1px solid #d9e2ec', fontSize: '13px', outline: 'none', backgroundColor: '#fff', boxSizing: 'border-box' },
-  fileHelp: { display: 'block', fontSize: '11px', color: '#829ab1', marginTop: '4px' },
-  modalActions: { display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '20px' },
-  modalCancel: { backgroundColor: '#e2e8f0', color: '#4a5568', border: 'none', padding: '10px 20px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' },
-  modalConfirm: { backgroundColor: '#003087', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' },
-  // Image preview card
+  modal: { backgroundColor: '#fff', borderRadius: '16px', padding: '32px', maxWidth: '520px', width: '90%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' },
+  modalTitle: { margin: '0 0 16px 0', color: '#1e293b', fontWeight: '800' },
+  modalSub: { margin: '-8px 0 20px 0', color: '#64748b', fontSize: '13px' },
+  modalGroup: { marginBottom: '16px' },
+  modalLabel: { display: 'block', fontSize: '12px', fontWeight: '700', color: '#475569', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.02em' },
+  modalInput: { width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.2s' },
+  modalTextarea: { width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', outline: 'none', resize: 'vertical', boxSizing: 'border-box', transition: 'border-color 0.2s' },
+  modalSelect: { width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', outline: 'none', backgroundColor: '#fff', boxSizing: 'border-box', transition: 'border-color 0.2s' },
+  fileHelp: { display: 'block', fontSize: '11px', color: '#64748b', marginTop: '4px' },
+  modalActions: { display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '24px' },
+  modalCancel: { backgroundColor: '#f1f5f9', color: '#475569', border: 'none', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '600' },
+  modalConfirm: { backgroundColor: '#1a56db', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '700' },
   previewCard: {
-    backgroundColor: '#fff', borderRadius: '12px', overflow: 'hidden', maxWidth: '600px', width: '92%', boxShadow: '0 20px 40px rgba(0,0,0,0.15)'
+    backgroundColor: '#fff', borderRadius: '16px', overflow: 'hidden', maxWidth: '640px', width: '92%', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
   },
   previewHeader: {
-    backgroundColor: '#0a2540', color: '#fff', padding: '12px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 'bold', fontSize: '13px'
+    backgroundColor: '#1e293b', color: '#fff', padding: '14px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 'bold', fontSize: '13px'
   },
-  closePreviewBtn: { border: 'none', background: 'transparent', color: '#fff', fontSize: '18px', cursor: 'pointer' },
-  previewImg: { width: '100%', maxHeight: '70vh', objectFit: 'contain', backgroundColor: '#eaeaea' }
+  closePreviewBtn: { border: 'none', background: 'transparent', color: '#fff', fontSize: '20px', cursor: 'pointer' },
+  previewImg: { width: '100%', maxHeight: '72vh', objectFit: 'contain', backgroundColor: '#f8fafc' }
 };
 
 export default ExpenseDashboard;

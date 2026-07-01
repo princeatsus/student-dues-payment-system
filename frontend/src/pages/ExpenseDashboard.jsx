@@ -363,92 +363,86 @@ const ExpenseDashboard = () => {
               <p style={styles.emptySub}>All digital requisitions and reimbursement proofs will appear here.</p>
             </div>
           ) : (
-            <div style={styles.tableWrapper}>
-              <table style={styles.table}>
-                <thead>
-                  <tr style={styles.tableHeader}>
-                    <th style={styles.th}>Item</th>
-                    <th style={styles.th}>Amount</th>
-                    <th style={styles.th}>Vendor</th>
-                    <th style={styles.th}>Level</th>
-                    <th style={styles.th}>Quote</th>
-                    <th style={styles.th}>Voucher</th>
-                    <th style={styles.th}>Status</th>
-                    <th style={styles.th}>Requested By</th>
-                    <th style={styles.th}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredExpenses.map((exp) => (
-                    <tr key={exp.id} style={styles.tableRow}>
-                      <td style={styles.td}>{exp.item_description}</td>
-                      <td style={styles.td}>₵{parseFloat(exp.amount).toFixed(2)}</td>
-                      <td style={styles.td}>{exp.vendor_name || '—'}</td>
-                      <td style={styles.td}>Level {exp.target_level}</td>
+            <div style={styles.cardsList}>
+              {filteredExpenses.map((exp) => (
+                <div key={exp.id} style={styles.expenseListItem} onClick={() => {
+                  if (exp.attachment_url) setPreviewImage(exp.attachment_url);
+                }}>
+                  <div style={styles.itemLeft}>
+                    <div style={styles.itemAvatar}>
+                      {exp.item_description.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <h4 style={styles.itemDesc}>{exp.item_description}</h4>
+                      <p style={styles.itemMeta}>
+                        {new Date(exp.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} • by {exp.requested_by_name}
+                      </p>
+                      <p style={styles.itemVendor}>
+                        {exp.vendor_name || 'No vendor'} • Level {exp.target_level}
+                      </p>
                       
-                      {/* Quote Attachment */}
-                      <td style={styles.td}>
-                        {exp.attachment_url ? (
-                          <button onClick={() => setPreviewImage(exp.attachment_url)} style={styles.previewBtn}>
-                            📄 View
-                          </button>
-                        ) : 'None'}
-                      </td>
-
-                      {/* Disbursement Proof */}
-                      <td style={styles.td}>
-                        {exp.disbursement_proof_url ? (
-                          <button onClick={() => setPreviewImage(exp.disbursement_proof_url)} style={styles.previewBtn}>
-                            📄 Receipt
-                          </button>
-                        ) : 'None'}
-                      </td>
-
-                      <td style={styles.td}>
-                        <span style={{
-                          ...styles.statusBadge,
-                          backgroundColor: 
-                            exp.status === 'PENDING_HOD' ? '#fefcbf' :
-                            exp.status === 'PENDING_FINANCE' ? '#bee3f8' :
-                            exp.status === 'DISBURSED' ? '#c6f6d5' :
-                            exp.status === 'REJECTED' ? '#fed7d7' : '#e2e8f0',
-                          color:
-                            exp.status === 'PENDING_HOD' ? '#975a16' :
-                            exp.status === 'PENDING_FINANCE' ? '#2a69ac' :
-                            exp.status === 'DISBURSED' ? '#276749' :
-                            exp.status === 'REJECTED' ? '#9b2c2c' : '#4a5568',
-                        }}>
-                          {exp.status.replace('_', ' ')}
-                        </span>
-                      </td>
-                      <td style={styles.td}>{exp.requested_by_name}</td>
-                      <td style={styles.td}>
-                        {isHOD && exp.status === 'PENDING_HOD' && (
-                          <>
-                            <button onClick={() => handleApprove(exp.id)} style={{ ...styles.actionBtn, backgroundColor: '#38a169' }}>Approve</button>
-                            <button onClick={() => handleReject(exp.id)} style={{ ...styles.actionBtn, backgroundColor: '#e53e3e', marginLeft: '6px' }}>Reject</button>
-                          </>
+                      {/* Attachment Link indicators inside the meta section */}
+                      <div style={{ marginTop: '6px', display: 'flex', gap: '8px' }}>
+                        {exp.attachment_url && (
+                          <span style={styles.cardLinkBadge}>📄 Invoice</span>
                         )}
-                        {isAccountant && exp.status === 'PENDING_FINANCE' && (
-                          <button onClick={() => handleOpenDisburseModal(exp.id)} style={{ ...styles.actionBtn, backgroundColor: '#3182ce' }}>Disburse</button>
+                        {exp.disbursement_proof_url && (
+                          <span onClick={(e) => { e.stopPropagation(); setPreviewImage(exp.disbursement_proof_url); }} style={{ ...styles.cardLinkBadge, backgroundColor: '#e0f2fe', color: '#0369a1' }}>
+                            🧾 Receipt
+                          </span>
                         )}
-                        {isCourseRep && exp.status === 'PENDING_HOD' && (
-                          <span style={{ fontSize: '12px', color: '#718096' }}>Awaiting HOD</span>
-                        )}
-                        {isCourseRep && exp.status === 'PENDING_FINANCE' && (
-                          <span style={{ fontSize: '12px', color: '#718096' }}>Awaiting Finance</span>
-                        )}
-                        {exp.status === 'DISBURSED' && (
-                          <span style={{ fontSize: '12px', color: '#38a169' }}>✅ Disbursed</span>
-                        )}
-                        {exp.status === 'REJECTED' && (
-                          <span style={{ fontSize: '12px', color: '#e53e3e' }}>❌ Rejected</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      </div>
+                    </div>
+                  </div>
+                  <div style={styles.itemRight}>
+                    <span style={styles.itemAmount}>₵{parseFloat(exp.amount).toFixed(2)}</span>
+                    <span style={{
+                      ...styles.statusBadge,
+                      fontSize: '10px',
+                      padding: '4px 8px',
+                      marginTop: '4px',
+                      display: 'inline-block',
+                      backgroundColor: 
+                        exp.status === 'PENDING_HOD' ? '#fefcbf' :
+                        exp.status === 'PENDING_FINANCE' ? '#bee3f8' :
+                        exp.status === 'DISBURSED' ? '#c6f6d5' :
+                        exp.status === 'REJECTED' ? '#fed7d7' : '#e2e8f0',
+                      color:
+                        exp.status === 'PENDING_HOD' ? '#975a16' :
+                        exp.status === 'PENDING_FINANCE' ? '#2a69ac' :
+                        exp.status === 'DISBURSED' ? '#276749' :
+                        exp.status === 'REJECTED' ? '#9b2c2c' : '#4a5568',
+                    }}>
+                      {exp.status.replace('_', ' ')}
+                    </span>
+                    
+                    {/* Action buttons if applicable */}
+                    <div style={{ marginTop: '8px', display: 'flex', gap: '6px', justifyContent: 'flex-end' }} onClick={(e) => e.stopPropagation()}>
+                      {isHOD && exp.status === 'PENDING_HOD' && (
+                        <>
+                          <button onClick={() => handleApprove(exp.id)} style={{ ...styles.actionBtn, backgroundColor: '#10b981' }}>Approve</button>
+                          <button onClick={() => handleReject(exp.id)} style={{ ...styles.actionBtn, backgroundColor: '#ef4444' }}>Reject</button>
+                        </>
+                      )}
+                      {isAccountant && exp.status === 'PENDING_FINANCE' && (
+                        <button onClick={() => handleOpenDisburseModal(exp.id)} style={{ ...styles.actionBtn, backgroundColor: '#3b82f6' }}>Disburse</button>
+                      )}
+                      {isCourseRep && exp.status === 'PENDING_HOD' && (
+                        <span style={{ fontSize: '11px', color: '#94a3b8' }}>Awaiting HOD</span>
+                      )}
+                      {isCourseRep && exp.status === 'PENDING_FINANCE' && (
+                        <span style={{ fontSize: '11px', color: '#94a3b8' }}>Awaiting Finance</span>
+                      )}
+                      {exp.status === 'DISBURSED' && (
+                        <span style={{ fontSize: '11px', color: '#10b981', fontWeight: 'bold' }}>✅ Disbursed</span>
+                      )}
+                      {exp.status === 'REJECTED' && (
+                        <span style={{ fontSize: '11px', color: '#ef4444', fontWeight: 'bold' }}>❌ Rejected</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
@@ -866,6 +860,78 @@ const styles = {
     color: '#94a3b8',
     textTransform: 'uppercase',
     letterSpacing: '0.05em'
+  },
+  cardsList: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '12px',
+    marginTop: '16px'
+  },
+  expenseListItem: {
+    backgroundColor: '#ffffff',
+    borderRadius: '16px',
+    padding: '16px 20px',
+    border: '1.5px solid #f1f5f9',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    cursor: 'pointer',
+    transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.01)',
+    boxSizing: 'border-box'
+  },
+  itemLeft: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '16px'
+  },
+  itemAvatar: {
+    width: '44px',
+    height: '44px',
+    borderRadius: '50%',
+    backgroundColor: '#f1f5f9',
+    color: '#475569',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontWeight: '800',
+    fontSize: '16px'
+  },
+  itemDesc: {
+    margin: '0 0 4px 0',
+    fontSize: '15px',
+    fontWeight: '700',
+    color: '#1e293b'
+  },
+  itemMeta: {
+    margin: 0,
+    fontSize: '12px',
+    color: '#64748b'
+  },
+  itemVendor: {
+    margin: '4px 0 0 0',
+    fontSize: '11px',
+    color: '#94a3b8',
+    fontStyle: 'italic'
+  },
+  itemRight: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-end'
+  },
+  itemAmount: {
+    fontSize: '16px',
+    fontWeight: '800',
+    color: '#1e293b'
+  },
+  cardLinkBadge: {
+    fontSize: '10px',
+    fontWeight: '600',
+    backgroundColor: '#f1f5f9',
+    color: '#475569',
+    padding: '2px 6px',
+    borderRadius: '4px',
+    display: 'inline-block'
   }
 };
 

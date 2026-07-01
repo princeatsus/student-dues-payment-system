@@ -396,7 +396,7 @@ const StudentDashboard = () => {
         <div style={styles.navLeft}>
           {isMobile && (
             <button onClick={() => setMenuOpen(!menuOpen)} style={styles.menuBtn}>
-              {menuOpen ? <X size={20} /> : <Menu size={20} />}
+              {menuOpen ? <X size={20} style={{ color: '#1e3a8a' }} /> : <Menu size={20} style={{ color: '#1e3a8a' }} />}
             </button>
           )}
           <div style={styles.logoContainer}>
@@ -418,31 +418,36 @@ const StudentDashboard = () => {
             )}
           </div>
 
-          {/* Chat Icon */}
-          <div style={styles.chatWrapper}>
-            <MessageSquare size={20} style={{ color: '#475569' }} />
-          </div>
+          {/* Secondary controls shown ONLY on desktop to prevent mobile crowding */}
+          {!isMobile && (
+            <>
+              {/* Chat Icon */}
+              <div style={styles.chatWrapper}>
+                <MessageSquare size={20} style={{ color: '#475569' }} />
+              </div>
 
-          {/* Student Profile Initial Circle */}
-          <div style={styles.profileCircle}>
-            {student?.full_name?.charAt(0).toUpperCase()}
-          </div>
+              {/* Student Profile Initial Circle */}
+              <div style={styles.profileCircle}>
+                {student?.full_name?.charAt(0).toUpperCase()}
+              </div>
 
-          {/* Styled Dark Mode Toggle Mockup */}
-          <div 
-            onClick={() => setDarkMode(!darkMode)}
-            style={{ 
-              ...styles.toggleTrack, 
-              backgroundColor: darkMode ? '#10b981' : '#cbd5e1' 
-            }}
-          >
-            <div 
-              style={{ 
-                ...styles.toggleThumb, 
-                transform: darkMode ? 'translateX(16px)' : 'translateX(0px)' 
-              }}
-            ></div>
-          </div>
+              {/* Styled Dark Mode Toggle Mockup */}
+              <div 
+                onClick={() => setDarkMode(!darkMode)}
+                style={{ 
+                  ...styles.toggleTrack, 
+                  backgroundColor: darkMode ? '#10b981' : '#cbd5e1' 
+                }}
+              >
+                <div 
+                  style={{ 
+                    ...styles.toggleThumb, 
+                    transform: darkMode ? 'translateX(16px)' : 'translateX(0px)' 
+                  }}
+                ></div>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -450,9 +455,46 @@ const StudentDashboard = () => {
       {isMobile && menuOpen && (
         <div style={styles.mobileMenu}>
           <div style={styles.mobileMenuHeader}>
-            <span style={styles.mobileMenuUser}>👋 student: <strong>{student?.full_name}</strong></span>
+            <span style={styles.mobileMenuUser}>👋 Student: <strong>{student?.full_name}</strong></span>
             <span style={styles.mobileMenuIndex}>{student?.index_number}</span>
           </div>
+
+          {/* Mobile Profile Display */}
+          <div style={styles.mobileMenuRow}>
+            <div style={{ ...styles.profileCircle, width: '28px', height: '28px', fontSize: '12px' }}>
+              {student?.full_name?.charAt(0).toUpperCase()}
+            </div>
+            <div style={{ color: '#93c5fd', fontSize: '11px', fontWeight: '600' }}>
+              Level {student?.level} Class Group {student?.class_group}
+            </div>
+          </div>
+
+          {/* Mobile Chat Link */}
+          <div style={styles.mobileMenuItem}>
+            <MessageSquare size={14} style={{ marginRight: '8px', color: '#93c5fd' }} />
+            <span style={{ color: '#ffffff', fontSize: '12px', fontWeight: '600' }}>Class Messages</span>
+          </div>
+
+          {/* Mobile Dark Mode Toggle */}
+          <div style={styles.mobileMenuToggleRow}>
+            <span style={{ color: '#ffffff', fontSize: '12px', fontWeight: '600' }}>Dark Mode Theme</span>
+            <div 
+              onClick={() => setDarkMode(!darkMode)}
+              style={{ 
+                ...styles.toggleTrack, 
+                backgroundColor: darkMode ? '#10b981' : '#475569',
+                border: '1px solid #475569'
+              }}
+            >
+              <div 
+                style={{ 
+                  ...styles.toggleThumb, 
+                  transform: darkMode ? 'translateX(16px)' : 'translateX(0px)' 
+                }}
+              ></div>
+            </div>
+          </div>
+
           <button onClick={handleLogout} style={styles.mobileMenuLogoutBtn}>
             <LogOut size={14} style={{ marginRight: '8px' }} />
             Logout from SDMS
@@ -1009,6 +1051,24 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center'
+  },
+  mobileMenuRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    padding: '4px 0'
+  },
+  mobileMenuItem: {
+    display: 'flex',
+    alignItems: 'center',
+    padding: '8px 0',
+    borderBottom: '1px solid rgba(255,255,255,0.08)'
+  },
+  mobileMenuToggleRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '8px 0'
   },
   content: {
     maxWidth: '1100px',

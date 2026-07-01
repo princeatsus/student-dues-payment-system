@@ -17,6 +17,7 @@ const ExpenseDashboard = () => {
 
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState('ALL');
 
   useEffect(() => {
     const handleResize = () => {
@@ -172,6 +173,22 @@ const ExpenseDashboard = () => {
   const isHOD = user?.role === 'HOD';
   const isAccountant = user?.role === 'ACCOUNTANT';
 
+  const sumAmountByStatus = (statusList) => {
+    return expenses
+      .filter(e => statusList.includes(e.status))
+      .reduce((sum, e) => sum + parseFloat(e.amount), 0);
+  };
+
+  const totalRequestedAmount = sumAmountByStatus(['PENDING_HOD', 'PENDING_FINANCE', 'DISBURSED']);
+  const disbursedAmount = sumAmountByStatus(['DISBURSED']);
+  const awaitingHodAmount = sumAmountByStatus(['PENDING_HOD']);
+  const awaitingFinanceAmount = sumAmountByStatus(['PENDING_FINANCE']);
+
+  const filteredExpenses = expenses.filter((exp) => {
+    if (statusFilter === 'ALL') return true;
+    return exp.status === statusFilter;
+  });
+
   if (loading) return <div style={styles.loading}>Loading expenses...</div>;
 
   return (
@@ -241,29 +258,61 @@ const ExpenseDashboard = () => {
         {error && <div style={styles.error}>{error}</div>}
         {success && <div style={styles.success}>{success}</div>}
 
-        {/* Stats Row */}
-        <div style={styles.cardsRow}>
-          <div style={{ ...styles.statCard, borderTop: '4px solid #3b82f6' }}>
-            <p style={styles.statLabel}>Total Requests</p>
-            <p style={styles.statValue}>{expenses.length}</p>
+        {/* Approval Pipeline */}
+        <div style={styles.pipelineCard}>
+          <p style={styles.pipelineTitle}>APPROVAL PIPELINE</p>
+          <div style={styles.pipelineSteps}>
+            <div style={styles.pipelineStep}>
+              <div style={{ ...styles.stepCircle, backgroundColor: '#ebf5ff', color: '#1e40af' }}>
+                {expenses.filter(e => e.status !== 'REJECTED').length}
+              </div>
+              <span style={styles.stepLabel}>Total</span>
+            </div>
+            <div style={styles.stepArrow}>&gt;</div>
+            <div style={styles.pipelineStep}>
+              <div style={{ ...styles.stepCircle, backgroundColor: '#fef3c7', color: '#92400e' }}>
+                {expenses.filter(e => e.status === 'PENDING_HOD').length}
+              </div>
+              <span style={styles.stepLabel}>Pending HOD</span>
+            </div>
+            <div style={styles.stepArrow}>&gt;</div>
+            <div style={styles.pipelineStep}>
+              <div style={{ ...styles.stepCircle, backgroundColor: '#e6fffa', color: '#006d5b' }}>
+                {expenses.filter(e => e.status === 'PENDING_FINANCE').length}
+              </div>
+              <span style={styles.stepLabel}>Pending finance</span>
+            </div>
+            <div style={styles.stepArrow}>&gt;</div>
+            <div style={styles.pipelineStep}>
+              <div style={{ ...styles.stepCircle, backgroundColor: '#def7ec', color: '#03543f' }}>
+                {expenses.filter(e => e.status === 'DISBURSED').length}
+              </div>
+              <span style={styles.stepLabel}>Disbursed</span>
+            </div>
           </div>
-          <div style={{ ...styles.statCard, borderTop: '4px solid #f59e0b' }}>
-            <p style={styles.statLabel}>Pending HOD</p>
-            <p style={{ ...styles.statValue, color: '#d69e2e' }}>
-              {expenses.filter(e => e.status === 'PENDING_HOD').length}
-            </p>
+        </div>
+
+        {/* Statistics Cards Grid */}
+        <div style={styles.cardsGrid}>
+          <div style={{ ...styles.newStatCard, borderLeft: '4px solid #3b82f6' }}>
+            <p style={styles.newStatLabel}>Total requested</p>
+            <p style={{ ...styles.newStatValue, color: '#2563eb' }}>₵{totalRequestedAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+            <p style={styles.newStatSub}>this semester</p>
           </div>
-          <div style={{ ...styles.statCard, borderTop: '4px solid #8b5cf6' }}>
-            <p style={styles.statLabel}>Pending Finance</p>
-            <p style={{ ...styles.statValue, color: '#3182ce' }}>
-              {expenses.filter(e => e.status === 'PENDING_FINANCE').length}
-            </p>
+          <div style={{ ...styles.newStatCard, borderLeft: '4px solid #10b981' }}>
+            <p style={styles.newStatLabel}>Disbursed</p>
+            <p style={{ ...styles.newStatValue, color: '#059669' }}>₵{disbursedAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+            <p style={styles.newStatSub}>released to rep</p>
           </div>
-          <div style={{ ...styles.statCard, borderTop: '4px solid #10b981' }}>
-            <p style={styles.statLabel}>Disbursed</p>
-            <p style={{ ...styles.statValue, color: '#38a169' }}>
-              {expenses.filter(e => e.status === 'DISBURSED').length}
-            </p>
+          <div style={{ ...styles.newStatCard, borderLeft: '4px solid #f59e0b' }}>
+            <p style={styles.newStatLabel}>Awaiting HOD</p>
+            <p style={{ ...styles.newStatValue, color: '#d97706' }}>₵{awaitingHodAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+            <p style={styles.newStatSub}>pending approval</p>
+          </div>
+          <div style={{ ...styles.newStatCard, borderLeft: '4px solid #0d9488' }}>
+            <p style={styles.newStatLabel}>Awaiting finance</p>
+            <p style={{ ...styles.newStatValue, color: '#0d9488' }}>₵{awaitingFinanceAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+            <p style={styles.newStatSub}>approved, undisbursed</p>
           </div>
         </div>
 
@@ -274,10 +323,40 @@ const ExpenseDashboard = () => {
           </button>
         )}
 
+        {/* Filter Buttons */}
+        <div style={styles.filterTabsRow}>
+          <button 
+            onClick={() => setStatusFilter('ALL')} 
+            style={{ ...styles.tabBtn, ...(statusFilter === 'ALL' ? styles.tabBtnActive : {}) }}
+          >
+            All
+          </button>
+          <button 
+            onClick={() => setStatusFilter('PENDING_HOD')} 
+            style={{ ...styles.tabBtn, ...(statusFilter === 'PENDING_HOD' ? styles.tabBtnActive : {}) }}
+          >
+            Pending HOD
+          </button>
+          <button 
+            onClick={() => setStatusFilter('PENDING_FINANCE')} 
+            style={{ ...styles.tabBtn, ...(statusFilter === 'PENDING_FINANCE' ? styles.tabBtnActive : {}) }}
+          >
+            Pending finance
+          </button>
+          <button 
+            onClick={() => setStatusFilter('DISBURSED')} 
+            style={{ ...styles.tabBtn, ...(statusFilter === 'DISBURSED' ? styles.tabBtnActive : {}) }}
+          >
+            Disbursed
+          </button>
+        </div>
+
         {/* Expenses Table */}
         <div style={styles.section}>
-          <h2 style={styles.sectionTitle}>📋 All Expense Requests</h2>
-          {expenses.length === 0 ? (
+          <div style={{ marginBottom: '16px' }}>
+            <span style={styles.sectionTitleUpper}>REQUESTS</span>
+          </div>
+          {filteredExpenses.length === 0 ? (
             <div style={styles.emptyState}>
               <div style={styles.emptyIcon}>📋</div>
               <p style={styles.emptyText}>No expense requests found</p>
@@ -300,7 +379,7 @@ const ExpenseDashboard = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {expenses.map((exp) => (
+                  {filteredExpenses.map((exp) => (
                     <tr key={exp.id} style={styles.tableRow}>
                       <td style={styles.td}>{exp.item_description}</td>
                       <td style={styles.td}>₵{parseFloat(exp.amount).toFixed(2)}</td>
@@ -673,6 +752,120 @@ const styles = {
   modalError: {
     backgroundColor: '#fef2f2', border: '1px solid #fca5a5',
     color: '#b91c1c', padding: '10px 14px', borderRadius: '8px', marginBottom: '16px', fontSize: '13px', fontWeight: '600'
+  },
+  pipelineCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: '16px',
+    padding: '24px',
+    marginBottom: '28px',
+    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
+    border: '1px solid #f1f5f9'
+  },
+  pipelineTitle: {
+    margin: '0 0 16px 0',
+    fontSize: '12px',
+    fontWeight: '700',
+    color: '#94a3b8',
+    textTransform: 'uppercase',
+    letterSpacing: '0.05em'
+  },
+  pipelineSteps: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    flexWrap: 'wrap',
+    gap: '12px'
+  },
+  pipelineStep: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '8px',
+    minWidth: '80px'
+  },
+  stepCircle: {
+    width: '44px',
+    height: '44px',
+    borderRadius: '50%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontWeight: '800',
+    fontSize: '16px'
+  },
+  stepLabel: {
+    fontSize: '12px',
+    fontWeight: '600',
+    color: '#64748b',
+    textAlign: 'center'
+  },
+  stepArrow: {
+    fontSize: '18px',
+    color: '#cbd5e1',
+    fontWeight: 'bold',
+    userSelect: 'none'
+  },
+  cardsGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+    gap: '20px',
+    marginBottom: '32px'
+  },
+  newStatCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: '16px',
+    padding: '24px',
+    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '6px'
+  },
+  newStatLabel: {
+    margin: 0,
+    fontSize: '12px',
+    fontWeight: '600',
+    color: '#94a3b8',
+    textTransform: 'capitalize'
+  },
+  newStatValue: {
+    margin: 0,
+    fontSize: '24px',
+    fontWeight: '800'
+  },
+  newStatSub: {
+    margin: 0,
+    fontSize: '12px',
+    color: '#64748b'
+  },
+  filterTabsRow: {
+    display: 'flex',
+    gap: '10px',
+    marginBottom: '24px',
+    flexWrap: 'wrap'
+  },
+  tabBtn: {
+    padding: '10px 20px',
+    borderRadius: '10px',
+    border: '1px solid #cbd5e1',
+    backgroundColor: '#ffffff',
+    color: '#64748b',
+    fontSize: '13px',
+    fontWeight: '600',
+    cursor: 'pointer',
+    transition: 'all 0.2s'
+  },
+  tabBtnActive: {
+    backgroundColor: '#f1f5f9',
+    color: '#1e293b',
+    borderColor: '#cbd5e1',
+    boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.02)'
+  },
+  sectionTitleUpper: {
+    fontSize: '12px',
+    fontWeight: '700',
+    color: '#94a3b8',
+    textTransform: 'uppercase',
+    letterSpacing: '0.05em'
   }
 };
 

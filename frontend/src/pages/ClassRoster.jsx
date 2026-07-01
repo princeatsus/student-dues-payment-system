@@ -403,10 +403,25 @@ const ClassRoster = () => {
                       <td style={{ ...styles.td, textAlign: 'right', color: student.outstanding > 0 ? '#f43f5e' : '#0f172a', fontWeight: student.outstanding > 0 ? 'bold' : 'normal' }}>
                         ₵{student.outstanding.toFixed(2)}
                       </td>
-                      <td style={{ ...styles.td, textAlign: 'center' }}>
-                        <span style={student.status === 'PAID' ? styles.badgePaid : styles.badgeOwing}>
-                          {student.status}
-                        </span>
+                      <td style={{ ...styles.td, textAlign: 'center', minWidth: '140px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                          <span style={student.status === 'PAID' ? styles.badgePaid : styles.badgeOwing}>
+                            {student.status}
+                          </span>
+                          {(() => {
+                            const progress = student.total_dues > 0 
+                              ? Math.min(100, Math.round((student.total_paid / student.total_dues) * 100)) 
+                              : 0;
+                            return (
+                              <div style={{ width: '90px', display: 'flex', flexDirection: 'column', gap: '3px', margin: '0 auto' }}>
+                                <div style={{ width: '100%', height: '5px', backgroundColor: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
+                                  <div style={{ width: `${progress}%`, height: '100%', backgroundColor: student.status === 'PAID' ? '#10b981' : '#6366f1' }} />
+                                </div>
+                                <span style={{ fontSize: '9px', color: '#64748b', fontWeight: '700', textAlign: 'center', display: 'block' }}>{progress}% Paid</span>
+                              </div>
+                            );
+                          })()}
+                        </div>
                       </td>
                       <td style={{ ...styles.td, textAlign: 'center' }}>
                         {student.status === 'OWING' ? (

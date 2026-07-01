@@ -332,6 +332,22 @@ const StudentDashboard = () => {
       doc.setFontSize(9);
       doc.text('Ho Technical University', 40, 227);
 
+      // Circular digital seal / stamp
+      doc.setDrawColor(26, 86, 219); // Royal Blue Seal
+      doc.setLineWidth(0.8);
+      doc.circle(95, 218, 14); // circular seal outline
+      doc.setFillColor(239, 246, 255);
+      doc.circle(95, 218, 13.5, 'FD'); // filled circle
+      
+      doc.setTextColor(26, 86, 219);
+      doc.setFontSize(5);
+      doc.setFont('Helvetica', 'bold');
+      doc.text('HTU COMPSSA', 95, 212, { align: 'center' });
+      doc.setFontSize(8);
+      doc.text('APPROVED', 95, 219, { align: 'center' });
+      doc.setFontSize(5);
+      doc.text('DEPT CLEARANCE', 95, 225, { align: 'center' });
+
       doc.setFontSize(11);
       doc.text('_______________________', 130, 215);
       doc.text('Date of Issue', 130, 222);
@@ -658,6 +674,25 @@ const StudentDashboard = () => {
                       {balance?.previous_balance}
                     </strong>
                   </div>
+                  
+                  {/* Payment Progress Tracker */}
+                  {(() => {
+                    const duesVal = parseFloat((balance?.current_dues || '0').replace(/[₵\s,]/g, '')) + parseFloat((balance?.previous_balance || '0').replace(/[₵\s,]/g, ''));
+                    const paidVal = parseFloat((balance?.total_paid || '0').replace(/[₵\s,]/g, ''));
+                    const progress = duesVal > 0 ? Math.min(100, Math.round((paidVal / duesVal) * 100)) : 0;
+                    return (
+                      <div style={{ marginTop: '12px', marginBottom: '12px', padding: '12px', backgroundColor: '#f8fafc', borderRadius: '10px', border: '1px dashed #e2e8f0' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', fontWeight: '700', color: '#475569', marginBottom: '6px' }}>
+                          <span>Payment Progress</span>
+                          <span>{progress}% Paid (₵{paidVal.toFixed(2)} of ₵{duesVal.toFixed(2)})</span>
+                        </div>
+                        <div style={{ width: '100%', height: '8px', backgroundColor: '#e2e8f0', borderRadius: '9999px', overflow: 'hidden' }}>
+                          <div style={{ width: `${progress}%`, height: '100%', backgroundColor: progress >= 100 ? '#10b981' : '#3b82f6', transition: 'width 0.4s ease' }} />
+                        </div>
+                      </div>
+                    );
+                  })()}
+
                   <div style={styles.ledgerDivider} />
                   <div style={{ ...styles.ledgerRow, ...styles.ledgerTotalRow }}>
                     <span>Total Outstanding Balance:</span>

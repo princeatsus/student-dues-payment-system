@@ -383,7 +383,7 @@ const StudentDashboard = () => {
       <div style={styles.loadingContainer}>
         <div style={styles.spinner}></div>
         <div style={{ marginTop: '16px', fontSize: '15px', color: '#1a56db', fontWeight: '600' }}>
-          Loading LMS dashboard...
+          Loading SDMS dashboard...
         </div>
       </div>
     );
@@ -391,7 +391,7 @@ const StudentDashboard = () => {
 
   return (
     <div style={styles.container}>
-      {/* Official HTU LMS Style Header */}
+      {/* Official HTU SDMS Style Header */}
       <div style={styles.navbar}>
         <div style={styles.navLeft}>
           {isMobile && (
@@ -405,7 +405,7 @@ const StudentDashboard = () => {
                 <span style={{ fontSize: '10px', color: '#1e3a8a', fontWeight: 'bold' }}>HTU</span>
               </div>
             </div>
-            <span style={styles.lmsText}>LMS</span>
+            <span style={styles.sdmsText}>SDMS</span>
           </div>
         </div>
 
@@ -455,7 +455,7 @@ const StudentDashboard = () => {
           </div>
           <button onClick={handleLogout} style={styles.mobileMenuLogoutBtn}>
             <LogOut size={14} style={{ marginRight: '8px' }} />
-            Logout from LMS
+            Logout from SDMS
           </button>
         </div>
       )}
@@ -485,19 +485,19 @@ const StudentDashboard = () => {
           </div>
         </div>
 
-        {/* Timeline / Dues Action Card (LMS STYLE WITH BLUE TOP BORDER) */}
-        <div style={styles.lmsCard}>
-          <div style={styles.lmsCardHeader}>
-            <h3 style={styles.lmsCardTitle}>Timeline</h3>
+        {/* Timeline / Dues Action Card (SDMS STYLE WITH BLUE TOP BORDER) */}
+        <div style={styles.sdmsCard}>
+          <div style={styles.sdmsCardHeader}>
+            <h3 style={styles.sdmsCardTitle}>Timeline</h3>
           </div>
           
           {/* Timeline Mock Filters matching screenshot */}
           <div style={styles.timelineFilters}>
             <div style={styles.filterDropdowns}>
-              <select style={styles.lmsSelect} disabled>
+              <select style={styles.sdmsSelect} disabled>
                 <option>Next 7 days</option>
               </select>
-              <select style={styles.lmsSelect} disabled>
+              <select style={styles.sdmsSelect} disabled>
                 <option>Sort by dates</option>
               </select>
             </div>
@@ -513,9 +513,9 @@ const StudentDashboard = () => {
           </div>
 
           <div style={styles.timelineContent}>
-            {/* If Student is fully cleared, show the official LMS empty state look! */}
+            {/* If Student is fully cleared, show the official SDMS empty state look! */}
             {isCleared ? (
-              <div style={styles.lmsEmptyState}>
+              <div style={styles.sdmsEmptyState}>
                 <div style={styles.emptyIconWrapper}>
                   <FileText size={36} style={{ color: '#94a3b8' }} />
                 </div>
@@ -578,9 +578,9 @@ const StudentDashboard = () => {
 
         {/* Mobile USSD / QR Code display if reference is active */}
         {reference && !isCleared && (
-          <div style={styles.lmsCard}>
-            <div style={styles.lmsCardHeader}>
-              <h3 style={styles.lmsCardTitle}>Mobile Money Reference Info</h3>
+          <div style={styles.sdmsCard}>
+            <div style={styles.sdmsCardHeader}>
+              <h3 style={styles.sdmsCardTitle}>Mobile Money Reference Info</h3>
             </div>
             <div style={styles.refInfoContent}>
               <p style={styles.refCodeSub}>Your generated reference code:</p>
@@ -614,11 +614,11 @@ const StudentDashboard = () => {
           </div>
         )}
 
-        {/* Class Fund Transparency Dashboard (LMS STYLE WITH BLUE TOP BORDER) */}
+        {/* Class Fund Transparency Dashboard (SDMS STYLE WITH BLUE TOP BORDER) */}
         {classFund && (
-          <div style={styles.lmsCard}>
-            <div style={styles.lmsCardHeader}>
-              <h3 style={styles.lmsCardTitle}>Class Fund Transparency Dashboard (Level {student?.level})</h3>
+          <div style={styles.sdmsCard}>
+            <div style={styles.sdmsCardHeader}>
+              <h3 style={styles.sdmsCardTitle}>Class Fund Transparency Dashboard (Level {student?.level})</h3>
             </div>
             <div style={styles.transpContent}>
               <div style={styles.transpGrid}>
@@ -667,10 +667,10 @@ const StudentDashboard = () => {
           </div>
         )}
 
-        {/* Dues Payment History Log (LMS STYLE WITH BLUE TOP BORDER) */}
-        <div style={styles.lmsCard}>
-          <div style={styles.lmsCardHeaderWithAction}>
-            <h3 style={styles.lmsCardTitle}>Dues Payment History</h3>
+        {/* Dues Payment History Log (SDMS STYLE WITH BLUE TOP BORDER) */}
+        <div style={styles.sdmsCard}>
+          <div style={styles.sdmsCardHeaderWithAction}>
+            <h3 style={styles.sdmsCardTitle}>Dues Payment History</h3>
             <button 
               onClick={generateStatement}
               style={styles.statementBtn}
@@ -906,7 +906,7 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center'
   },
-  lmsText: {
+  sdmsText: {
     fontSize: '20px',
     fontWeight: '800',
     color: '#1e3a8a',
@@ -1096,7 +1096,7 @@ const styles = {
     letterSpacing: '0.3px',
     display: 'inline-block'
   },
-  lmsCard: {
+  sdmsCard: {
     backgroundColor: '#ffffff',
     borderRadius: '8px',
     boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
@@ -1105,12 +1105,12 @@ const styles = {
     marginBottom: '20px',
     overflow: 'hidden'
   },
-  lmsCardHeader: {
+  sdmsCardHeader: {
     padding: '16px 20px',
     borderBottom: '1px solid #f1f5f9',
     backgroundColor: '#fafafb'
   },
-  lmsCardHeaderWithAction: {
+  sdmsCardHeaderWithAction: {
     padding: '14px 20px',
     borderBottom: '1px solid #f1f5f9',
     backgroundColor: '#fafafb',
@@ -1120,7 +1120,7 @@ const styles = {
     flexWrap: 'wrap',
     gap: '12px'
   },
-  lmsCardTitle: {
+  sdmsCardTitle: {
     margin: 0,
     fontSize: '15px',
     fontWeight: '700',
@@ -1139,7 +1139,7 @@ const styles = {
     display: 'flex',
     gap: '8px'
   },
-  lmsSelect: {
+  sdmsSelect: {
     backgroundColor: '#ffffff',
     border: '1px solid #cbd5e1',
     borderRadius: '4px',
@@ -1173,7 +1173,7 @@ const styles = {
   timelineContent: {
     padding: '24px 20px'
   },
-  lmsEmptyState: {
+  sdmsEmptyState: {
     padding: '24px 0',
     textAlign: 'center',
     display: 'flex',

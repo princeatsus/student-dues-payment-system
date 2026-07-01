@@ -104,6 +104,43 @@ const StudentDashboard = () => {
     }
   };
 
+  const handleTriggerPaystack = async (transactionId, refCode, amountText) => {
+    const numericAmount = parseFloat(amountText.replace(/[₵\s,]/g, ''));
+    const amountInPesewas = Math.round(numericAmount * 100);
+
+    if (typeof window.PaystackPop === 'undefined') {
+      alert('⚠️ Paystack payment service is currently loading. Please wait a second and try again.');
+      return;
+    }
+
+    const paystack = new window.PaystackPop();
+    paystack.newTransaction({
+      key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || 'pk_test_a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0',
+      email: user?.email || 'student@htu.edu.gh',
+      amount: amountInPesewas,
+      currency: 'GHS',
+      ref: refCode,
+      onSuccess: async (transaction) => {
+        try {
+          setPayLoading(true);
+          await confirmPayment(transactionId, {
+            payment_method: 'MOMO_MTN',
+            notes: `Paystack Ref: ${transaction.reference}`
+          });
+          alert('🎉 Dues paid successfully! Your account is now cleared.');
+          await fetchData();
+        } catch (err) {
+          alert('⚠️ Error confirming transaction with backend: ' + (err.response?.data?.message || err.message));
+        } finally {
+          setPayLoading(false);
+        }
+      },
+      onCancel: () => {
+        alert('❌ Payment cancelled.');
+      }
+    });
+  };
+
   const handlePayRequest = async () => {
     setPayLoading(true);
     setError('');
@@ -116,9 +153,7 @@ const StudentDashboard = () => {
         amount: refData.amount,
         instructions: refData.instructions
       });
-      // Open the simulated MoMo prompt directly!
-      setMomoStep(1);
-      setShowMomoModal(true);
+      await handleTriggerPaystack(refData.transaction.id, refData.reference, refData.amount);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to generate payment reference.');
     } finally {
@@ -655,7 +690,7 @@ const StudentDashboard = () => {
               <div style={styles.refDivider} />
 
               <button 
-                onClick={() => { setMomoStep(1); setShowMomoModal(true); }}
+                onClick={() => handleTriggerPaystack(reference.id, reference.reference, reference.amount)}
                 style={styles.momoGateBtn}
               >
                 📱 Open MoMo Payment Interface

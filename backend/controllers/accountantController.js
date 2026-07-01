@@ -47,6 +47,43 @@ const confirmPayment = async (req, res) => {
       return res.status(400).json({ message: 'Transaction already confirmed' });
     }
 
+    // Paystack Server-side Verification
+    const secretKey = process.env.PAYSTACK_SECRET_KEY;
+    if (secretKey && secretKey !== 'sk_test_a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0') {
+      try {
+        const verifyUrl = `https://api.paystack.co/transaction/verify/${encodeURIComponent(transaction.payment_reference)}`;
+        const paystackRes = await fetch(verifyUrl, {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${secretKey}`
+          }
+        });
+
+        if (!paystackRes.ok) {
+          return res.status(400).json({ message: 'Paystack payment verification request failed.' });
+        }
+
+        const paystackData = await paystackRes.json();
+        
+        if (!paystackData.status || paystackData.data.status !== 'success') {
+          return res.status(400).json({ message: 'Paystack transaction is not successfully completed.' });
+        }
+
+        // Validate currency and amount (Paystack returns amount in kobo/pesewas)
+        const paystackAmount = parseFloat(paystackData.data.amount) / 100;
+        const dbAmount = parseFloat(transaction.amount);
+        
+        if (Math.abs(paystackAmount - dbAmount) > 0.01) {
+          return res.status(400).json({ 
+            message: `Paystack verification failed: Amount mismatch. Paid GHS ${paystackAmount} but expected GHS ${dbAmount}` 
+          });
+        }
+      } catch (err) {
+        console.error('Paystack verification runtime error:', err.message);
+        return res.status(500).json({ message: 'Server-side payment verification failed.' });
+      }
+    }
+
     // Update transaction status
     const updated = await pool.query(
       `UPDATE transactions 

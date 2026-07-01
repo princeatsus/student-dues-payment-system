@@ -375,8 +375,9 @@ const StudentDashboard = () => {
   const session = dashboardData?.session;
   const balance = dashboardData?.balance;
 
-  const hasOutstanding = balance && parseFloat(balance.total_outstanding.replace('₵', '')) > 0;
   const isCleared = balance?.status === 'CLEARED' || balance?.has_override;
+  const hasOutstanding = balance && !isCleared;
+  const initial = student?.full_name ? student.full_name.charAt(0).toUpperCase() : 'S';
 
   if (loading) {
     return (
@@ -385,6 +386,17 @@ const StudentDashboard = () => {
         <div style={{ marginTop: '16px', fontSize: '15px', color: '#1a56db', fontWeight: '600' }}>
           Loading SDMS dashboard...
         </div>
+      </div>
+    );
+  }
+
+  if (!dashboardData) {
+    return (
+      <div style={styles.loadingContainer}>
+        {error && <div style={{ ...styles.errorBox, maxWidth: '400px' }}>⚠️ {error}</div>}
+        <button onClick={fetchData} style={{ ...styles.payBtn, width: 'auto', marginTop: '12px' }}>
+          🔄 Retry Loading Dashboard
+        </button>
       </div>
     );
   }
@@ -428,7 +440,7 @@ const StudentDashboard = () => {
 
               {/* Student Profile Initial Circle */}
               <div style={styles.profileCircle}>
-                {student?.full_name?.charAt(0).toUpperCase()}
+                {initial}
               </div>
 
               {/* Styled Dark Mode Toggle Mockup */}
@@ -462,7 +474,7 @@ const StudentDashboard = () => {
           {/* Mobile Profile Display */}
           <div style={styles.mobileMenuRow}>
             <div style={{ ...styles.profileCircle, width: '28px', height: '28px', fontSize: '12px' }}>
-              {student?.full_name?.charAt(0).toUpperCase()}
+              {initial}
             </div>
             <div style={{ color: '#93c5fd', fontSize: '11px', fontWeight: '600' }}>
               Level {student?.level} Class Group {student?.class_group}
@@ -592,7 +604,7 @@ const StudentDashboard = () => {
                   </div>
                   <div style={styles.ledgerRow}>
                     <span>Previous Carryover Balance:</span>
-                    <strong style={{ ...styles.ledgerAmount, color: parseFloat(balance?.previous_balance.replace('₵', '')) > 0 ? '#f43f5e' : '#0f172a' }}>
+                    <strong style={{ ...styles.ledgerAmount, color: parseFloat((balance?.previous_balance || '0').replace('₵', '')) > 0 ? '#f43f5e' : '#0f172a' }}>
                       {balance?.previous_balance}
                     </strong>
                   </div>

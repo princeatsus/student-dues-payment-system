@@ -156,7 +156,8 @@ const StudentDashboard = () => {
       });
       await handleTriggerPaystack(refData.transaction.id, refData.reference, refData.amount);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to generate payment reference.');
+      console.error('Payment generation error:', err);
+      setError(err.response?.data?.message || err.message || 'Failed to generate payment reference.');
     } finally {
       setPayLoading(false);
     }

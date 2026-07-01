@@ -279,17 +279,23 @@ const generatePaymentReference = async (req, res) => {
 
     if (pendingTxResult.rows.length > 0) {
       const existingTx = pendingTxResult.rows[0];
-      // Update amount of this pending transaction to match our target payment amount
+      
+      // Generate a fresh unique reference code to avoid duplicate references in Paystack
+      const randomPart = Math.random().toString(36).substring(2, 6).toUpperCase();
+      const shortYear = new Date().getFullYear().toString().slice(-2);
+      const newReference = `HTU-ELE-${shortYear}-${randomPart}`;
+
+      // Update amount AND the reference code in the database
       const updatedTx = await pool.query(
-        'UPDATE transactions SET amount = $1 WHERE id = $2 RETURNING *',
-        [amount, existingTx.id]
+        'UPDATE transactions SET amount = $1, payment_reference = $2 WHERE id = $3 RETURNING *',
+        [amount, newReference, existingTx.id]
       );
       
       return res.status(200).json({
         message: 'Active payment reference updated',
-        reference: existingTx.payment_reference,
+        reference: newReference,
         amount: `₵${parseFloat(amount).toFixed(2)}`,
-        instructions: `Dial *170# → Send Money → Enter reference: ${existingTx.payment_reference}`,
+        instructions: `Dial *170# → Send Money → Enter reference: ${newReference}`,
         transaction: updatedTx.rows[0]
       });
     }

@@ -136,6 +136,12 @@ const ExpenseDashboard = () => {
     setShowDisburseModal(true);
   };
 
+  const handleOpenModal = () => {
+    setError('');
+    setSuccess('');
+    setShowModal(true);
+  };
+
   const handleConfirmDisbursement = async (e) => {
     e.preventDefault();
     if (!disbursementProof) {
@@ -263,7 +269,7 @@ const ExpenseDashboard = () => {
 
         {/* Submit Button (Course Rep only) */}
         {isCourseRep && (
-          <button onClick={() => setShowModal(true)} style={styles.submitBtn}>
+          <button onClick={handleOpenModal} style={styles.submitBtn}>
             + Submit New Expense Request
           </button>
         )}
@@ -374,6 +380,7 @@ const ExpenseDashboard = () => {
         <div style={styles.modalOverlay}>
           <div style={styles.modal}>
             <h3 style={styles.modalTitle}>Submit Expense Request</h3>
+            {error && <div style={styles.modalError}>⚠️ {error}</div>}
             <form onSubmit={handleSubmit}>
               <div style={styles.modalGroup}>
                 <label style={styles.modalLabel}>Item Description *</label>
@@ -662,6 +669,10 @@ const styles = {
   },
   drawerLogout: {
     backgroundColor: '#fee2e2', color: '#ef4444'
+  },
+  modalError: {
+    backgroundColor: '#fef2f2', border: '1px solid #fca5a5',
+    color: '#b91c1c', padding: '10px 14px', borderRadius: '8px', marginBottom: '16px', fontSize: '13px', fontWeight: '600'
   }
 };
 

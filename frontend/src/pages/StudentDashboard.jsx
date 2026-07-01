@@ -108,24 +108,23 @@ const StudentDashboard = () => {
     const numericAmount = parseFloat(amountText.replace(/[₵\s,]/g, ''));
     const amountInPesewas = Math.round(numericAmount * 100);
 
-    if (typeof window.PaystackPop === 'undefined') {
+    if (typeof window.PaystackPop === 'undefined' || typeof window.PaystackPop.setup !== 'function') {
       alert('⚠️ Paystack payment service is currently loading. Please wait a second and try again.');
       return;
     }
 
-    const paystack = new window.PaystackPop();
-    paystack.newTransaction({
+    const handler = window.PaystackPop.setup({
       key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || 'pk_test_a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0',
       email: user?.email || 'student@htu.edu.gh',
       amount: amountInPesewas,
       currency: 'GHS',
       ref: refCode,
-      onSuccess: async (transaction) => {
+      callback: async (response) => {
         try {
           setPayLoading(true);
           await confirmPayment(transactionId, {
             payment_method: 'MOMO_MTN',
-            notes: `Paystack Ref: ${transaction.reference}`
+            notes: `Paystack Ref: ${response.reference}`
           });
           alert('🎉 Dues paid successfully! Your account is now cleared.');
           await fetchData();
@@ -135,10 +134,12 @@ const StudentDashboard = () => {
           setPayLoading(false);
         }
       },
-      onCancel: () => {
+      onClose: () => {
         alert('❌ Payment cancelled.');
       }
     });
+
+    handler.openIframe();
   };
 
   const handlePayRequest = async () => {

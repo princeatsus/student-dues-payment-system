@@ -42,7 +42,6 @@ const StudentDashboard = () => {
   const [successMsg, setSuccessMsg] = useState('');
   const [certLoading, setCertLoading] = useState(false);
   const [statementLoading, setStatementLoading] = useState(false);
-  const [customAmount, setCustomAmount] = useState('');
 
   // Simulated MoMo Modal State
   const [showMomoModal, setShowMomoModal] = useState(false);
@@ -97,11 +96,6 @@ const StudentDashboard = () => {
           amount: `₵${parseFloat(pendingTx.amount).toFixed(2)}`,
           instructions: `Dial *170# → Send Money → Enter reference: ${pendingTx.payment_reference}`
         });
-        setCustomAmount(parseFloat(pendingTx.amount).toString());
-      } else {
-        const rawOutstanding = dashRes.data.balance?.total_outstanding || '0';
-        const parsedAmount = parseFloat(rawOutstanding.replace(/[₵\s,]/g, '')) || 0;
-        setCustomAmount(parsedAmount > 0 ? parsedAmount.toString() : '');
       }
     } catch (err) {
       setError('Failed to load dashboard data. Please try again.');
@@ -154,11 +148,7 @@ const StudentDashboard = () => {
     setPayLoading(true);
     setError('');
     try {
-      const payload = {};
-      if (customAmount) {
-        payload.amount = parseFloat(customAmount);
-      }
-      const response = await generatePaymentReference(payload);
+      const response = await generatePaymentReference();
       const refData = response.data;
       setReference({
         id: refData.transaction.id,
@@ -700,30 +690,7 @@ const StudentDashboard = () => {
                   </div>
                 </div>
 
-                <div style={{ marginBottom: '16px', display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
-                  <label style={{ fontSize: '12px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.02em' }}>
-                    Enter Amount to Pay (₵)
-                  </label>
-                  <input
-                    type="number"
-                    value={customAmount}
-                    onChange={(e) => setCustomAmount(e.target.value)}
-                    placeholder="e.g. 50"
-                    min="1"
-                    max={parseFloat((balance?.total_outstanding || '0').replace(/[₵\s,]/g, ''))}
-                    style={{
-                      width: '100%',
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      border: '1px solid #cbd5e1',
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      color: '#1e293b',
-                      outline: 'none',
-                      boxSizing: 'border-box'
-                    }}
-                  />
-                </div>
+
 
                 <div style={styles.paymentActionsBlock}>
                   <button

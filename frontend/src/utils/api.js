@@ -25,7 +25,7 @@ export const login = (data) => API.post('/auth/login', data);
 export const getBalance = () => API.get('/dues/balance');
 export const getDuesConfig = () => API.get('/dues/config');
 export const setDuesConfig = (data) => API.post('/dues/config', data);
-export const generatePaymentReference = () => API.post('/dues/pay');
+export const generatePaymentReference = (data) => API.post('/dues/pay', data);
 
 // Student Specific Endpoints
 export const getStudentDashboard = () => API.get('/student/dashboard');

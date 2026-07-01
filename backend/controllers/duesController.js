@@ -216,6 +216,59 @@ const generatePaymentReference = async (req, res) => {
 
     const student = studentResult.rows[0];
 
+    // Calculate outstanding balance
+    const currentDuesResult = await pool.query(
+      'SELECT amount FROM dues_configuration WHERE session_id = $1 AND student_level = $2',
+      [session.id, student.current_level]
+    );
+    const currentDuesAmount = currentDuesResult.rows.length > 0 
+      ? parseFloat(currentDuesResult.rows[0].amount) 
+      : 0;
+
+    const currentPaidResult = await pool.query(
+      `SELECT COALESCE(SUM(amount), 0) as total_paid 
+       FROM transactions 
+       WHERE student_id = $1 AND session_id = $2 AND status IN ('PAID', 'RECONCILED')`,
+      [studentId, session.id]
+    );
+    const currentPaidAmount = parseFloat(currentPaidResult.rows[0].total_paid);
+
+    const pastDuesConfigResult = await pool.query(
+      `SELECT COALESCE(SUM(dc.amount), 0) as total_past_dues
+       FROM dues_configuration dc
+       JOIN academic_sessions as2 ON dc.session_id = as2.id
+       WHERE dc.session_id != $1 AND dc.student_level <= $2`,
+      [session.id, student.current_level]
+    );
+    const totalPastDues = parseFloat(pastDuesConfigResult.rows[0].total_past_dues);
+
+    const pastPaidResult = await pool.query(
+      `SELECT COALESCE(SUM(amount), 0) as total_past_paid 
+       FROM transactions 
+       WHERE student_id = $1 AND session_id != $2 AND status IN ('PAID', 'RECONCILED')`,
+      [studentId, session.id]
+    );
+    const totalPastPaid = parseFloat(pastPaidResult.rows[0].total_past_paid);
+
+    const carryoverBalance = Math.max(0, totalPastDues - totalPastPaid);
+    const currentOutstanding = Math.max(0, currentDuesAmount - currentPaidAmount);
+    const totalOutstanding = currentOutstanding + carryoverBalance;
+
+    if (totalOutstanding <= 0) {
+      return res.status(400).json({ message: 'You have no outstanding dues to pay' });
+    }
+
+    // Determine custom or full outstanding amount
+    let amount = totalOutstanding;
+    if (req.body.amount) {
+      const parsed = parseFloat(req.body.amount);
+      if (!isNaN(parsed) && parsed > 0) {
+        amount = Math.min(totalOutstanding, parsed);
+      } else {
+        return res.status(400).json({ message: 'Invalid payment amount' });
+      }
+    }
+
     // Check if there is already a PENDING transaction for this student this semester
     const pendingTxResult = await pool.query(
       `SELECT * FROM transactions 
@@ -226,28 +279,22 @@ const generatePaymentReference = async (req, res) => {
 
     if (pendingTxResult.rows.length > 0) {
       const existingTx = pendingTxResult.rows[0];
+      // Update amount of this pending transaction to match our target payment amount
+      const updatedTx = await pool.query(
+        'UPDATE transactions SET amount = $1 WHERE id = $2 RETURNING *',
+        [amount, existingTx.id]
+      );
+      
       return res.status(200).json({
-        message: 'Active payment reference found',
+        message: 'Active payment reference updated',
         reference: existingTx.payment_reference,
-        amount: `₵${parseFloat(existingTx.amount).toFixed(2)}`,
+        amount: `₵${parseFloat(amount).toFixed(2)}`,
         instructions: `Dial *170# → Send Money → Enter reference: ${existingTx.payment_reference}`,
-        transaction: existingTx
+        transaction: updatedTx.rows[0]
       });
     }
 
-    // Get dues amount configuration
-    const duesResult = await pool.query(
-      'SELECT * FROM dues_configuration WHERE session_id = $1 AND student_level = $2',
-      [session.id, student.current_level]
-    );
-
-    if (duesResult.rows.length === 0) {
-      return res.status(404).json({ message: 'Dues not configured for your level' });
-    }
-
-    const amount = duesResult.rows[0].amount;
-
-    // Generate unique 12-character alphanumeric reference code (HTU-ELE-24-AB12 style)
+    // Generate unique 12-character alphanumeric reference code
     const randomPart = Math.random().toString(36).substring(2, 6).toUpperCase();
     const shortYear = new Date().getFullYear().toString().slice(-2);
     const reference = `HTU-ELE-${shortYear}-${randomPart}`;

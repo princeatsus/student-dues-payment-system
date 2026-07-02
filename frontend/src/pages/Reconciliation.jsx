@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { reconcileUpload, reconcileConfirm, getAllStudents, confirmPayment } from '../utils/api';
+import { reconcileUpload, reconcileConfirm, getAllStudents, confirmPayment, manualAssignPayment } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 
 const Reconciliation = () => {
@@ -118,15 +118,6 @@ const Reconciliation = () => {
     setError('');
     setSuccess('');
     try {
-      // 1. Generate pending reference first for this student so we can link it
-      const refRes = await fetch('/api/dues/pay', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({ student_id: selectedStudentId }) // Wait, backend pay is studentId from req.user
-      });
       
       // Better flow: accountant can directly post manual payment using existing confirmPayment
       // Let's create a transaction directly for the student.
@@ -143,25 +134,13 @@ const Reconciliation = () => {
       // We will write `postManualPayment(student_id, amount, payment_method, notes)` on the backend.
       // That satisfies BOTH manual entry (FR-PAY-04) and manual CSV assignment (US-3.1.4)!
       // Let's do that!
-      const manualResponse = await fetch('/api/accountant/reconcile/manual-assign', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          student_id: selectedStudentId,
-          amount: item.amount,
-          tx_id: item.tx_id,
-          payment_method: 'MOMO_MTN',
-          notes: `CSV Manual Reconciled: ${item.narration}`
-        })
+      await manualAssignPayment({
+        student_id: selectedStudentId,
+        amount: item.amount,
+        tx_id: item.tx_id,
+        payment_method: 'MOMO_MTN',
+        notes: `CSV Manual Reconciled: ${item.narration}`
       });
-      
-      if (!manualResponse.ok) {
-        const errorData = await manualResponse.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Failed to manually link transaction');
-      }
 
       setSuccess(`Successfully linked payment of GHS ${item.amount.toFixed(2)} to ${student.full_name}.`);
       

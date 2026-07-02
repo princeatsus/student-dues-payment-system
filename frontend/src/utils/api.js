@@ -43,6 +43,7 @@ export const getAllTransactions = () => API.get('/accountant/transactions');
 export const confirmPayment = (id, data) => API.put(`/accountant/transactions/${id}/confirm`, data);
 export const reconcileUpload = (data) => API.post('/accountant/reconcile/upload', data);
 export const reconcileConfirm = (data) => API.post('/accountant/reconcile/confirm', data);
+export const manualAssignPayment = (data) => API.post('/accountant/reconcile/manual-assign', data);
 export const syncGoogleDirectory = () => API.post('/accountant/sync-directory');
 
 // HOD

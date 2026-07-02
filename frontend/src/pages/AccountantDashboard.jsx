@@ -4,7 +4,8 @@ import { getAllStudents, confirmPayment, setDuesConfig, syncGoogleDirectory } fr
 import { useAuth } from '../context/AuthContext';
 import { 
   Users, CheckCircle, AlertCircle, CreditCard, Search, 
-  Database, RefreshCw, LogOut, Sun, Moon, Settings, Coins 
+  Database, RefreshCw, LogOut, Sun, Moon, Settings, Coins,
+  Menu, X
 } from 'lucide-react';
 
 const AccountantDashboard = () => {
@@ -27,6 +28,8 @@ const AccountantDashboard = () => {
   const { user, logoutUser } = useAuth();
   const navigate = useNavigate();
   const [syncing, setSyncing] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     fetchStudents();
@@ -35,6 +38,17 @@ const AccountantDashboard = () => {
   useEffect(() => {
     localStorage.setItem('theme-dark', darkMode ? 'true' : 'false');
   }, [darkMode]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 1024);
+      if (window.innerWidth >= 1024) {
+        setMenuOpen(false);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const fetchStudents = async () => {
     try {
@@ -144,6 +158,35 @@ const AccountantDashboard = () => {
         .stat-card-glow-2 { border-left: 4px solid #10b981 !important; }
         .stat-card-glow-3 { border-left: 4px solid #ef4444 !important; }
         .stat-card-glow-4 { border-left: 4px solid #8b5cf6 !important; }
+
+        @media (max-width: 768px) {
+          .stat-card-override {
+            flex: 1 1 calc(50% - 8px) !important;
+            min-width: 140px !important;
+          }
+          .grid-container-override {
+            flex-direction: column !important;
+          }
+          .content-override {
+            padding: 12px !important;
+          }
+          .directory-header-override {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 12px !important;
+          }
+          .search-wrapper-override {
+            width: 100% !important;
+          }
+          .search-input-override {
+            width: 100% !important;
+          }
+        }
+        @media (max-width: 480px) {
+          .stat-card-override {
+            flex: 1 1 100% !important;
+          }
+        }
       `}</style>
 
       {/* Navbar */}
@@ -156,63 +199,132 @@ const AccountantDashboard = () => {
       }}>
         <div style={styles.navLeft}>
           <div style={styles.logoBadge}>🎓</div>
-          <h1 style={styles.navTitle}>HTU Computer Science — Accountant</h1>
+          <h1 style={styles.navTitle}>HTU Computer Science</h1>
         </div>
         
-        <div style={styles.navRight}>
-          <span style={styles.navUser}>👋 {user?.full_name}</span>
-          
-          {/* Dark Mode Switcher */}
-          <div 
-            onClick={() => setDarkMode(!darkMode)}
-            style={{ 
-              ...styles.toggleTrack, 
-              backgroundColor: darkMode ? '#10b981' : '#cbd5e1' 
-            }}
-          >
+        {isMobile ? (
+          <div style={styles.mobileNavActions}>
+            {/* Dark Mode Switcher for Mobile Header */}
             <div 
+              onClick={() => setDarkMode(!darkMode)}
               style={{ 
-                ...styles.toggleThumb, 
-                transform: darkMode ? 'translateX(16px)' : 'translateX(0px)',
-                backgroundColor: '#ffffff',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
+                ...styles.toggleTrack, 
+                backgroundColor: darkMode ? '#10b981' : '#cbd5e1',
+                marginRight: '12px'
               }}
             >
-              {darkMode ? <Moon size={8} color="#10b981" /> : <Sun size={8} color="#f59e0b" />}
+              <div 
+                style={{ 
+                  ...styles.toggleThumb, 
+                  transform: darkMode ? 'translateX(16px)' : 'translateX(0px)',
+                  backgroundColor: '#ffffff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                {darkMode ? <Moon size={8} color="#10b981" /> : <Sun size={8} color="#f59e0b" />}
+              </div>
             </div>
+            
+            <button 
+              onClick={() => setMenuOpen(!menuOpen)} 
+              style={styles.hamburgerBtn}
+            >
+              {menuOpen ? <X size={20} color="#fff" /> : <Menu size={20} color="#fff" />}
+            </button>
           </div>
+        ) : (
+          <div style={styles.navRight}>
+            <span style={styles.navUser}>👋 {user?.full_name}</span>
+            
+            {/* Dark Mode Switcher */}
+            <div 
+              onClick={() => setDarkMode(!darkMode)}
+              style={{ 
+                ...styles.toggleTrack, 
+                backgroundColor: darkMode ? '#10b981' : '#cbd5e1' 
+              }}
+            >
+              <div 
+                style={{ 
+                  ...styles.toggleThumb, 
+                  transform: darkMode ? 'translateX(16px)' : 'translateX(0px)',
+                  backgroundColor: '#ffffff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                {darkMode ? <Moon size={8} color="#10b981" /> : <Sun size={8} color="#f59e0b" />}
+              </div>
+            </div>
 
-          <button onClick={handleSyncDirectory} disabled={syncing} style={styles.navBtn}>
-            <Database size={13} style={styles.btnIcon} />
-            {syncing ? 'Syncing...' : 'Google Sync'}
-          </button>
-          
-          <button onClick={() => navigate('/reconcile')} style={styles.navBtn}>
-            <RefreshCw size={13} style={styles.btnIcon} />
-            Reconciliation
-          </button>
-          
-          <button onClick={() => navigate('/expenses')} style={styles.navBtn}>
-            <Coins size={13} style={styles.btnIcon} />
-            Expenses
-          </button>
-          
-          <button onClick={handleLogout} style={styles.logoutBtn}>
-            <LogOut size={13} style={styles.btnIcon} />
-            Logout
-          </button>
-        </div>
+            <button onClick={handleSyncDirectory} disabled={syncing} style={styles.navBtn}>
+              <Database size={13} style={styles.btnIcon} />
+              {syncing ? 'Syncing...' : 'Google Sync'}
+            </button>
+            
+            <button onClick={() => navigate('/reconcile')} style={styles.navBtn}>
+              <RefreshCw size={13} style={styles.btnIcon} />
+              Reconciliation
+            </button>
+            
+            <button onClick={() => navigate('/expenses')} style={styles.navBtn}>
+              <Coins size={13} style={styles.btnIcon} />
+              Expenses
+            </button>
+            
+            <button onClick={handleLogout} style={styles.logoutBtn}>
+              <LogOut size={13} style={styles.btnIcon} />
+              Logout
+            </button>
+          </div>
+        )}
       </div>
 
-      <div style={styles.content}>
+      {/* Mobile Drawer Menu */}
+      {isMobile && menuOpen && (
+        <div style={{
+          ...styles.mobileMenu,
+          background: darkMode ? '#1e293b' : '#1e3a8a',
+          borderBottom: darkMode ? '1px solid #334155' : 'none'
+        }}>
+          <div style={styles.mobileMenuHeader}>
+            <span style={styles.mobileMenuUser}>👋 Accountant: <strong>{user?.full_name}</strong></span>
+          </div>
+
+          <div style={styles.mobileMenuContent}>
+            <button onClick={() => { handleSyncDirectory(); setMenuOpen(false); }} disabled={syncing} style={styles.mobileMenuBtn}>
+              <Database size={14} style={{ marginRight: '8px' }} />
+              {syncing ? 'Google Syncing...' : 'Google Directory Sync'}
+            </button>
+            
+            <button onClick={() => { navigate('/reconcile'); setMenuOpen(false); }} style={styles.mobileMenuBtn}>
+              <RefreshCw size={14} style={{ marginRight: '8px' }} />
+              MoMo Reconciliation
+            </button>
+            
+            <button onClick={() => { navigate('/expenses'); setMenuOpen(false); }} style={styles.mobileMenuBtn}>
+              <Coins size={14} style={{ marginRight: '8px' }} />
+              Expense Requisitions
+            </button>
+            
+            <button onClick={handleLogout} style={styles.mobileMenuLogoutBtn}>
+              <LogOut size={14} style={{ marginRight: '8px' }} />
+              Logout from Portal
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div style={styles.content} className="content-override">
         {error && <div style={styles.error}>{error}</div>}
         {success && <div style={styles.success}>{success}</div>}
 
         {/* Stats Row */}
         <div style={styles.cardsRow}>
-          <div className="card-override stat-card-glow-1" style={styles.statCard}>
+          <div className="card-override stat-card-glow-1 stat-card-override" style={styles.statCard}>
             <div style={styles.statHeader}>
               <p style={styles.statLabel} className="text-muted">Total Students</p>
               <Users size={18} color="#3b82f6" />
@@ -220,7 +332,7 @@ const AccountantDashboard = () => {
             <p style={{ ...styles.statValue, ...darkStylesText }}>{students.length}</p>
           </div>
           
-          <div className="card-override stat-card-glow-2" style={styles.statCard}>
+          <div className="card-override stat-card-glow-2 stat-card-override" style={styles.statCard}>
             <div style={styles.statHeader}>
               <p style={styles.statLabel} className="text-muted">Cleared Dues</p>
               <CheckCircle size={18} color="#10b981" />
@@ -230,7 +342,7 @@ const AccountantDashboard = () => {
             </p>
           </div>
           
-          <div className="card-override stat-card-glow-3" style={styles.statCard}>
+          <div className="card-override stat-card-glow-3 stat-card-override" style={styles.statCard}>
             <div style={styles.statHeader}>
               <p style={styles.statLabel} className="text-muted">Owing Dues</p>
               <AlertCircle size={18} color="#ef4444" />
@@ -240,7 +352,7 @@ const AccountantDashboard = () => {
             </p>
           </div>
           
-          <div className="card-override stat-card-glow-4" style={styles.statCard}>
+          <div className="card-override stat-card-glow-4 stat-card-override" style={styles.statCard}>
             <div style={styles.statHeader}>
               <p style={styles.statLabel} className="text-muted">Total Collected</p>
               <CreditCard size={18} color="#8b5cf6" />
@@ -252,7 +364,7 @@ const AccountantDashboard = () => {
         </div>
 
         {/* Grid for Dues Config & Students */}
-        <div style={styles.gridContainer}>
+        <div style={styles.gridContainer} className="grid-container-override">
           {/* Configure Dues Section */}
           <div className="card-override" style={styles.section}>
             <h2 style={styles.sectionTitle} className="text-title">
@@ -289,13 +401,13 @@ const AccountantDashboard = () => {
 
           {/* Students Directory */}
           <div className="card-override" style={{ ...styles.section, flex: 2 }}>
-            <div style={styles.directoryHeader}>
+            <div style={styles.directoryHeader} className="directory-header-override">
               <h2 style={styles.sectionTitle} className="text-title">
                 👥 Student Ledger Directory
               </h2>
               
               {/* Search Bar */}
-              <div style={styles.searchWrapper}>
+              <div style={styles.searchWrapper} className="search-wrapper-override">
                 <Search size={14} style={styles.searchIcon} className="text-muted" />
                 <input 
                   type="text"
@@ -303,7 +415,7 @@ const AccountantDashboard = () => {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   style={styles.searchInput}
-                  className="input-override"
+                  className="input-override search-input-override"
                 />
               </div>
             </div>
@@ -381,6 +493,8 @@ const styles = {
     justifyContent: 'space-between',
     alignItems: 'center',
     boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+    zIndex: 100,
+    position: 'relative'
   },
   navLeft: { display: 'flex', alignItems: 'center', gap: '10px' },
   logoBadge: {
@@ -420,6 +534,64 @@ const styles = {
     alignItems: 'center',
     gap: '6px',
     transition: 'background 0.2s',
+  },
+  mobileNavActions: { display: 'flex', alignItems: 'center' },
+  hamburgerBtn: {
+    backgroundColor: 'transparent',
+    border: 'none',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '4px'
+  },
+  mobileMenu: {
+    width: '100%',
+    padding: '16px 24px',
+    boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+    zIndex: 99,
+    position: 'relative'
+  },
+  mobileMenuHeader: {
+    marginBottom: '16px',
+    borderBottom: '1px solid rgba(255,255,255,0.1)',
+    paddingBottom: '12px'
+  },
+  mobileMenuUser: {
+    color: '#ffffff',
+    fontSize: '13px'
+  },
+  mobileMenuContent: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '12px'
+  },
+  mobileMenuBtn: {
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    border: '1px solid rgba(255,255,255,0.15)',
+    color: '#ffffff',
+    padding: '10px 16px',
+    borderRadius: '8px',
+    fontSize: '13px',
+    fontWeight: '600',
+    textAlign: 'left',
+    display: 'flex',
+    alignItems: 'center',
+    cursor: 'pointer'
+  },
+  mobileMenuLogoutBtn: {
+    backgroundColor: '#ef4444',
+    border: 'none',
+    color: '#ffffff',
+    padding: '10px 16px',
+    borderRadius: '8px',
+    fontSize: '13px',
+    fontWeight: '600',
+    textAlign: 'left',
+    display: 'flex',
+    alignItems: 'center',
+    cursor: 'pointer',
+    marginTop: '8px'
   },
   content: { maxWidth: '1280px', margin: '0 auto', padding: '24px' },
   error: {

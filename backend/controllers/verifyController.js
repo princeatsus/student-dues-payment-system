@@ -26,8 +26,8 @@ const verifyStudent = async (req, res) => {
 
     // Find student by index number
     const studentResult = await pool.query(
-      'SELECT id, full_name, index_number, current_level, email FROM users WHERE index_number = $1 AND role = $2',
-      [indexNumber, 'STUDENT']
+      "SELECT id, full_name, index_number, current_level, email FROM users WHERE index_number = $1 AND role IN ('STUDENT', 'COURSE_REP')",
+      [indexNumber]
     );
 
     if (studentResult.rows.length === 0) {

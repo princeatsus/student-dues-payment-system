@@ -222,7 +222,7 @@ const getAllStudents = async (req, res) => {
        FROM users u
        LEFT JOIN dues_configuration dc ON dc.student_level = u.current_level AND dc.session_id = $1
        LEFT JOIN transactions t ON t.student_id = u.id AND t.session_id = $1
-       WHERE u.role = 'STUDENT'
+       WHERE u.role IN ('STUDENT', 'COURSE_REP')
        GROUP BY u.id, u.full_name, u.index_number, u.current_level, u.class_group, u.email, dc.amount
        ORDER BY u.current_level, u.full_name`,
       [session.id]

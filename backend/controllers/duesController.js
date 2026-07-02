@@ -335,7 +335,7 @@ const generatePaymentReference = async (req, res) => {
 
   } catch (error) {
     console.error('Generate payment reference error:', error.message);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: error.message || 'Server error' });
   }
 };
 

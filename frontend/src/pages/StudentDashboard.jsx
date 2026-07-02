@@ -54,6 +54,7 @@ const StudentDashboard = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [darkMode, setDarkMode] = useState(false);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
 
   const { user, logoutUser } = useAuth();
   const navigate = useNavigate();
@@ -535,6 +536,19 @@ const StudentDashboard = () => {
           .dark-mode .bell-icon {
             color: #cbd5e1 !important;
           }
+          .dark-mode .profile-dropdown-override {
+            background-color: #1e293b !important;
+            border-color: #334155 !important;
+            color: #f8fafc !important;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2) !important;
+          }
+          .dark-mode .profile-dropdown-override div {
+            color: #cbd5e1 !important;
+            border-bottom-color: #334155 !important;
+          }
+          .dark-mode .profile-dropdown-name-override {
+            color: #ffffff !important;
+          }
         `}</style>
       )}
       {/* Official HTU SDMS Style Header */}
@@ -573,8 +587,65 @@ const StudentDashboard = () => {
               </div>
 
               {/* Student Profile Initial Circle */}
-              <div style={styles.profileCircle}>
-                {initial}
+              <div style={{ position: 'relative' }}>
+                <div 
+                  onClick={() => setProfileMenuOpen(!profileMenuOpen)} 
+                  style={styles.profileCircle}
+                >
+                  {initial}
+                </div>
+                {profileMenuOpen && (
+                  <div 
+                    className="profile-dropdown-override"
+                    style={{
+                      position: 'absolute',
+                      top: '40px',
+                      right: '0',
+                      width: '240px',
+                      backgroundColor: '#ffffff',
+                      borderRadius: '8px',
+                      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                      border: '1px solid #e2e8f0',
+                      padding: '16px',
+                      zIndex: '1000',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '12px',
+                      textAlign: 'left'
+                    }}
+                  >
+                    <div style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '8px' }}>
+                      <div className="profile-dropdown-name-override" style={{ fontWeight: 'bold', fontSize: '14px', color: '#1e293b' }}>
+                        {student?.full_name}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#64748b' }}>
+                        {student?.index_number}
+                      </div>
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#334155', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <div><strong>Level:</strong> {student?.level}</div>
+                      <div><strong>Group:</strong> {student?.class_group}</div>
+                      <div style={{ wordBreak: 'break-all' }}><strong>Email:</strong> {student?.email}</div>
+                    </div>
+                    <button 
+                      onClick={handleLogout} 
+                      style={{
+                        backgroundColor: '#ef4444',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '6px',
+                        padding: '8px',
+                        fontSize: '12px',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        width: '100%',
+                        textAlign: 'center'
+                      }}
+                    >
+                      Logout from Portal
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Styled Dark Mode Toggle Mockup */}

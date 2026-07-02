@@ -159,10 +159,36 @@ const AccountantDashboard = () => {
         .stat-card-glow-3 { border-left: 4px solid #ef4444 !important; }
         .stat-card-glow-4 { border-left: 4px solid #8b5cf6 !important; }
 
+        /* Desktop & Mobile display configurations */
+        .desktop-only {
+          display: block !important;
+        }
+        .mobile-only {
+          display: none !important;
+        }
+
         @media (max-width: 768px) {
+          .desktop-only {
+            display: none !important;
+          }
+          .mobile-only {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 12px !important;
+          }
+          .cards-row-override {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr !important;
+            gap: 12px !important;
+            margin-bottom: 16px !important;
+          }
           .stat-card-override {
-            flex: 1 1 calc(50% - 8px) !important;
-            min-width: 140px !important;
+            margin-bottom: 0 !important;
+            padding: 12px 14px !important;
+          }
+          .stat-value-override {
+            font-size: 20px !important;
+            font-weight: 800 !important;
           }
           .grid-container-override {
             flex-direction: column !important;
@@ -181,10 +207,20 @@ const AccountantDashboard = () => {
           .search-input-override {
             width: 100% !important;
           }
-        }
-        @media (max-width: 480px) {
-          .stat-card-override {
-            flex: 1 1 100% !important;
+          .dues-grid-override {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr !important;
+            gap: 12px !important;
+          }
+          .due-item-override {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+          }
+          .due-input-wrapper-override {
+            width: 100% !important;
+          }
+          .due-input-override {
+            width: 100% !important;
           }
         }
       `}</style>
@@ -323,21 +359,21 @@ const AccountantDashboard = () => {
         {success && <div style={styles.success}>{success}</div>}
 
         {/* Stats Row */}
-        <div style={styles.cardsRow}>
+        <div style={styles.cardsRow} className="cards-row-override">
           <div className="card-override stat-card-glow-1 stat-card-override" style={styles.statCard}>
             <div style={styles.statHeader}>
               <p style={styles.statLabel} className="text-muted">Total Students</p>
-              <Users size={18} color="#3b82f6" />
+              <Users size={16} color="#3b82f6" />
             </div>
-            <p style={{ ...styles.statValue, ...darkStylesText }}>{students.length}</p>
+            <p className="stat-value-override" style={{ ...styles.statValue, ...darkStylesText }}>{students.length}</p>
           </div>
           
           <div className="card-override stat-card-glow-2 stat-card-override" style={styles.statCard}>
             <div style={styles.statHeader}>
               <p style={styles.statLabel} className="text-muted">Cleared Dues</p>
-              <CheckCircle size={18} color="#10b981" />
+              <CheckCircle size={16} color="#10b981" />
             </div>
-            <p style={{ ...styles.statValue, color: '#10b981' }}>
+            <p className="stat-value-override" style={{ ...styles.statValue, color: '#10b981' }}>
               {students.filter(s => s.status === 'CLEARED').length}
             </p>
           </div>
@@ -345,9 +381,9 @@ const AccountantDashboard = () => {
           <div className="card-override stat-card-glow-3 stat-card-override" style={styles.statCard}>
             <div style={styles.statHeader}>
               <p style={styles.statLabel} className="text-muted">Owing Dues</p>
-              <AlertCircle size={18} color="#ef4444" />
+              <AlertCircle size={16} color="#ef4444" />
             </div>
-            <p style={{ ...styles.statValue, color: '#ef4444' }}>
+            <p className="stat-value-override" style={{ ...styles.statValue, color: '#ef4444' }}>
               {students.filter(s => s.status === 'OWING').length}
             </p>
           </div>
@@ -355,9 +391,9 @@ const AccountantDashboard = () => {
           <div className="card-override stat-card-glow-4 stat-card-override" style={styles.statCard}>
             <div style={styles.statHeader}>
               <p style={styles.statLabel} className="text-muted">Total Collected</p>
-              <CreditCard size={18} color="#8b5cf6" />
+              <CreditCard size={16} color="#8b5cf6" />
             </div>
-            <p style={{ ...styles.statValue, color: '#8b5cf6' }}>
+            <p className="stat-value-override" style={{ ...styles.statValue, color: '#8b5cf6' }}>
               ₵{totalCollected.toFixed(2)}
             </p>
           </div>
@@ -373,11 +409,11 @@ const AccountantDashboard = () => {
             </h2>
             <p style={styles.configSubtitle} className="text-muted">Set academic fees configured per class level</p>
             
-            <div style={styles.duesGrid}>
+            <div style={styles.duesGrid} className="dues-grid-override">
               {duesForm.dues.map((due, index) => (
-                <div key={due.level} style={styles.dueItem}>
+                <div key={due.level} style={styles.dueItem} className="due-item-override">
                   <label style={styles.dueLabel} className="text-muted">Level {due.level}</label>
-                  <div style={styles.inputWrapper}>
+                  <div style={styles.inputWrapper} className="due-input-wrapper-override">
                     <span style={styles.currencyPrefix}>₵</span>
                     <input
                       type="number"
@@ -388,7 +424,7 @@ const AccountantDashboard = () => {
                         setDuesForm({ ...duesForm, dues: updated });
                       }}
                       style={styles.dueInput}
-                      className="input-override"
+                      className="input-override due-input-override"
                     />
                   </div>
                 </div>
@@ -420,7 +456,8 @@ const AccountantDashboard = () => {
               </div>
             </div>
 
-            <div style={styles.tableWrapper}>
+            {/* Desktop Table View */}
+            <div className="desktop-only" style={styles.tableWrapper}>
               <table style={styles.table}>
                 <thead>
                   <tr className="table-header-override">
@@ -468,6 +505,53 @@ const AccountantDashboard = () => {
                 </tbody>
               </table>
             </div>
+
+            {/* Mobile Card List View */}
+            <div className="mobile-only" style={styles.mobileCardList}>
+              {filteredStudents.length === 0 ? (
+                <div style={styles.emptyRow} className="text-muted">
+                  No students found matching your search
+                </div>
+              ) : (
+                filteredStudents.map((student) => (
+                  <div key={student.id} style={styles.mobileStudentCard} className="card-override">
+                    <div style={styles.mobileCardHeader}>
+                      <div>
+                        <h4 style={styles.mobileCardName} className="text-title">{student.full_name}</h4>
+                        <span style={styles.mobileCardIndex} className="text-muted">{student.index_number}</span>
+                      </div>
+                      <span style={student.status === 'CLEARED' ? styles.badgeCleared : styles.badgeOwing}>
+                        {student.status}
+                      </span>
+                    </div>
+
+                    <div style={styles.mobileCardDivider} />
+
+                    <div style={styles.mobileCardGrid}>
+                      <div style={styles.mobileCardCol}>
+                        <span style={styles.mobileColLabel} className="text-muted">Level</span>
+                        <span style={styles.mobileColValue} className="text-title">L{student.current_level}</span>
+                      </div>
+                      <div style={styles.mobileCardCol}>
+                        <span style={styles.mobileColLabel} className="text-muted">Paid</span>
+                        <span style={styles.mobileColValue} className="text-title">₵{parseFloat(student.total_paid || 0).toFixed(2)}</span>
+                      </div>
+                      <div style={styles.mobileCardCol}>
+                        <span style={styles.mobileColLabel} className="text-muted">Outstanding</span>
+                        <span style={{ 
+                          ...styles.mobileColValue, 
+                          color: parseFloat(student.outstanding) > 0 ? '#ef4444' : '#10b981',
+                          fontWeight: '700'
+                        }}>
+                          ₵{parseFloat(student.outstanding || 0).toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
           </div>
         </div>
       </div>
@@ -721,6 +805,61 @@ const styles = {
     height: '14px',
     borderRadius: '7px',
     transition: 'transform 0.2s',
+  },
+
+  // Mobile Student Card specific styling
+  mobileCardList: { display: 'none' },
+  mobileStudentCard: {
+    padding: '16px',
+    borderRadius: '12px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '12px',
+    transition: 'all 0.3s ease'
+  },
+  mobileCardHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: '12px'
+  },
+  mobileCardName: {
+    margin: 0,
+    fontSize: '14px',
+    fontWeight: '700',
+    lineHeight: '1.2'
+  },
+  mobileCardIndex: {
+    fontSize: '11px',
+    fontFamily: 'monospace',
+    marginTop: '2px',
+    display: 'block'
+  },
+  mobileCardDivider: {
+    height: '1px',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    width: '100%',
+    margin: '4px 0'
+  },
+  mobileCardGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(3, 1fr)',
+    gap: '8px'
+  },
+  mobileCardCol: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '4px'
+  },
+  mobileColLabel: {
+    fontSize: '10px',
+    textTransform: 'uppercase',
+    letterSpacing: '0.3px',
+    fontWeight: '600'
+  },
+  mobileColValue: {
+    fontSize: '12px',
+    fontWeight: '600'
   }
 };
 

@@ -468,18 +468,52 @@ const StudentDashboard = () => {
           .dark-mode .navbar-override {
             background-color: #1e293b !important;
             color: #f8fafc !important;
-            border-bottom-color: #334155 !important;
+            border-bottom: 1px solid #334155 !important;
           }
           .dark-mode .card-override {
             background-color: #1e293b !important;
             border-color: #334155 !important;
             color: #f8fafc !important;
           }
+          .dark-mode .card-header-override {
+            background-color: #1e293b !important;
+            background: #1e293b !important;
+            border-bottom: 1.5px solid #334155 !important;
+            color: #ffffff !important;
+          }
+          .dark-mode .transp-box-override {
+            background-color: #334155 !important;
+            border-color: #475569 !important;
+            color: #cbd5e1 !important;
+          }
           .dark-mode .text-title {
             color: #ffffff !important;
           }
           .dark-mode .text-muted {
             color: #94a3b8 !important;
+          }
+          .dark-mode .text-blue {
+            color: #60a5fa !important;
+          }
+          .dark-mode .text-blue-dark {
+            color: #93c5fd !important;
+          }
+          .dark-mode .text-red {
+            color: #f43f5e !important;
+          }
+          .dark-mode .filters-override {
+            background-color: #1e293b !important;
+            border-color: #334155 !important;
+          }
+          .dark-mode button.filters-override {
+            background-color: #334155 !important;
+            color: #cbd5e1 !important;
+            border-color: #475569 !important;
+          }
+          .dark-mode button.filters-override.active-filter-override {
+            background-color: #2563eb !important;
+            color: #ffffff !important;
+            border-color: #2563eb !important;
           }
           .dark-mode .th-override {
             background-color: #334155 !important;
@@ -491,7 +525,7 @@ const StudentDashboard = () => {
             color: #cbd5e1 !important;
           }
           .dark-mode .input-override {
-            background-color: #1e293b !important;
+            background-color: #334155 !important;
             color: #ffffff !important;
             border-color: #475569 !important;
           }
@@ -641,17 +675,17 @@ const StudentDashboard = () => {
 
         {/* Timeline / Dues Action Card (SDMS STYLE WITH BLUE TOP BORDER) */}
         <div style={styles.sdmsCard} className="card-override">
-          <div style={styles.sdmsCardHeader}>
+          <div style={styles.sdmsCardHeader} className="card-header-override">
             <h3 style={styles.sdmsCardTitle} className="text-title">Timeline</h3>
           </div>
           
           {/* Timeline Mock Filters matching screenshot */}
-          <div style={styles.timelineFilters}>
+          <div style={styles.timelineFilters} className="filters-override">
             <div style={styles.filterDropdowns}>
-              <select style={styles.sdmsSelect} disabled>
+              <select style={styles.sdmsSelect} disabled className="input-override">
                 <option>Next 7 days</option>
               </select>
-              <select style={styles.sdmsSelect} disabled>
+              <select style={styles.sdmsSelect} disabled className="input-override">
                 <option>Sort by dates</option>
               </select>
             </div>
@@ -661,6 +695,7 @@ const StudentDashboard = () => {
                 type="text" 
                 placeholder="Search by activity type or name" 
                 style={styles.timelineSearch} 
+                className="input-override"
                 disabled 
               />
             </div>
@@ -754,7 +789,7 @@ const StudentDashboard = () => {
         {/* Mobile USSD / QR Code display if reference is active */}
         {reference && !isCleared && (
           <div style={styles.sdmsCard} className="card-override">
-            <div style={styles.sdmsCardHeader}>
+            <div style={styles.sdmsCardHeader} className="card-header-override">
               <h3 style={styles.sdmsCardTitle} className="text-title">Mobile Money Reference Info</h3>
             </div>
             <div style={styles.refInfoContent}>
@@ -792,22 +827,22 @@ const StudentDashboard = () => {
         {/* Class Fund Transparency Dashboard (SDMS STYLE WITH BLUE TOP BORDER) */}
         {classFund && (
           <div style={styles.sdmsCard} className="card-override">
-            <div style={styles.sdmsCardHeader}>
+            <div style={styles.sdmsCardHeader} className="card-header-override">
               <h3 style={styles.sdmsCardTitle} className="text-title">Class Fund Transparency Dashboard (Level {student?.level})</h3>
             </div>
             <div style={styles.transpContent}>
               <div style={styles.transpGrid}>
-                <div style={styles.transpBox}>
+                <div style={styles.transpBox} className="transp-box-override">
                   <span style={styles.transpLabel} className="text-muted">Total Dues Collected</span>
-                  <strong style={styles.transpVal}>₵{parseFloat(classFund.total_collected).toFixed(2)}</strong>
+                  <strong style={styles.transpVal} className="text-blue">₵{parseFloat(classFund.total_collected).toFixed(2)}</strong>
                 </div>
-                <div style={styles.transpBox}>
+                <div style={styles.transpBox} className="transp-box-override">
                   <span style={styles.transpLabel} className="text-muted">Total Dues Expenses Disbursed</span>
-                  <strong style={{ ...styles.transpVal, color: '#f43f5e' }}>₵{parseFloat(classFund.total_spent).toFixed(2)}</strong>
+                  <strong style={{ ...styles.transpVal, color: '#f43f5e' }} className="text-red">₵{parseFloat(classFund.total_spent).toFixed(2)}</strong>
                 </div>
-                <div style={styles.transpBox}>
+                <div style={styles.transpBox} className="transp-box-override">
                   <span style={styles.transpLabel} className="text-muted">Current Fund Balance</span>
-                  <strong style={{ ...styles.transpVal, color: '#1e3a8a' }}>₵{parseFloat(classFund.current_balance).toFixed(2)}</strong>
+                  <strong style={{ ...styles.transpVal, color: '#1e3a8a' }} className="text-blue-dark">₵{parseFloat(classFund.current_balance).toFixed(2)}</strong>
                 </div>
               </div>
 
@@ -844,7 +879,7 @@ const StudentDashboard = () => {
 
         {/* Dues Payment History Log (SDMS STYLE WITH BLUE TOP BORDER) */}
         <div style={styles.sdmsCard} className="card-override">
-          <div style={styles.sdmsCardHeaderWithAction}>
+          <div style={styles.sdmsCardHeaderWithAction} className="card-header-override">
             <h3 style={styles.sdmsCardTitle} className="text-title">Dues Payment History</h3>
             <button 
               onClick={generateStatement}
@@ -856,11 +891,12 @@ const StudentDashboard = () => {
           </div>
 
           <div style={styles.historyContent}>
-            <div style={styles.filterBar}>
+            <div style={styles.filterBar} className="filters-override">
               {['All', 'Level 100', 'Level 200', 'Level 300', 'Level 400'].map((filter) => (
                 <button
                   key={filter}
                   onClick={() => handleHistoryFilterChange(filter)}
+                  className={`filters-override ${historyFilter === filter ? 'active-filter-override' : ''}`}
                   style={{
                     ...styles.filterBtn,
                     ...(historyFilter === filter ? styles.activeFilterBtn : {})

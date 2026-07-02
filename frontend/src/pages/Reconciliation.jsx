@@ -159,7 +159,8 @@ const Reconciliation = () => {
       });
       
       if (!manualResponse.ok) {
-        throw new Error('Failed to manually link transaction');
+        const errorData = await manualResponse.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to manually link transaction');
       }
 
       setSuccess(`Successfully linked payment of GHS ${item.amount.toFixed(2)} to ${student.full_name}.`);

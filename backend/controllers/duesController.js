@@ -260,7 +260,7 @@ const generatePaymentReference = async (req, res) => {
 
     // Determine custom or full outstanding amount
     let amount = totalOutstanding;
-    if (req.body.amount) {
+    if (req.body && req.body.amount) {
       const parsed = parseFloat(req.body.amount);
       if (!isNaN(parsed) && parsed > 0) {
         amount = Math.min(totalOutstanding, parsed);

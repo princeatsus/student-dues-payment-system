@@ -458,9 +458,53 @@ const StudentDashboard = () => {
   }
 
   return (
-    <div style={styles.container}>
+    <div style={styles.container} className={darkMode ? 'dark-mode' : ''}>
+      {darkMode && (
+        <style>{`
+          .dark-mode {
+            background-color: #0f172a !important;
+            color: #f8fafc !important;
+          }
+          .dark-mode .navbar-override {
+            background-color: #1e293b !important;
+            color: #f8fafc !important;
+            border-bottom-color: #334155 !important;
+          }
+          .dark-mode .card-override {
+            background-color: #1e293b !important;
+            border-color: #334155 !important;
+            color: #f8fafc !important;
+          }
+          .dark-mode .text-title {
+            color: #ffffff !important;
+          }
+          .dark-mode .text-muted {
+            color: #94a3b8 !important;
+          }
+          .dark-mode .th-override {
+            background-color: #334155 !important;
+            border-bottom-color: #475569 !important;
+            color: #ffffff !important;
+          }
+          .dark-mode .td-override {
+            border-bottom-color: #334155 !important;
+            color: #cbd5e1 !important;
+          }
+          .dark-mode .input-override {
+            background-color: #1e293b !important;
+            color: #ffffff !important;
+            border-color: #475569 !important;
+          }
+          .dark-mode .logo-text {
+            color: #93c5fd !important;
+          }
+          .dark-mode .bell-icon {
+            color: #cbd5e1 !important;
+          }
+        `}</style>
+      )}
       {/* Official HTU SDMS Style Header */}
-      <div style={styles.navbar}>
+      <div style={styles.navbar} className="navbar-override">
         <div style={styles.navLeft}>
           {isMobile && (
             <button onClick={() => setMenuOpen(!menuOpen)} style={styles.menuBtn}>
@@ -473,14 +517,14 @@ const StudentDashboard = () => {
                 <span style={{ fontSize: '10px', color: '#1e3a8a', fontWeight: 'bold' }}>HTU</span>
               </div>
             </div>
-            <span style={styles.sdmsText}>SDMS</span>
+            <span style={styles.sdmsText} className="logo-text">SDMS</span>
           </div>
         </div>
 
         <div style={styles.navRight}>
           {/* Notification Bell with Badge */}
           <div style={styles.bellWrapper}>
-            <Bell size={20} style={{ color: '#475569' }} />
+            <Bell size={20} style={{ color: '#475569' }} className="bell-icon" />
             {hasOutstanding && (
               <span style={styles.bellBadge}>1</span>
             )}
@@ -574,7 +618,7 @@ const StudentDashboard = () => {
       <div style={styles.content}>
         {/* Page Title */}
         <div style={styles.titleContainer}>
-          <h2 style={styles.dashboardTitle}>Dashboard</h2>
+          <h2 style={styles.dashboardTitle} className="text-title">Dashboard</h2>
         </div>
 
         {error && <div style={styles.errorBox}>⚠️ {error}</div>}
@@ -596,9 +640,9 @@ const StudentDashboard = () => {
         </div>
 
         {/* Timeline / Dues Action Card (SDMS STYLE WITH BLUE TOP BORDER) */}
-        <div style={styles.sdmsCard}>
+        <div style={styles.sdmsCard} className="card-override">
           <div style={styles.sdmsCardHeader}>
-            <h3 style={styles.sdmsCardTitle}>Timeline</h3>
+            <h3 style={styles.sdmsCardTitle} className="text-title">Timeline</h3>
           </div>
           
           {/* Timeline Mock Filters matching screenshot */}
@@ -709,12 +753,12 @@ const StudentDashboard = () => {
 
         {/* Mobile USSD / QR Code display if reference is active */}
         {reference && !isCleared && (
-          <div style={styles.sdmsCard}>
+          <div style={styles.sdmsCard} className="card-override">
             <div style={styles.sdmsCardHeader}>
-              <h3 style={styles.sdmsCardTitle}>Mobile Money Reference Info</h3>
+              <h3 style={styles.sdmsCardTitle} className="text-title">Mobile Money Reference Info</h3>
             </div>
             <div style={styles.refInfoContent}>
-              <p style={styles.refCodeSub}>Your generated reference code:</p>
+              <p style={styles.refCodeSub} className="text-muted">Your generated reference code:</p>
               <div style={styles.refCodeValue}>{reference.reference}</div>
               <p style={styles.refAmountVal}>Amount to Pay: <strong>{reference.amount}</strong></p>
 
@@ -747,22 +791,22 @@ const StudentDashboard = () => {
 
         {/* Class Fund Transparency Dashboard (SDMS STYLE WITH BLUE TOP BORDER) */}
         {classFund && (
-          <div style={styles.sdmsCard}>
+          <div style={styles.sdmsCard} className="card-override">
             <div style={styles.sdmsCardHeader}>
-              <h3 style={styles.sdmsCardTitle}>Class Fund Transparency Dashboard (Level {student?.level})</h3>
+              <h3 style={styles.sdmsCardTitle} className="text-title">Class Fund Transparency Dashboard (Level {student?.level})</h3>
             </div>
             <div style={styles.transpContent}>
               <div style={styles.transpGrid}>
                 <div style={styles.transpBox}>
-                  <span style={styles.transpLabel}>Total Dues Collected</span>
+                  <span style={styles.transpLabel} className="text-muted">Total Dues Collected</span>
                   <strong style={styles.transpVal}>₵{parseFloat(classFund.total_collected).toFixed(2)}</strong>
                 </div>
                 <div style={styles.transpBox}>
-                  <span style={styles.transpLabel}>Total Expenses Disbursed</span>
+                  <span style={styles.transpLabel} className="text-muted">Total Dues Expenses Disbursed</span>
                   <strong style={{ ...styles.transpVal, color: '#f43f5e' }}>₵{parseFloat(classFund.total_spent).toFixed(2)}</strong>
                 </div>
                 <div style={styles.transpBox}>
-                  <span style={styles.transpLabel}>Current Fund Balance</span>
+                  <span style={styles.transpLabel} className="text-muted">Current Fund Balance</span>
                   <strong style={{ ...styles.transpVal, color: '#1e3a8a' }}>₵{parseFloat(classFund.current_balance).toFixed(2)}</strong>
                 </div>
               </div>
@@ -775,19 +819,19 @@ const StudentDashboard = () => {
                   <table style={styles.table}>
                     <thead>
                       <tr style={styles.tableHeaderRow}>
-                        <th style={{ ...styles.th, textAlign: 'left' }}>Date</th>
-                        <th style={{ ...styles.th, textAlign: 'left' }}>Description</th>
-                        <th style={{ ...styles.th, textAlign: 'left' }}>Approved By</th>
-                        <th style={{ ...styles.th, textAlign: 'right' }}>Amount</th>
+                        <th style={{ ...styles.th, textAlign: 'left' }} className="th-override">Date</th>
+                        <th style={{ ...styles.th, textAlign: 'left' }} className="th-override">Description</th>
+                        <th style={{ ...styles.th, textAlign: 'left' }} className="th-override">Approved By</th>
+                        <th style={{ ...styles.th, textAlign: 'right' }} className="th-override">Amount</th>
                       </tr>
                     </thead>
                     <tbody>
                       {classFund.recent_expenses.map((expense, idx) => (
                         <tr key={idx} style={styles.tableRow}>
-                          <td style={{ ...styles.td, textAlign: 'left' }}>{new Date(expense.date).toLocaleDateString('en-GB')}</td>
-                          <td style={{ ...styles.td, textAlign: 'left' }}>{expense.description}</td>
-                          <td style={{ ...styles.td, textAlign: 'left' }}>{expense.approved_by || 'Dr. Joseph Darko'}</td>
-                          <td style={{ ...styles.td, textAlign: 'right', fontWeight: 'bold', color: '#0f172a' }}>₵{parseFloat(expense.amount).toFixed(2)}</td>
+                          <td style={{ ...styles.td, textAlign: 'left' }} className="td-override">{new Date(expense.date).toLocaleDateString('en-GB')}</td>
+                          <td style={{ ...styles.td, textAlign: 'left' }} className="td-override">{expense.description}</td>
+                          <td style={{ ...styles.td, textAlign: 'left' }} className="td-override">{expense.approved_by || 'Dr. Joseph Darko'}</td>
+                          <td style={{ ...styles.td, textAlign: 'right', fontWeight: 'bold' }} className="td-override">₵{parseFloat(expense.amount).toFixed(2)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -799,9 +843,9 @@ const StudentDashboard = () => {
         )}
 
         {/* Dues Payment History Log (SDMS STYLE WITH BLUE TOP BORDER) */}
-        <div style={styles.sdmsCard}>
+        <div style={styles.sdmsCard} className="card-override">
           <div style={styles.sdmsCardHeaderWithAction}>
-            <h3 style={styles.sdmsCardTitle}>Dues Payment History</h3>
+            <h3 style={styles.sdmsCardTitle} className="text-title">Dues Payment History</h3>
             <button 
               onClick={generateStatement}
               style={styles.statementBtn}
@@ -834,27 +878,27 @@ const StudentDashboard = () => {
                 <table style={styles.table}>
                   <thead>
                     <tr style={styles.tableHeaderRow}>
-                      <th style={{ ...styles.th, textAlign: 'left' }}>Date</th>
-                      <th style={{ ...styles.th, textAlign: 'left' }}>Reference Code</th>
-                      <th style={{ ...styles.th, textAlign: 'left' }}>Academic Semester</th>
-                      <th style={{ ...styles.th, textAlign: 'left' }}>Method</th>
-                      <th style={{ ...styles.th, textAlign: 'center' }}>Status</th>
-                      <th style={{ ...styles.th, textAlign: 'right' }}>Amount</th>
+                      <th style={{ ...styles.th, textAlign: 'left' }} className="th-override">Date</th>
+                      <th style={{ ...styles.th, textAlign: 'left' }} className="th-override">Reference Code</th>
+                      <th style={{ ...styles.th, textAlign: 'left' }} className="th-override">Academic Semester</th>
+                      <th style={{ ...styles.th, textAlign: 'left' }} className="th-override">Method</th>
+                      <th style={{ ...styles.th, textAlign: 'center' }} className="th-override">Status</th>
+                      <th style={{ ...styles.th, textAlign: 'right' }} className="th-override">Amount</th>
                     </tr>
                   </thead>
                   <tbody>
                     {history.map((tx) => (
                       <tr key={tx.id} style={styles.tableRow}>
-                        <td style={{ ...styles.td, textAlign: 'left' }}>{new Date(tx.created_at).toLocaleDateString('en-GB')}</td>
-                        <td style={{ ...styles.td, textAlign: 'left' }}><code>{tx.payment_reference}</code></td>
-                        <td style={{ ...styles.td, textAlign: 'left' }}>{tx.academic_year} Sem {tx.semester}</td>
-                        <td style={{ ...styles.td, textAlign: 'left' }}>{tx.payment_method?.replace('MOMO_', '') || 'MoMo'}</td>
-                        <td style={{ ...styles.td, textAlign: 'center' }}>
+                        <td style={{ ...styles.td, textAlign: 'left' }} className="td-override">{new Date(tx.created_at).toLocaleDateString('en-GB')}</td>
+                        <td style={{ ...styles.td, textAlign: 'left' }} className="td-override"><code>{tx.payment_reference}</code></td>
+                        <td style={{ ...styles.td, textAlign: 'left' }} className="td-override">{tx.academic_year} Sem {tx.semester}</td>
+                        <td style={{ ...styles.td, textAlign: 'left' }} className="td-override">{tx.payment_method?.replace('MOMO_', '') || 'MoMo'}</td>
+                        <td style={{ ...styles.td, textAlign: 'center' }} className="td-override">
                           <span style={tx.status === 'RECONCILED' || tx.status === 'PAID' ? styles.statusBadgePaid : styles.statusBadgePending}>
                             {tx.status}
                           </span>
                         </td>
-                        <td style={{ ...styles.td, textAlign: 'right', fontWeight: 'bold', color: '#0f172a' }}>₵{parseFloat(tx.amount).toFixed(2)}</td>
+                        <td style={{ ...styles.td, textAlign: 'right', fontWeight: 'bold' }} className="td-override">₵{parseFloat(tx.amount).toFixed(2)}</td>
                       </tr>
                     ))}
                   </tbody>

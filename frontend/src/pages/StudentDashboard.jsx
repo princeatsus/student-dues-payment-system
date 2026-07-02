@@ -53,11 +53,15 @@ const StudentDashboard = () => {
   // Hamburger Menu Mobile Toggle
   const [menuOpen, setMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(localStorage.getItem('theme-dark') === 'true');
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
 
   const { user, logoutUser } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    localStorage.setItem('theme-dark', darkMode ? 'true' : 'false');
+  }, [darkMode]);
 
   // Handle window resize for mobile navigation
   useEffect(() => {

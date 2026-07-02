@@ -30,7 +30,7 @@ const DemoRoleSwitcher = () => {
   const [switching, setSwitching] = useState(false);
 
   // Don't show if user is not logged in or we are on public pages
-  if (!user || ['/', '/verify', '/iot-gate'].includes(location.pathname)) return null;
+  if (!user || ['/', '/verify'].includes(location.pathname)) return null;
 
   // Check demo mode environment flag (default to true to ensure it runs during development/demos)
   const isDemo = import.meta.env.VITE_DEMO_MODE !== 'false';
@@ -40,17 +40,23 @@ const DemoRoleSwitcher = () => {
     { label: '🎓 Student View', value: 'STUDENT', path: '/student' },
     { label: '📢 Course Rep View', value: 'COURSE_REP', path: '/expenses' },
     { label: '💼 Accountant View', value: 'ACCOUNTANT', path: '/accountant' },
-    { label: '🏛️ HOD View', value: 'HOD', path: '/hod' }
+    { label: '🏛️ HOD View', value: 'HOD', path: '/hod' },
+    { label: '📡 IoT Gate Simulator', value: 'IOT_GATE', path: '/iot-gate', isPublic: true }
   ];
 
-  const handleSwitch = async (targetRole, path) => {
-    if (user.role === targetRole) return;
+  const handleSwitch = async (roleObj) => {
+    if (roleObj.isPublic) {
+      setIsOpen(false);
+      window.location.href = roleObj.path;
+      return;
+    }
+    if (user.role === roleObj.value) return;
     setSwitching(true);
     try {
-      const res = await switchRole({ targetRole });
+      const res = await switchRole({ targetRole: roleObj.value });
       loginUser(res.data.user, res.data.token);
       setIsOpen(false);
-      window.location.href = path;
+      window.location.href = roleObj.path;
     } catch (err) {
       console.error('Demo switch error:', err);
       alert('Failed to switch role in demo mode');
@@ -77,13 +83,13 @@ const DemoRoleSwitcher = () => {
             {roles.map((r) => (
               <button
                 key={r.value}
-                onClick={() => handleSwitch(r.value, r.path)}
+                onClick={() => handleSwitch(r)}
                 disabled={switching}
                 style={{
                   ...demoStyles.roleBtn,
-                  backgroundColor: user.role === r.value ? '#1e3a8a' : '#f8fafc',
-                  color: user.role === r.value ? '#ffffff' : '#334155',
-                  fontWeight: user.role === r.value ? '700' : '500'
+                  backgroundColor: (location.pathname === r.path || user.role === r.value) && !r.isPublic ? '#1e3a8a' : (location.pathname === r.path && r.isPublic ? '#1e3a8a' : '#f8fafc'),
+                  color: (location.pathname === r.path || user.role === r.value) && !r.isPublic ? '#ffffff' : (location.pathname === r.path && r.isPublic ? '#ffffff' : '#334155'),
+                  fontWeight: (location.pathname === r.path || user.role === r.value) ? '700' : '500'
                 }}
               >
                 {r.label}

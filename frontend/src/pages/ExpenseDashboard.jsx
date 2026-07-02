@@ -258,6 +258,18 @@ const ExpenseDashboard = () => {
         {error && <div style={styles.error}>{error}</div>}
         {success && <div style={styles.success}>{success}</div>}
 
+        <div style={styles.pageHeader}>
+          <div>
+            <p style={styles.deptLabel}>ELECTRICAL DEPT</p>
+            <h1 style={styles.pageTitle}>Expense requests</h1>
+          </div>
+          {isCourseRep && (
+            <button onClick={handleOpenModal} style={styles.newRequestBtn}>
+              + New request
+            </button>
+          )}
+        </div>
+
         {/* Approval Pipeline */}
         <div style={styles.pipelineCard}>
           <p style={styles.pipelineTitle}>APPROVAL PIPELINE</p>
@@ -364,58 +376,63 @@ const ExpenseDashboard = () => {
             </div>
           ) : (
             <div style={styles.cardsList}>
-              {filteredExpenses.map((exp) => (
-                <div key={exp.id} style={styles.expenseListItem} onClick={() => {
-                  if (exp.attachment_url) setPreviewImage(exp.attachment_url);
-                }}>
-                  <div style={styles.itemLeft}>
-                    <div style={styles.itemAvatar}>
-                      {exp.item_description.charAt(0).toUpperCase()}
-                    </div>
-                    <div>
-                      <h4 style={styles.itemDesc}>{exp.item_description}</h4>
-                      <p style={styles.itemMeta}>
-                        {new Date(exp.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} • by {exp.requested_by_name}
-                      </p>
-                      <p style={styles.itemVendor}>
-                        {exp.vendor_name || 'No vendor'} • Level {exp.target_level}
-                      </p>
+              {filteredExpenses.map((exp) => {
+                const description = exp.item_description?.trim() || 'Expense request';
+                const createdAtText = exp.created_at
+                  ? new Date(exp.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                  : 'No date';
+                const statusLabel = exp.status ? exp.status.replace('_', ' ') : 'Unknown';
+                return (
+                  <div key={exp.id} style={styles.expenseListItem} onClick={() => {
+                    if (exp.attachment_url) setPreviewImage(exp.attachment_url);
+                  }}>
+                    <div style={styles.itemLeft}>
+                      <div style={styles.itemAvatar}>
+                        {description.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <h4 style={styles.itemDesc}>{description}</h4>
+                        <p style={styles.itemMeta}>
+                          {createdAtText} • by {exp.requested_by_name || 'Unknown'}
+                        </p>
+                        <p style={styles.itemVendor}>
+                          {exp.vendor_name || 'No vendor'} • Level {exp.target_level || 'N/A'}
+                        </p>
                       
-                      {/* Attachment Link indicators inside the meta section */}
-                      <div style={{ marginTop: '6px', display: 'flex', gap: '8px' }}>
-                        {exp.attachment_url && (
-                          <span style={styles.cardLinkBadge}>📄 Invoice</span>
-                        )}
-                        {exp.disbursement_proof_url && (
-                          <span onClick={(e) => { e.stopPropagation(); setPreviewImage(exp.disbursement_proof_url); }} style={{ ...styles.cardLinkBadge, backgroundColor: '#e0f2fe', color: '#0369a1' }}>
-                            🧾 Receipt
-                          </span>
-                        )}
+                        {/* Attachment Link indicators inside the meta section */}
+                        <div style={{ marginTop: '6px', display: 'flex', gap: '8px' }}>
+                          {exp.attachment_url && (
+                            <span style={styles.cardLinkBadge}>📄 Invoice</span>
+                          )}
+                          {exp.disbursement_proof_url && (
+                            <span onClick={(e) => { e.stopPropagation(); setPreviewImage(exp.disbursement_proof_url); }} style={{ ...styles.cardLinkBadge, backgroundColor: '#e0f2fe', color: '#0369a1' }}>
+                              🧾 Receipt
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div style={styles.itemRight}>
-                    <span style={styles.itemAmount}>₵{parseFloat(exp.amount).toFixed(2)}</span>
-                    <span style={{
-                      ...styles.statusBadge,
-                      fontSize: '10px',
-                      padding: '4px 8px',
-                      marginTop: '4px',
-                      display: 'inline-block',
-                      backgroundColor: 
-                        exp.status === 'PENDING_HOD' ? '#fefcbf' :
-                        exp.status === 'PENDING_FINANCE' ? '#bee3f8' :
-                        exp.status === 'DISBURSED' ? '#c6f6d5' :
-                        exp.status === 'REJECTED' ? '#fed7d7' : '#e2e8f0',
-                      color:
-                        exp.status === 'PENDING_HOD' ? '#975a16' :
-                        exp.status === 'PENDING_FINANCE' ? '#2a69ac' :
-                        exp.status === 'DISBURSED' ? '#276749' :
-                        exp.status === 'REJECTED' ? '#9b2c2c' : '#4a5568',
-                    }}>
-                      {exp.status.replace('_', ' ')}
-                    </span>
-                    
+                    <div style={styles.itemRight}>
+                      <span style={styles.itemAmount}>₵{Number(exp.amount || 0).toFixed(2)}</span>
+                      <span style={{
+                        ...styles.statusBadge,
+                        fontSize: '10px',
+                        padding: '4px 8px',
+                        marginTop: '4px',
+                        display: 'inline-block',
+                        backgroundColor: 
+                          exp.status === 'PENDING_HOD' ? '#fefcbf' :
+                          exp.status === 'PENDING_FINANCE' ? '#bee3f8' :
+                          exp.status === 'DISBURSED' ? '#c6f6d5' :
+                          exp.status === 'REJECTED' ? '#fed7d7' : '#e2e8f0',
+                        color:
+                          exp.status === 'PENDING_HOD' ? '#975a16' :
+                          exp.status === 'PENDING_FINANCE' ? '#2a69ac' :
+                          exp.status === 'DISBURSED' ? '#276749' :
+                          exp.status === 'REJECTED' ? '#9b2c2c' : '#4a5568',
+                      }}>
+                        {statusLabel}
+                      </span>
                     {/* Action buttons if applicable */}
                     <div style={{ marginTop: '8px', display: 'flex', gap: '6px', justifyContent: 'flex-end' }} onClick={(e) => e.stopPropagation()}>
                       {isHOD && exp.status === 'PENDING_HOD' && (
@@ -442,7 +459,8 @@ const ExpenseDashboard = () => {
                     </div>
                   </div>
                 </div>
-              ))}
+              );
+            }) }
             </div>
           )}
         </div>
@@ -636,7 +654,44 @@ const styles = {
     cursor: 'pointer', fontSize: '12px', fontWeight: '600',
     transition: 'all 0.2s ease'
   },
-  content: { maxWidth: '1200px', margin: '0 auto', padding: '32px' },
+  content: { maxWidth: '1200px', margin: '0 auto', padding: '32px 24px 48px' },
+  pageHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    gap: '20px',
+    marginBottom: '24px',
+    flexWrap: 'wrap'
+  },
+  deptLabel: {
+    margin: 0,
+    fontSize: '11px',
+    fontWeight: '700',
+    letterSpacing: '0.2em',
+    color: '#64748b',
+    textTransform: 'uppercase'
+  },
+  pageTitle: {
+    margin: '6px 0 0 0',
+    fontSize: '34px',
+    fontWeight: '800',
+    color: '#0f172a'
+  },
+  newRequestBtn: {
+    backgroundColor: '#1d4ed8',
+    color: '#ffffff',
+    border: 'none',
+    borderRadius: '12px',
+    padding: '14px 22px',
+    fontSize: '14px',
+    fontWeight: '700',
+    cursor: 'pointer',
+    boxShadow: '0 12px 24px rgba(59, 130, 246, 0.16)',
+    transition: 'transform 0.18s ease, box-shadow 0.18s ease'
+  },
+  newRequestBtnHover: {
+    transform: 'translateY(-1px)'
+  },
   error: {
     backgroundColor: '#fef2f2', border: '1px solid #fca5a5',
     color: '#b91c1c', padding: '14px', borderRadius: '12px', marginBottom: '24px', fontSize: '13px', fontWeight: '500'
@@ -661,8 +716,8 @@ const styles = {
   },
   section: { 
     backgroundColor: '#fff', borderRadius: '16px', padding: '28px', 
-    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
-    borderTop: '3px solid #1a56db'
+    boxShadow: '0 4px 6px -1px rgba(15, 23, 42, 0.08), 0 2px 4px -1px rgba(15, 23, 42, 0.06)',
+    borderTop: '3px solid #e2e8f0'
   },
   sectionTitle: { margin: '0 0 20px 0', fontSize: '16px', fontWeight: '800', color: '#1e293b' },
   emptyState: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 24px', textAlign: 'center' },
@@ -838,21 +893,21 @@ const styles = {
     flexWrap: 'wrap'
   },
   tabBtn: {
-    padding: '10px 20px',
-    borderRadius: '10px',
-    border: '1px solid #cbd5e1',
+    padding: '12px 20px',
+    borderRadius: '999px',
+    border: '1px solid #e2e8f0',
     backgroundColor: '#ffffff',
-    color: '#64748b',
+    color: '#475569',
     fontSize: '13px',
-    fontWeight: '600',
+    fontWeight: '700',
     cursor: 'pointer',
     transition: 'all 0.2s'
   },
   tabBtnActive: {
-    backgroundColor: '#f1f5f9',
-    color: '#1e293b',
+    backgroundColor: '#f8fafc',
+    color: '#0f172a',
     borderColor: '#cbd5e1',
-    boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.02)'
+    boxShadow: 'inset 0 1px 2px rgba(15, 23, 42, 0.08)'
   },
   sectionTitleUpper: {
     fontSize: '12px',
@@ -869,15 +924,15 @@ const styles = {
   },
   expenseListItem: {
     backgroundColor: '#ffffff',
-    borderRadius: '16px',
-    padding: '16px 20px',
-    border: '1.5px solid #f1f5f9',
+    borderRadius: '18px',
+    padding: '18px 22px',
+    border: '1px solid #e2e8f0',
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
     cursor: 'pointer',
     transition: 'transform 0.15s ease, box-shadow 0.15s ease',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.01)',
+    boxShadow: '0 8px 18px rgba(15, 23, 42, 0.04)',
     boxSizing: 'border-box'
   },
   itemLeft: {
@@ -920,17 +975,17 @@ const styles = {
     alignItems: 'flex-end'
   },
   itemAmount: {
-    fontSize: '16px',
+    fontSize: '18px',
     fontWeight: '800',
-    color: '#1e293b'
+    color: '#0f172a'
   },
   cardLinkBadge: {
-    fontSize: '10px',
+    fontSize: '11px',
     fontWeight: '600',
-    backgroundColor: '#f1f5f9',
-    color: '#475569',
-    padding: '2px 6px',
-    borderRadius: '4px',
+    backgroundColor: '#f8fafc',
+    color: '#0f172a',
+    padding: '4px 8px',
+    borderRadius: '999px',
     display: 'inline-block'
   }
 };

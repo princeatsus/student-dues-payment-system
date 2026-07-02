@@ -716,7 +716,9 @@ const styles = {
     textAlign: 'left',
     display: 'flex',
     alignItems: 'center',
-    cursor: 'pointer'
+    cursor: 'pointer',
+    width: '100%',
+    boxSizing: 'border-box'
   },
   mobileMenuLogoutBtn: {
     backgroundColor: '#ef4444',
@@ -730,7 +732,9 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     cursor: 'pointer',
-    marginTop: '8px'
+    marginTop: '8px',
+    width: '100%',
+    boxSizing: 'border-box'
   },
   content: { maxWidth: '1280px', margin: '0 auto', padding: '24px' },
   error: {

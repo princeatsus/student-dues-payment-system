@@ -112,6 +112,12 @@ const AccountantDashboard = () => {
     <div style={{ ...styles.container, backgroundColor: darkMode ? '#0f172a' : '#f8fafc' }}>
       {/* Global CSS Styles Injector */}
       <style>{`
+        html, body, #root {
+          max-width: 100vw !important;
+          overflow-x: hidden !important;
+          margin: 0;
+          padding: 0;
+        }
         body {
           background-color: ${darkMode ? '#0f172a' : '#f8fafc'} !important;
           transition: background-color 0.3s ease;
@@ -185,6 +191,7 @@ const AccountantDashboard = () => {
           .stat-card-override {
             margin-bottom: 0 !important;
             padding: 12px 14px !important;
+            min-width: 0 !important;
           }
           .stat-value-override {
             font-size: 20px !important;
@@ -221,6 +228,10 @@ const AccountantDashboard = () => {
           }
           .due-input-override {
             width: 100% !important;
+          }
+          .section-card-override {
+            min-width: 0 !important;
+            padding: 16px !important;
           }
         }
       `}</style>
@@ -402,7 +413,7 @@ const AccountantDashboard = () => {
         {/* Grid for Dues Config & Students */}
         <div style={styles.gridContainer} className="grid-container-override">
           {/* Configure Dues Section */}
-          <div className="card-override" style={styles.section}>
+          <div className="card-override section-card-override" style={styles.section}>
             <h2 style={styles.sectionTitle} className="text-title">
               <Settings size={18} style={styles.titleIcon} />
               Configure Semester Dues
@@ -436,7 +447,7 @@ const AccountantDashboard = () => {
           </div>
 
           {/* Students Directory */}
-          <div className="card-override" style={{ ...styles.section, flex: 2 }}>
+          <div className="card-override section-card-override" style={{ ...styles.section, flex: 2 }}>
             <div style={styles.directoryHeader} className="directory-header-override">
               <h2 style={styles.sectionTitle} className="text-title">
                 👥 Student Ledger Directory

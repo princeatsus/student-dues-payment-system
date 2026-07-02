@@ -233,6 +233,28 @@ const AccountantDashboard = () => {
             min-width: 0 !important;
             padding: 16px !important;
           }
+          .mobile-menu-btn-override {
+            transition: all 0.2s ease-in-out !important;
+          }
+          .mobile-menu-btn-override:active {
+            transform: scale(0.97) !important;
+            background-color: rgba(255, 255, 255, 0.2) !important;
+          }
+        }
+
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            transform: translateY(-8px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .mobile-menu-animate {
+          animation: slideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
         }
       `}</style>
 
@@ -332,32 +354,54 @@ const AccountantDashboard = () => {
 
       {/* Mobile Drawer Menu */}
       {isMobile && menuOpen && (
-        <div style={{
-          ...styles.mobileMenu,
-          background: darkMode ? '#1e293b' : '#1e3a8a',
-          borderBottom: darkMode ? '1px solid #334155' : 'none'
-        }}>
+        <div 
+          className="mobile-menu-animate"
+          style={{
+            ...styles.mobileMenu,
+            background: darkMode 
+              ? 'linear-gradient(180deg, #1e293b 0%, #0f172a 100%)' 
+              : 'linear-gradient(180deg, #1e3a8a 0%, #172554 100%)',
+            borderBottom: darkMode ? '1px solid #334155' : '1px solid rgba(255,255,255,0.1)'
+          }}
+        >
           <div style={styles.mobileMenuHeader}>
             <span style={styles.mobileMenuUser}>👋 Accountant: <strong>{user?.full_name}</strong></span>
           </div>
 
           <div style={styles.mobileMenuContent}>
-            <button onClick={() => { handleSyncDirectory(); setMenuOpen(false); }} disabled={syncing} style={styles.mobileMenuBtn}>
+            <button 
+              onClick={() => { handleSyncDirectory(); setMenuOpen(false); }} 
+              disabled={syncing} 
+              style={styles.mobileMenuBtn}
+              className="mobile-menu-btn-override"
+            >
               <Database size={14} style={{ marginRight: '8px' }} />
               {syncing ? 'Google Syncing...' : 'Google Directory Sync'}
             </button>
             
-            <button onClick={() => { navigate('/reconcile'); setMenuOpen(false); }} style={styles.mobileMenuBtn}>
+            <button 
+              onClick={() => { navigate('/reconcile'); setMenuOpen(false); }} 
+              style={styles.mobileMenuBtn}
+              className="mobile-menu-btn-override"
+            >
               <RefreshCw size={14} style={{ marginRight: '8px' }} />
               MoMo Reconciliation
             </button>
             
-            <button onClick={() => { navigate('/expenses'); setMenuOpen(false); }} style={styles.mobileMenuBtn}>
+            <button 
+              onClick={() => { navigate('/expenses'); setMenuOpen(false); }} 
+              style={styles.mobileMenuBtn}
+              className="mobile-menu-btn-override"
+            >
               <Coins size={14} style={{ marginRight: '8px' }} />
               Expense Requisitions
             </button>
             
-            <button onClick={handleLogout} style={styles.mobileMenuLogoutBtn}>
+            <button 
+              onClick={handleLogout} 
+              style={styles.mobileMenuLogoutBtn}
+              className="mobile-menu-btn-override"
+            >
               <LogOut size={14} style={{ marginRight: '8px' }} />
               Logout from Portal
             </button>

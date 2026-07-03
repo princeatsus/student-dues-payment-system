@@ -1,58 +1,66 @@
 # 🎓 COMPSSA — Student Dues Payment & Expense Management System
 ### Department of Computer Science · Ho Technical University (HTU)
 
-A secure, audit-compliant, and fully integrated dues payment portal and project expense transparency system, custom-engineered for the Ho Technical University Computer Science Department. 
+A secure, audit-compliant, and fully integrated dues payment portal and project expense transparency system, custom-engineered for the Ho Technical University Computer Science Department.
 
 This project was built for the **COMPSSA Hackathon 2026**.
 
 ---
 
 ## 🚀 Live Demonstration Links
-*   **Live Web Application (Vercel):** `https://student-dues-payment-system.vercel.app` *(Note: If Vercel assigned a suffix, replace this with your actual URL)*
+*   **Live Web Application (Vercel):** [https://student-dues-payment-system.vercel.app](https://student-dues-payment-system.vercel.app)
 *   **Live API Server (Render):** [https://student-dues-payment-system.onrender.com](https://student-dues-payment-system.onrender.com)
-*   **Database Engine:** PostgreSQL (Hosted on Supabase with Row-Level Security active)
+*   **Database Engine:** PostgreSQL (hosted on Supabase)
 
 ---
 
 ## 🌟 Key Features
 
 ### 1. 🎓 Student Portal (Payer)
-*   **Real-time Ledger balance:** View current semester dues, historical outstanding balances, and recent payment logs.
-*   **Simulated Momo Gateway:** Generate a unique 12-character alphanumeric payment reference (e.g., `HTU-ELE-26-PXBO`), scan a generated QR code, or trigger a simulated MTN/Telecel mobile money prompt.
-*   **Clearance Slips:** Generate and download a watermarked PDF Clearance Certificate containing student details and a secure verification QR code once the balance is cleared.
+*   **Real-time ledger balance:** View current semester dues, historical outstanding balances, and recent payment logs.
+*   **Payment gateway:** Generate a unique payment reference (e.g., `HTU-ELE-26-PXBO`) with QR code, then pay via **Paystack** inline checkout.
+*   **Clearance slips:** Download a watermarked PDF Clearance Certificate with a verification QR code once the balance is cleared.
 
 ### 2. 📢 Course Representative Dashboard
-*   **Isolated Class Roster:** Monitor payment status (Paid vs. Owing) strictly for students in their assigned level group.
-*   **Email Nudge Engine:** Send automated reminder emails containing individual outstanding balances directly to defaulters.
-*   **Roster Export:** Download the roster database as a spreadsheet for offline record keeping.
-*   **Expense Requisitions:** File project expense requests to draw from class project funds, specifying item descriptions, justifications, amounts, and quotes.
+*   **Isolated class roster:** Monitor payment status (Paid vs. Owing) strictly for students in their assigned level group.
+*   **Email nudge engine:** Send automated reminder emails containing individual outstanding balances directly to defaulters (via Brevo).
+*   **Roster export:** Download the roster as a CSV spreadsheet for offline record keeping.
+*   **Expense requisitions:** File project expense requests with item descriptions, justifications, amounts, and quote attachments.
 
 ### 3. 🏛️ HOD (Head of Department) Portal
-*   **Executive Dashboard:** View visual metrics like overall dues collection efficiency (SVG ring) and class budget spend ratio (linear progress bar).
-*   **Academic Clearance Overrides:** Grant temporary clearance to students with financial hardships on compassionate grounds. This logs a reason, bypasses the exam hall gate, but leaves their financial ledger intact.
-*   **Approvals Workflow:** Approve or reject expense requests submitted by Course Reps.
+*   **Executive dashboard:** View overall dues collection efficiency (SVG ring) and class budget spend ratio (progress bar).
+*   **Academic clearance overrides:** Grant temporary exam clearance on compassionate grounds — gate access is granted, but the financial ledger stays unchanged.
+*   **Approvals workflow:** Approve or reject expense requests submitted by Course Reps (on `/expenses` and the HOD Expenses tab).
 
 ### 4. 💼 Departmental Accountant Workspace
-*   **Dues Configurator:** Configure dues amounts per academic year and level.
-*   **Reconciliation Wizard:** Drag and drop MTN/Telecel Mobile Money statement CSV files to automatically match references and auto-clear student dues in bulk.
-*   **Manual Entry & Audit Logs:** Log cash payments manually. An append-only audit trail logs every system action (logins, overrides, manual payments) with timestamps and actor details.
+*   **Dues configurator:** Configure dues amounts per academic year and level.
+*   **Reconciliation wizard:** Upload MTN/Telecel Mobile Money statement CSV files to automatically match payment references and clear student dues in bulk.
+*   **Manual reconciliation:** Assign unmatched CSV rows to students from the reconciliation wizard.
+*   **Audit logging:** Append-only audit records for logins, overrides, payments, and expense actions (stored in the database).
 
 ### 5. 📡 Virtual IoT Gate Simulator (`/iot-gate`)
 *   Simulates a physical turnstile gate connected to an **ESP8266 NodeMCU** microcontroller.
 *   Scan student index numbers to simulate real-world hardware verification.
-*   The virtual controller flashes a **Green LED** and rotates to `🔓 GATE OPENED` for cleared students and HOD overrides, or flashes a **Red LED** and keeps the gate `🔒 LOCKED` for defaulters, printing debug logs in real-time.
+*   Flashes a **Green LED** and `🔓 GATE OPENED` for cleared students and HOD overrides, or a **Red LED** and `🔒 LOCKED` for defaulters, with real-time serial debug logs.
 
 ### 🔍 6. Public Verification Portal (`/verify`)
-*   An unauthenticated lookup portal where third-party employers or exams officers can search by **Index Number + Graduation Year** to verify a student's clearance status without exposing their exact financial details.
+*   An unauthenticated lookup portal where employers or exams officers can search by **Index Number + Graduation Year** to verify clearance status without exposing exact financial amounts.
+
+### ⚙️ 7. Demo Console (for judges & presentations)
+*   Built-in **Demo Console** (bottom-right) lets you switch between **Student**, **Course Rep**, **Accountant**, and **HOD** views from a single Google login — no separate staff accounts required for walkthroughs.
 
 ---
 
 ## 🛠️ Technology Stack
-*   **Frontend:** React (Vite), Vanilla CSS (glassmorphic styling, responsive layout).
-*   **Backend:** Node.js, Express.js.
-*   **Database:** PostgreSQL (Supabase cloud database with RLS policies).
-*   **PDF Engine:** jsPDF (Client-side watermarked generator).
-*   **Hosting:** Vercel (Frontend), Render (Backend).
+*   **Frontend:** React (Vite), Tailwind CSS, responsive layout
+*   **Backend:** Node.js, Express.js, JWT authentication
+*   **Database:** PostgreSQL (Supabase)
+*   **Auth:** Google OAuth (`@htu.edu.gh` domain restriction)
+*   **Payments:** Paystack (inline checkout + server-side verification)
+*   **Email:** Brevo transactional API (console fallback in development)
+*   **Security:** AES-256-GCM email encryption at rest, rate limiting, append-only audit logs
+*   **PDF:** jsPDF (client-side watermarked certificate generator)
+*   **Hosting:** Vercel (frontend), Render (backend)
 
 ---
 
@@ -61,7 +69,9 @@ This project was built for the **COMPSSA Hackathon 2026**.
 ### Prerequisites
 *   Node.js (v18+)
 *   NPM or Yarn
-*   A PostgreSQL Database (e.g., Supabase)
+*   A PostgreSQL database (e.g., Supabase)
+*   Google Cloud OAuth Client ID
+*   Paystack test keys (optional for local payment testing)
 
 ### 1. Backend Setup
 1. Open the `/backend` folder:
@@ -72,14 +82,18 @@ This project was built for the **COMPSSA Hackathon 2026**.
    ```bash
    npm install
    ```
-3. Create a `.env` file inside the `/backend` folder and add:
+3. Create a `.env` file inside the `/backend` folder:
    ```env
    PORT=5000
    DATABASE_URL=your_postgresql_connection_string
    JWT_SECRET=your_jwt_secret_key
+   ENCRYPTION_KEY=your_32_byte_hex_encryption_key
+   PAYSTACK_SECRET_KEY=sk_test_your_paystack_secret
+   BREVO_API_KEY=your_brevo_api_key
+   BREVO_SENDER_EMAIL=your_sender@htu.edu.gh
    ```
-4. Seed the database schemas:
-   Execute the SQL statements in `/backend/config/schema.sql` on your PostgreSQL database to set up tables, views, RLS policies, and academic session seeds.
+4. Initialize the database:
+   Execute the SQL in `/backend/config/schema.sql` on your PostgreSQL database (tables, views, seeds). The server also auto-runs the schema on first connect if tables are missing.
 5. Start the local server:
    ```bash
    node server.js
@@ -94,8 +108,26 @@ This project was built for the **COMPSSA Hackathon 2026**.
    ```bash
    npm install
    ```
-3. Start the Vite development server:
+3. Create a `.env` file inside the `/frontend` folder:
+   ```env
+   VITE_API_URL=http://localhost:5000/api
+   VITE_GOOGLE_CLIENT_ID=your_google_oauth_client_id
+   VITE_PAYSTACK_PUBLIC_KEY=pk_test_your_paystack_public_key
+   VITE_DEMO_MODE=true
+   ```
+4. Start the Vite development server:
    ```bash
    npm run dev
    ```
-4. Access the portal locally at `http://localhost:5173`.
+5. Access the portal locally at `http://localhost:5173`.
+
+---
+
+## 🎬 Demo Walkthrough (quick guide)
+1. Sign in with your **HTU Google account** at the login page.
+2. Explore the **Student Dashboard** — balance, Paystack payment, PDF certificate.
+3. Open **⚙️ Demo Console** → switch to **Accountant** → upload `momo_statement.csv` on `/reconcile`.
+4. Switch to **Course Rep** → submit an expense, view class roster, send a reminder.
+5. Switch to **HOD** → review defaulters, grant an override, approve expenses.
+6. Open **IoT Gate** (`/iot-gate`) → scan cleared vs owing index numbers.
+7. Open **Public Verify** (`/verify`) → look up clearance by index + graduation year.

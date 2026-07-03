@@ -145,20 +145,21 @@ const ClassRoster = () => {
   }
 
   return (
-    <div style={styles.container}>
-      <AppHeader 
-        role="COURSE_REP" 
-        userName={user?.full_name} 
-        pageTitle="Class roster" 
-        subtitle={`Level ${rosterData?.level || '200'}${rosterData?.class_group || 'A'} · Semester ${rosterData?.session?.semester || '1'}, ${rosterData?.session?.academic_year || '2025/2026'}`} 
-        onBack={() => navigate('/expenses')} 
-        onLogout={handleLogout}
-      />
+    <div className="w-full min-h-screen bg-slate-50 flex justify-center font-sans">
+      <div className="w-full max-w-[420px] lg:max-w-none min-h-screen bg-slate-50 flex flex-col pb-16 relative">
+        <AppHeader 
+          role="COURSE_REP" 
+          userName={user?.full_name} 
+          pageTitle="Class roster" 
+          subtitle={`Level ${rosterData?.level || '200'}${rosterData?.class_group || 'A'} · Semester ${rosterData?.session?.semester || '1'}, ${rosterData?.session?.academic_year || '2025/2026'}`} 
+          onBack={() => navigate('/expenses')} 
+          onLogout={handleLogout}
+        />
 
-      {/* Main Content Body */}
-      <div style={styles.content}>
-        {error && <div style={styles.errorBox}>⚠️ {error}</div>}
-        {success && <div style={styles.successBox}>✅ {success}</div>}
+        {/* Main Content Body */}
+        <div className="w-full max-w-7xl mx-auto px-4 py-6 flex-1 flex flex-col gap-6">
+          {error && <div style={styles.errorBox}>⚠️ {error}</div>}
+          {success && <div style={styles.successBox}>✅ {success}</div>}
 
         {/* Portal Greeting Card with Circular Chart */}
         <div style={styles.heroCard}>
@@ -399,6 +400,7 @@ const ClassRoster = () => {
             </div>
           )}
         </div>
+      </div>
       </div>
     </div>
   );

@@ -268,6 +268,38 @@ const AccountantDashboard = () => {
       />
 
       <div style={styles.content} className="content-override">
+        {/* Accountant Quick Actions Panel */}
+        <div className="mb-4 bg-white border border-slate-300 rounded-[12px] p-3 flex flex-wrap items-center gap-2.5">
+          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mr-1">
+            Actions
+          </span>
+          <button 
+            type="button"
+            onClick={handleSyncDirectory} 
+            disabled={syncing}
+            className="border border-slate-300 rounded-[8px] bg-slate-50 text-slate-700 px-3 py-1.5 flex items-center gap-1.5 text-xs font-medium hover:bg-slate-100 disabled:opacity-50 transition active:scale-95 cursor-pointer"
+          >
+            <Database size={13} />
+            <span>{syncing ? 'Syncing...' : 'Google sync'}</span>
+          </button>
+          <button 
+            type="button"
+            onClick={() => navigate('/reconcile')}
+            className="border border-slate-300 rounded-[8px] bg-slate-50 text-slate-700 px-3 py-1.5 flex items-center gap-1.5 text-xs font-medium hover:bg-slate-100 transition active:scale-95 cursor-pointer"
+          >
+            <RefreshCw size={13} />
+            <span>Reconciliation</span>
+          </button>
+          <button 
+            type="button"
+            onClick={() => navigate('/expenses')}
+            className="border border-slate-300 rounded-[8px] bg-slate-50 text-slate-700 px-3 py-1.5 flex items-center gap-1.5 text-xs font-medium hover:bg-slate-100 transition active:scale-95 cursor-pointer"
+          >
+            <Coins size={13} />
+            <span>Expenses</span>
+          </button>
+        </div>
+
         {error && <div style={styles.error}>{error}</div>}
         {success && <div style={styles.success}>{success}</div>}
 

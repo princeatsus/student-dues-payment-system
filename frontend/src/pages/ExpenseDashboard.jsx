@@ -489,6 +489,23 @@ const ExpenseDashboard = () => {
                 </div>
               )}
 
+              {/* Course Rep Quick Navigation Actions */}
+              {isCourseRep && (
+                <div className="bg-white border border-slate-300 rounded-[12px] p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-none">
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-900">Class management console</h3>
+                    <p className="text-xs text-slate-500 mt-0.5">Track your class members' payment history and send dues reminders.</p>
+                  </div>
+                  <button 
+                    type="button"
+                    onClick={() => navigate('/roster')}
+                    className="border border-slate-300 rounded-[8px] bg-slate-50 text-slate-700 px-4 py-2 flex items-center justify-center gap-1.5 text-xs font-semibold hover:bg-slate-100 transition active:scale-95 cursor-pointer shrink-0 font-medium"
+                  >
+                    <span>📋 View Class Roster</span>
+                  </button>
+                </div>
+              )}
+
               {/* 2x2 Stats Cards Grid */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 bg-slate-50/50 lg:bg-transparent p-4 lg:p-0 rounded-[12px] lg:rounded-none border border-slate-200 lg:border-none">
                 <div className="bg-white border border-slate-300 rounded-[12px] p-3 flex flex-col justify-between">

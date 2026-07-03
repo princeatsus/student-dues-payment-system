@@ -96,69 +96,71 @@ const AppHeader = ({
     <div className="w-full bg-white flex flex-col font-sans">
       
       {/* Top Navbar */}
-      <div className="px-4 py-3 flex items-center justify-between border-b border-slate-300">
-        
-        {/* Left Side: Back Arrow + Breadcrumb */}
-        <div className="flex items-center gap-2.5 min-w-0">
-          <button 
-            type="button"
-            onClick={handleDefaultBack}
-            className="w-8 h-8 rounded-[8px] border border-slate-300 flex items-center justify-center bg-white text-slate-700 hover:bg-slate-50 active:scale-95 transition shrink-0"
-            aria-label="Back"
-          >
-            <ArrowLeft size={16} />
-          </button>
-          
-          <div className="min-w-0">
-            <span className="block text-[9px] font-bold text-slate-400 tracking-wider uppercase leading-tight">
-              ELECTRICAL DEPT
-            </span>
-            <span className="block text-sm font-bold text-slate-950 truncate -mt-0.5">
-              {pageTitle}
-            </span>
-          </div>
-        </div>
-
-        {/* Right Side: Role Chip + Logout */}
-        <div className="flex items-center gap-2 shrink-0">
-          {/* Role Chip Pill */}
-          <div className={`rounded-full border border-slate-300 px-2.5 py-0.5 pr-3.5 flex items-center gap-2 ${config.bgClass} ${config.textClass}`}>
-            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-white shrink-0 ${config.iconBgClass}`}>
-              <RoleIcon size={13} />
-            </div>
-            <div className="flex flex-col items-start leading-[1.1]">
-              <span className="text-[8px] font-semibold uppercase tracking-wider opacity-85">
-                {config.label}
+      <div className="w-full border-b border-slate-300 bg-white">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+          {/* Left Side: Back Arrow + Breadcrumb */}
+          <div className="flex items-center gap-2.5 min-w-0">
+            <button 
+              type="button"
+              onClick={handleDefaultBack}
+              className="w-8 h-8 rounded-[8px] border border-slate-300 flex items-center justify-center bg-white text-slate-700 hover:bg-slate-50 active:scale-95 transition shrink-0"
+              aria-label="Back"
+            >
+              <ArrowLeft size={16} />
+            </button>
+            
+            <div className="min-w-0">
+              <span className="block text-[9px] font-bold text-slate-400 tracking-wider uppercase leading-tight">
+                ELECTRICAL DEPT
               </span>
-              <span className="text-[11px] font-bold truncate max-w-[80px]">
-                {userName}
+              <span className="block text-sm font-bold text-slate-950 truncate -mt-0.5">
+                {pageTitle}
               </span>
             </div>
           </div>
 
-          {/* Logout Button */}
-          <button
-            type="button"
-            onClick={handleDefaultLogout}
-            className="w-8 h-8 rounded-[8px] border border-slate-300 flex items-center justify-center bg-white text-slate-600 hover:text-red-600 hover:bg-red-50 hover:border-red-200 active:scale-95 transition"
-            aria-label="Log out"
-          >
-            <LogOut size={15} />
-          </button>
-        </div>
+          {/* Right Side: Role Chip + Logout */}
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Role Chip Pill */}
+            <div className={`rounded-full border border-slate-300 px-2.5 py-0.5 pr-3.5 flex items-center gap-2 ${config.bgClass} ${config.textClass}`}>
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-white shrink-0 ${config.iconBgClass}`}>
+                <RoleIcon size={13} />
+              </div>
+              <div className="flex flex-col items-start leading-[1.1]">
+                <span className="text-[8px] font-semibold uppercase tracking-wider opacity-85">
+                  {config.label}
+                </span>
+                <span className="text-[11px] font-bold truncate max-w-[80px]">
+                  {userName}
+                </span>
+              </div>
+            </div>
 
+            {/* Logout Button */}
+            <button
+              type="button"
+              onClick={handleDefaultLogout}
+              className="w-8 h-8 rounded-[8px] border border-slate-300 flex items-center justify-center bg-white text-slate-600 hover:text-red-600 hover:bg-red-50 hover:border-red-200 active:scale-95 transition"
+              aria-label="Log out"
+            >
+              <LogOut size={15} />
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Hero Page Section */}
-      <div className="px-4 py-5 bg-white">
-        <h1 className="text-xl font-bold text-slate-950 leading-tight">
-          {pageTitle}
-        </h1>
-        {subtitle && (
-          <p className="text-xs text-slate-500 mt-1 font-medium leading-normal">
-            {subtitle}
-          </p>
-        )}
+      <div className="w-full bg-white">
+        <div className="max-w-7xl mx-auto px-4 py-5">
+          <h1 className="text-xl font-bold text-slate-950 leading-tight">
+            {pageTitle}
+          </h1>
+          {subtitle && (
+            <p className="text-xs text-slate-500 mt-1 font-medium leading-normal">
+              {subtitle}
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Thin divider line below hero */}

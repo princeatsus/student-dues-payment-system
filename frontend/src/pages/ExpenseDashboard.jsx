@@ -241,12 +241,12 @@ const ExpenseDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-100 flex justify-center items-start">
-      <div className="w-full max-w-[420px] bg-white min-h-screen border-x border-slate-200 flex flex-col relative text-slate-700 font-sans shadow-none">
+    <div className="min-h-screen bg-slate-100 lg:bg-slate-50 flex justify-center items-start w-full font-sans">
+      <div className="w-full max-w-[420px] lg:max-w-none bg-white lg:bg-slate-50 min-h-screen border-x border-slate-200 lg:border-none flex flex-col relative text-slate-700 shadow-none">
         
         {/* VIEW 1: Expense Request Multi-Step Form */}
         {showModal ? (
-          <div className="flex-1 flex flex-col bg-white pb-6">
+          <div className="flex-1 flex flex-col bg-white pb-6 max-w-xl lg:mx-auto w-full lg:my-8 lg:border lg:border-slate-300 lg:rounded-[12px] lg:shadow-sm">
             {/* Header */}
             <div className="p-4 border-b border-slate-100 flex items-center gap-3">
               <button 
@@ -470,7 +470,7 @@ const ExpenseDashboard = () => {
           </div>
         ) : (
           /* VIEW 2: Dashboard Main Roster and Requests List */
-          <div className="flex-1 flex flex-col pb-20">
+          <div className="flex-1 flex flex-col bg-white lg:bg-slate-50 pb-20">
             <AppHeader 
               role={user?.role} 
               userName={user?.full_name} 
@@ -480,69 +480,72 @@ const ExpenseDashboard = () => {
               onLogout={handleLogout}
             />
 
-            {/* Notification messages */}
-            {success && (
-              <div className="m-4 p-3 bg-teal-50 border border-teal-200 text-teal-800 rounded-[12px] text-xs font-semibold flex items-center justify-between">
-                <span>{success}</span>
-                <button onClick={() => setSuccess('')} className="text-teal-600 text-sm">✕</button>
-              </div>
-            )}
+            <div className="w-full max-w-7xl mx-auto px-4 py-6 flex-1 flex flex-col gap-5">
+              {/* Notification messages */}
+              {success && (
+                <div className="p-3 bg-teal-50 border border-teal-200 text-teal-800 rounded-[12px] text-xs font-semibold flex items-center justify-between">
+                  <span>{success}</span>
+                  <button onClick={() => setSuccess('')} className="text-teal-600 text-sm">✕</button>
+                </div>
+              )}
 
-            {/* 2x2 Stats Cards Grid */}
-            <div className="p-4 grid grid-cols-2 gap-3 bg-slate-50/50">
-              <div className="bg-white border border-slate-300 rounded-[12px] p-3 flex flex-col justify-between">
-                <span className="text-[10px] text-slate-500 font-semibold">Total requested</span>
-                <span className="text-sm font-bold text-slate-950 mt-1">₵{totalRequestedAmount.toFixed(2)}</span>
-                <span className="text-[9px] text-slate-400 mt-0.5">this semester</span>
+              {/* 2x2 Stats Cards Grid */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 bg-slate-50/50 lg:bg-transparent p-4 lg:p-0 rounded-[12px] lg:rounded-none border border-slate-200 lg:border-none">
+                <div className="bg-white border border-slate-300 rounded-[12px] p-3 flex flex-col justify-between">
+                  <span className="text-[10px] text-slate-500 font-semibold">Total requested</span>
+                  <span className="text-sm font-bold text-slate-950 mt-1">₵{totalRequestedAmount.toFixed(2)}</span>
+                  <span className="text-[9px] text-slate-400 mt-0.5">this semester</span>
+                </div>
+                <div className="bg-white border border-slate-300 rounded-[12px] p-3 flex flex-col justify-between">
+                  <span className="text-[10px] text-slate-500 font-semibold">Disbursed</span>
+                  <span className="text-sm font-bold text-slate-950 mt-1">₵{disbursedAmount.toFixed(2)}</span>
+                  <span className="text-[9px] text-slate-400 mt-0.5">released to rep</span>
+                </div>
+                <div className="bg-white border border-slate-300 rounded-[12px] p-3 flex flex-col justify-between">
+                  <span className="text-[10px] text-slate-500 font-semibold">Awaiting HOD</span>
+                  <span className="text-sm font-bold text-slate-950 mt-1 text-amber-700">₵{awaitingHodAmount.toFixed(2)}</span>
+                  <span className="text-[9px] text-slate-400 mt-0.5">pending HOD</span>
+                </div>
+                <div className="bg-white border border-slate-300 rounded-[12px] p-3 flex flex-col justify-between">
+                  <span className="text-[10px] text-slate-500 font-semibold">Awaiting finance</span>
+                  <span className="text-sm font-bold text-slate-950 mt-1 text-teal-700">₵{awaitingFinanceAmount.toFixed(2)}</span>
+                  <span className="text-[9px] text-slate-400 mt-0.5">approved funds</span>
+                </div>
               </div>
-              <div className="bg-white border border-slate-300 rounded-[12px] p-3 flex flex-col justify-between">
-                <span className="text-[10px] text-slate-500 font-semibold">Disbursed</span>
-                <span className="text-sm font-bold text-slate-950 mt-1">₵{disbursedAmount.toFixed(2)}</span>
-                <span className="text-[9px] text-slate-400 mt-0.5">released to rep</span>
-              </div>
-              <div className="bg-white border border-slate-300 rounded-[12px] p-3 flex flex-col justify-between">
-                <span className="text-[10px] text-slate-500 font-semibold">Awaiting HOD</span>
-                <span className="text-sm font-bold text-slate-950 mt-1 text-amber-700">₵{awaitingHodAmount.toFixed(2)}</span>
-                <span className="text-[9px] text-slate-400 mt-0.5">pending HOD</span>
-              </div>
-              <div className="bg-white border border-slate-300 rounded-[12px] p-3 flex flex-col justify-between">
-                <span className="text-[10px] text-slate-500 font-semibold">Awaiting finance</span>
-                <span className="text-sm font-bold text-slate-950 mt-1 text-teal-700">₵{awaitingFinanceAmount.toFixed(2)}</span>
-                <span className="text-[9px] text-slate-400 mt-0.5">approved funds</span>
-              </div>
-            </div>
 
-            {/* Filter Toggle Buttons */}
-            <div className="px-4 py-2 flex gap-1.5 overflow-x-auto scrollbar-none border-y border-slate-100 bg-white">
-              <button 
-                onClick={() => setStatusFilter('ALL')}
-                className={`text-xs px-3.5 py-1.5 font-bold rounded-full border transition shrink-0 ${statusFilter === 'ALL' ? 'bg-slate-950 text-white border-slate-950' : 'bg-white text-slate-600 border-slate-200'}`}
-              >
-                All
-              </button>
-              <button 
-                onClick={() => setStatusFilter('PENDING_HOD')}
-                className={`text-xs px-3.5 py-1.5 font-bold rounded-full border transition shrink-0 ${statusFilter === 'PENDING_HOD' ? 'bg-slate-950 text-white border-slate-950' : 'bg-white text-slate-600 border-slate-200'}`}
-              >
-                Pending HOD
-              </button>
-              <button 
-                onClick={() => setStatusFilter('PENDING_FINANCE')}
-                className={`text-xs px-3.5 py-1.5 font-bold rounded-full border transition shrink-0 ${statusFilter === 'PENDING_FINANCE' ? 'bg-slate-950 text-white border-slate-950' : 'bg-white text-slate-600 border-slate-200'}`}
-              >
-                Pending finance
-              </button>
-              <button 
-                onClick={() => setStatusFilter('DISBURSED')}
-                className={`text-xs px-3.5 py-1.5 font-bold rounded-full border transition shrink-0 ${statusFilter === 'DISBURSED' ? 'bg-slate-950 text-white border-slate-950' : 'bg-white text-slate-600 border-slate-200'}`}
-              >
-                Disbursed
-              </button>
-            </div>
+              {/* Filter Toggle Buttons */}
+              <div className="py-2 flex items-center justify-between border-y border-slate-200 lg:border-none bg-white lg:bg-transparent px-4 lg:px-0">
+                <div className="flex gap-1.5 overflow-x-auto scrollbar-none">
+                  <button 
+                    onClick={() => setStatusFilter('ALL')}
+                    className={`text-xs px-3.5 py-1.5 font-bold rounded-full border transition shrink-0 ${statusFilter === 'ALL' ? 'bg-slate-950 text-white border-slate-950' : 'bg-white text-slate-600 border-slate-200'}`}
+                  >
+                    All
+                  </button>
+                  <button 
+                    onClick={() => setStatusFilter('PENDING_HOD')}
+                    className={`text-xs px-3.5 py-1.5 font-bold rounded-full border transition shrink-0 ${statusFilter === 'PENDING_HOD' ? 'bg-slate-950 text-white border-slate-950' : 'bg-white text-slate-600 border-slate-200'}`}
+                  >
+                    Pending HOD
+                  </button>
+                  <button 
+                    onClick={() => setStatusFilter('PENDING_FINANCE')}
+                    className={`text-xs px-3.5 py-1.5 font-bold rounded-full border transition shrink-0 ${statusFilter === 'PENDING_FINANCE' ? 'bg-slate-950 text-white border-slate-950' : 'bg-white text-slate-600 border-slate-200'}`}
+                  >
+                    Pending finance
+                  </button>
+                  <button 
+                    onClick={() => setStatusFilter('DISBURSED')}
+                    className={`text-xs px-3.5 py-1.5 font-bold rounded-full border transition shrink-0 ${statusFilter === 'DISBURSED' ? 'bg-slate-950 text-white border-slate-950' : 'bg-white text-slate-600 border-slate-200'}`}
+                  >
+                    Disbursed
+                  </button>
+                </div>
+              </div>
 
-            {/* Requests List */}
-            <div className="mt-4 flex-1">
-              <h2 className="text-[11px] font-bold text-slate-400 tracking-wider px-4 mb-2">REQUESTS</h2>
+              {/* Requests List */}
+              <div className="mt-2 flex-1">
+                <h2 className="text-[11px] font-bold text-slate-400 tracking-wider mb-2">REQUESTS</h2>
               
               {filteredExpenses.length === 0 ? (
                 <div className="m-4 p-8 border border-slate-200 border-dashed rounded-[12px] bg-white text-center flex flex-col items-center justify-center gap-3">
@@ -557,7 +560,7 @@ const ExpenseDashboard = () => {
                   </div>
                 </div>
               ) : (
-                <div className="flex flex-col gap-3 px-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   {filteredExpenses.map((exp) => {
                     const description = exp.item_description?.trim() || 'Expense request';
                     const createdAtText = exp.created_at
@@ -662,15 +665,18 @@ const ExpenseDashboard = () => {
 
             {/* Sticky submit button at bottom inside w-full frame */}
             {isCourseRep && (
-              <div className="absolute bottom-0 left-0 right-0 p-4 bg-white border-t border-slate-100 z-10">
-                <button 
-                  onClick={handleOpenModal}
-                  className="w-full py-3 bg-slate-950 text-white rounded-[12px] font-semibold text-sm hover:bg-slate-900 transition text-center"
-                >
-                  + Submit expense request
-                </button>
+              <div className="fixed lg:absolute bottom-0 left-0 right-0 p-4 bg-white border-t border-slate-100 z-10 w-full">
+                <div className="max-w-7xl mx-auto px-4 w-full">
+                  <button 
+                    onClick={handleOpenModal}
+                    className="w-full py-3 bg-[#1F3864] text-white rounded-[12px] font-semibold text-sm hover:bg-[#1a3055] transition text-center"
+                  >
+                    + Submit expense request
+                  </button>
+                </div>
               </div>
             )}
+          </div>
           </div>
         )}
 

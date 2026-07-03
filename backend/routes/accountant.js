@@ -20,5 +20,6 @@ router.post('/reconcile/manual-assign', protect, authorize('ACCOUNTANT', 'ADMIN'
 
 // Google Directory Sync Cron endpoint
 router.post('/sync-directory', protect, authorize('ACCOUNTANT', 'ADMIN', 'HOD'), accountantController.syncGoogleDirectory);
+router.get('/sync-logs', protect, authorize('ACCOUNTANT', 'ADMIN'), accountantController.getSyncLogs);
 
 module.exports = router;

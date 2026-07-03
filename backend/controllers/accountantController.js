@@ -376,6 +376,24 @@ const syncGoogleDirectory = async (req, res) => {
       details.push(`Google Workspace status check complete: 0 suspensions found.`);
     }
 
+    // Ensure sync_logs table exists
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS sync_logs (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        new_students_count INT NOT NULL,
+        errors_count INT NOT NULL,
+        triggered_by UUID REFERENCES students(id)
+      );
+    `);
+
+    // Insert into sync_logs table
+    await pool.query(
+      `INSERT INTO sync_logs (new_students_count, errors_count, triggered_by)
+       VALUES ($1, $2, $3)`,
+      [syncedCount, 0, accountantId]
+    );
+
     // 3. Log this action in append-only audit logs (NFR-SEC-02 Compliance)
     await pool.query(
       `INSERT INTO audit_logs (actor_id, action, target_type, target_id, new_value)
@@ -405,4 +423,34 @@ const syncGoogleDirectory = async (req, res) => {
   }
 };
 
-module.exports = { getAllTransactions, confirmPayment, getAllStudents, manualAssignPayment, syncGoogleDirectory };
+const getSyncLogs = async (req, res) => {
+  try {
+    // Ensure table exists
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS sync_logs (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        new_students_count INT NOT NULL,
+        errors_count INT NOT NULL,
+        triggered_by UUID REFERENCES students(id)
+      );
+    `);
+    
+    const result = await pool.query(
+      'SELECT timestamp, new_students_count, errors_count FROM sync_logs ORDER BY timestamp DESC LIMIT 5'
+    );
+    res.status(200).json({ logs: result.rows });
+  } catch (error) {
+    console.error('Get sync logs error:', error.message);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+module.exports = { 
+  getAllTransactions, 
+  confirmPayment, 
+  getAllStudents, 
+  manualAssignPayment, 
+  syncGoogleDirectory,
+  getSyncLogs
+};

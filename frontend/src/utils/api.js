@@ -45,6 +45,7 @@ export const reconcileUpload = (data) => API.post('/accountant/reconcile/upload'
 export const reconcileConfirm = (data) => API.post('/accountant/reconcile/confirm', data);
 export const manualAssignPayment = (data) => API.post('/accountant/reconcile/manual-assign', data);
 export const syncGoogleDirectory = () => API.post('/accountant/sync-directory');
+export const getSyncLogs = () => API.get('/accountant/sync-logs');
 
 // HOD
 export const getDefaulters = () => API.get('/hod/defaulters');

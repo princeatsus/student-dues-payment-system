@@ -1,60 +1,94 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAllStudents, confirmPayment, setDuesConfig, syncGoogleDirectory } from '../utils/api';
-import { useAuth } from '../context/AuthContext';
-import AppHeader from '../components/AppHeader';
 import { 
-  Users, CheckCircle, AlertCircle, CreditCard, Search, 
-  Database, RefreshCw, LogOut, Sun, Moon, Settings, Coins,
-  Menu, X
+  getAllStudents, 
+  setDuesConfig, 
+  syncGoogleDirectory, 
+  getSyncLogs, 
+  reconcileUpload 
+} from '../utils/api';
+import { useAuth } from '../context/AuthContext';
+import { 
+  Calculator, 
+  Users, 
+  CheckCircle, 
+  AlertCircle, 
+  Coins, 
+  Upload, 
+  Settings, 
+  Save, 
+  Search, 
+  LogOut, 
+  RefreshCw,
+  Info,
+  ListTodo
 } from 'lucide-react';
 
+// Custom Google Brand Icon SVG
+const GoogleIcon = ({ size = 16, className = "" }) => (
+  <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    width={size} 
+    height={size} 
+    viewBox="0 0 24 24" 
+    fill="currentColor" 
+    className={className}
+  >
+    <path d="M12.24 10.285V14.4h6.887c-.648 2.41-2.519 4.114-5.136 4.114-3.555 0-6.435-2.88-6.435-6.435s2.88-6.435 6.435-6.435c1.637 0 3.136.612 4.3 1.62l3.22-3.22C19.58 2.235 16.14 1 12.24 1 6.033 1 1 6.033 1 12.24s5.033 11.24 11.24 11.24c6.478 0 11.24-4.557 11.24-11.24 0-.768-.078-1.503-.22-1.955H12.24z" />
+  </svg>
+);
+
 const AccountantDashboard = () => {
+  const [activeTab, setActiveTab] = useState('Overview'); // Overview, Student ledger, Reconciliation, Google sync, Dues config
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [darkMode, setDarkMode] = useState(localStorage.getItem('theme-dark') === 'true');
+  
+  // Toast notification state
+  const [toast, setToast] = useState('');
+  
+  // Dues configuration Form State
   const [duesForm, setDuesForm] = useState({
     academic_year: '2025/2026',
     semester: 1,
-    dues: [
-      { level: 100, amount: 100 },
-      { level: 200, amount: 150 },
-      { level: 300, amount: 250 },
-      { level: 400, amount: 300 },
-    ]
+    level100: 100,
+    level200: 150,
+    level300: 250,
+    level400: 300
   });
+
+  // Google Sync UI States
+  const [syncing, setSyncing] = useState(false);
+  const [syncStats, setSyncStats] = useState({
+    lastSynced: 'Today, 2:00 AM',
+    newAccounts: 0,
+    suspendedAccounts: 0
+  });
+  const [syncLogsList, setSyncLogsList] = useState([
+    { timestamp: 'Jul 3 · 2:00 AM', new_students_count: 10, errors_count: 0 },
+    { timestamp: 'Jul 2 · 2:00 AM', new_students_count: 0, errors_count: 0 },
+    { timestamp: 'Jul 1 · 2:00 AM', new_students_count: 0, errors_count: 0 }
+  ]);
+
   const { user, logoutUser } = useAuth();
   const navigate = useNavigate();
-  const [syncing, setSyncing] = useState(false);
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
-  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
-    fetchStudents();
+    fetchData();
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem('theme-dark', darkMode ? 'true' : 'false');
-  }, [darkMode]);
-
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 1024);
-      if (window.innerWidth >= 1024) {
-        setMenuOpen(false);
-      }
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  const fetchStudents = async () => {
+  const fetchData = async () => {
     try {
       const response = await getAllStudents();
-      setStudents(response.data.students);
+      setStudents(response.data.students || []);
+      
+      // Load sync logs from database
+      const logsRes = await getSyncLogs();
+      if (logsRes.data.logs && logsRes.data.logs.length > 0) {
+        setSyncLogsList(logsRes.data.logs);
+      }
     } catch (err) {
       setError('Failed to load students.');
     } finally {
@@ -62,13 +96,90 @@ const AccountantDashboard = () => {
     }
   };
 
-  const handleSetDues = async () => {
+  const showToast = (message) => {
+    setToast(message);
+    setTimeout(() => {
+      setToast('');
+    }, 2500);
+  };
+
+  const handleSetDues = async (e) => {
+    e.preventDefault();
     try {
-      await setDuesConfig(duesForm);
-      setSuccess('Dues configured successfully!');
-      fetchStudents();
+      const duesPayload = {
+        academic_year: duesForm.academic_year,
+        semester: duesForm.semester,
+        dues: [
+          { level: 100, amount: parseFloat(duesForm.level100) },
+          { level: 200, amount: parseFloat(duesForm.level200) },
+          { level: 300, amount: parseFloat(duesForm.level300) },
+          { level: 400, amount: parseFloat(duesForm.level400) }
+        ]
+      };
+      await setDuesConfig(duesPayload);
+      showToast('Dues configuration saved successfully');
+      fetchData();
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to configure dues.');
+    }
+  };
+
+  const handleSyncDirectory = async () => {
+    setSyncing(true);
+    setError('');
+    try {
+      const response = await syncGoogleDirectory();
+      
+      // Simulate the 2.5 second spinning animation requested
+      setTimeout(async () => {
+        if (response.data.success) {
+          setSyncStats({
+            lastSynced: 'Just now',
+            newAccounts: response.data.stats.syncedCount,
+            suspendedAccounts: response.data.stats.suspendedCount
+          });
+          
+          showToast('Google Directory sync completed');
+          
+          // Prepend entry to sync logs list
+          const newLog = {
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            new_students_count: response.data.stats.syncedCount,
+            errors_count: 0
+          };
+          setSyncLogsList(prev => [newLog, ...prev.slice(0, 4)]);
+          
+          fetchData();
+        }
+        setSyncing(false);
+      }, 2500);
+
+    } catch (err) {
+      setError(err.response?.data?.message || 'Google sync failed.');
+      setSyncing(false);
+    }
+  };
+
+  const handleMomoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    // Verify extension (US-3.1.1 compliance)
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (ext !== 'csv' && ext !== 'xlsx') {
+      setError('Please upload a valid MoMo CSV or Excel file.');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('statement', file);
+    
+    try {
+      await reconcileUpload(formData);
+      showToast('MoMo statement parsed successfully');
+      navigate('/reconcile');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to upload MoMo statement.');
     }
   };
 
@@ -77,740 +188,536 @@ const AccountantDashboard = () => {
     navigate('/');
   };
 
-  const handleSyncDirectory = async () => {
-    setSyncing(true);
-    setError('');
-    setSuccess('');
-    try {
-      const response = await syncGoogleDirectory();
-      if (response.data.success) {
-        setSuccess(`✅ Google Workspace Sync Success! ${response.data.stats.syncedCount} new student profiles added.`);
-        fetchStudents();
-      }
-    } catch (err) {
-      console.error(err);
-      setError(err.response?.data?.message || 'Google Workspace Synchronization failed.');
-    } finally {
-      setSyncing(false);
-    }
+  const getStudentStatus = (student) => {
+    const paid = parseFloat(student.total_paid || 0);
+    const outstanding = parseFloat(student.outstanding || 0);
+    if (paid > 0 && outstanding > 0) return 'PARTIAL';
+    if (outstanding <= 0) return 'CLEARED';
+    return 'OWING';
   };
 
+  if (loading) {
+    return (
+      <div className="w-full min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <div className="text-center flex flex-col items-center gap-3">
+          <div className="w-8 h-8 rounded-full border-2 border-[#0F6E56] border-t-transparent animate-spin" />
+          <span className="text-xs text-slate-500 font-medium">Loading accountant dashboard...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Aggregate numbers
+  const totalStudents = students.length;
+  const clearedStudentsCount = students.filter(s => getStudentStatus(s) === 'CLEARED').length;
+  const owingStudentsCount = students.filter(s => getStudentStatus(s) === 'OWING').length;
+  const totalCollectedAmount = students.reduce((sum, s) => sum + parseFloat(s.total_paid || 0), 0);
+
+  // Search filter
   const filteredStudents = students.filter(student => 
     student.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    student.index_number?.includes(searchTerm) ||
-    (`level ${student.current_level}`).includes(searchTerm.toLowerCase())
+    student.index_number?.includes(searchTerm)
   );
 
-  if (loading) return <div style={styles.loading}>Loading dashboard...</div>;
-
-  const totalCollected = students.reduce((sum, s) => sum + parseFloat(s.total_paid || 0), 0);
-
-  const darkStylesText = {
-    color: darkMode ? '#f8fafc' : '#1e293b'
-  };
+  const tabs = ['Overview', 'Student ledger', 'Reconciliation', 'Google sync', 'Dues config'];
 
   return (
-    <div style={{ ...styles.container, backgroundColor: darkMode ? '#0f172a' : '#f8fafc' }}>
-      {/* Global CSS Styles Injector */}
-      <style>{`
-        html, body, #root {
-          max-width: 100vw !important;
-          overflow-x: hidden !important;
-          margin: 0;
-          padding: 0;
-        }
-        body {
-          background-color: ${darkMode ? '#0f172a' : '#f8fafc'} !important;
-          transition: background-color 0.3s ease;
-        }
-        .card-override {
-          background-color: ${darkMode ? '#1e293b' : '#ffffff'} !important;
-          border: 1px solid ${darkMode ? '#334155' : '#e2e8f0'} !important;
-          box-shadow: ${darkMode ? '0 10px 30px rgba(0,0,0,0.3)' : '0 4px 6px -1px rgba(0,0,0,0.05)'} !important;
-          color: ${darkMode ? '#f8fafc' : '#1e293b'} !important;
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .card-override:hover {
-          transform: translateY(-2px);
-        }
-        .text-title {
-          color: ${darkMode ? '#f8fafc' : '#1e293b'} !important;
-        }
-        .text-muted {
-          color: ${darkMode ? '#94a3b8' : '#64748b'} !important;
-        }
-        .input-override {
-          background-color: ${darkMode ? '#0f172a' : '#ffffff'} !important;
-          border: 1px solid ${darkMode ? '#334155' : '#cbd5e1'} !important;
-          color: ${darkMode ? '#f8fafc' : '#1e293b'} !important;
-          transition: all 0.2s ease;
-        }
-        .input-override:focus {
-          border-color: #3b82f6 !important;
-          outline: none;
-          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important;
-        }
-        .table-row-override {
-          border-bottom: 1px solid ${darkMode ? '#334155' : '#e2e8f0'} !important;
-          transition: background-color 0.2s ease;
-        }
-        .table-row-override:hover {
-          background-color: ${darkMode ? '#1e293b' : '#f8fafc'} !important;
-        }
-        .table-header-override {
-          background-color: ${darkMode ? '#334155' : '#f1f5f9'} !important;
-          color: ${darkMode ? '#cbd5e1' : '#475569'} !important;
-        }
-        .stat-card-glow-1 { border-left: 4px solid #3b82f6 !important; }
-        .stat-card-glow-2 { border-left: 4px solid #10b981 !important; }
-        .stat-card-glow-3 { border-left: 4px solid #ef4444 !important; }
-        .stat-card-glow-4 { border-left: 4px solid #8b5cf6 !important; }
-
-        /* Desktop & Mobile display configurations */
-        .desktop-only {
-          display: block !important;
-        }
-        .mobile-only {
-          display: none !important;
-        }
-
-        @media (max-width: 768px) {
-          .desktop-only {
-            display: none !important;
-          }
-          .mobile-only {
-            display: flex !important;
-            flex-direction: column !important;
-            gap: 12px !important;
-          }
-          .cards-row-override {
-            display: grid !important;
-            grid-template-columns: 1fr 1fr !important;
-            gap: 12px !important;
-            margin-bottom: 16px !important;
-          }
-          .stat-card-override {
-            margin-bottom: 0 !important;
-            padding: 12px 14px !important;
-            min-width: 0 !important;
-          }
-          .stat-value-override {
-            font-size: 20px !important;
-            font-weight: 800 !important;
-          }
-          .grid-container-override {
-            flex-direction: column !important;
-          }
-          .content-override {
-            padding: 12px !important;
-          }
-          .directory-header-override {
-            flex-direction: column !important;
-            align-items: flex-start !important;
-            gap: 12px !important;
-          }
-          .search-wrapper-override {
-            width: 100% !important;
-          }
-          .search-input-override {
-            width: 100% !important;
-          }
-          .dues-grid-override {
-            display: grid !important;
-            grid-template-columns: 1fr 1fr !important;
-            gap: 12px !important;
-          }
-          .due-item-override {
-            flex-direction: column !important;
-            align-items: flex-start !important;
-          }
-          .due-input-wrapper-override {
-            width: 100% !important;
-          }
-          .due-input-override {
-            width: 100% !important;
-          }
-          .section-card-override {
-            min-width: 0 !important;
-            padding: 16px !important;
-          }
-          .mobile-menu-btn-override {
-            transition: all 0.2s ease-in-out !important;
-          }
-          .mobile-menu-btn-override:active {
-            transform: scale(0.97) !important;
-            background-color: rgba(255, 255, 255, 0.2) !important;
-          }
-        }
-
-        @keyframes slideDown {
-          from {
-            opacity: 0;
-            transform: translateY(-8px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        .mobile-menu-animate {
-          animation: slideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-        }
-      `}</style>
-      <AppHeader 
-        role="ACCOUNTANT" 
-        userName={user?.full_name} 
-        pageTitle="Accountant dashboard" 
-        subtitle="Department Dues & Financial Statements" 
-        onBack={() => navigate('/expenses')} 
-        onLogout={handleLogout}
-      />
-
-      <div style={styles.content} className="content-override">
-        {/* Accountant Quick Actions Panel */}
-        <div className="mb-4 bg-white border border-slate-300 rounded-[12px] p-3 flex flex-wrap items-center gap-2.5">
-          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mr-1">
-            Actions
-          </span>
-          <button 
-            type="button"
-            onClick={handleSyncDirectory} 
-            disabled={syncing}
-            className="border border-slate-300 rounded-[8px] bg-slate-50 text-slate-700 px-3 py-1.5 flex items-center gap-1.5 text-xs font-medium hover:bg-slate-100 disabled:opacity-50 transition active:scale-95 cursor-pointer"
-          >
-            <Database size={13} />
-            <span>{syncing ? 'Syncing...' : 'Google sync'}</span>
-          </button>
-          <button 
-            type="button"
-            onClick={() => navigate('/reconcile')}
-            className="border border-slate-300 rounded-[8px] bg-slate-50 text-slate-700 px-3 py-1.5 flex items-center gap-1.5 text-xs font-medium hover:bg-slate-100 transition active:scale-95 cursor-pointer"
-          >
-            <RefreshCw size={13} />
-            <span>Reconciliation</span>
-          </button>
-          <button 
-            type="button"
-            onClick={() => navigate('/expenses')}
-            className="border border-slate-300 rounded-[8px] bg-slate-50 text-slate-700 px-3 py-1.5 flex items-center gap-1.5 text-xs font-medium hover:bg-slate-100 transition active:scale-95 cursor-pointer"
-          >
-            <Coins size={13} />
-            <span>Expenses</span>
-          </button>
-        </div>
-
-        {error && <div style={styles.error}>{error}</div>}
-        {success && <div style={styles.success}>{success}</div>}
-
-        {/* Stats Row */}
-        <div style={styles.cardsRow} className="cards-row-override">
-          <div className="card-override stat-card-glow-1 stat-card-override" style={styles.statCard}>
-            <div style={styles.statHeader}>
-              <p style={styles.statLabel} className="text-muted">Total Students</p>
-              <Users size={16} color="#3b82f6" />
+    <div className="w-full min-h-screen bg-slate-50 flex justify-center py-0 md:py-8 font-sans">
+      <div className="w-full max-w-[420px] min-h-screen bg-white flex flex-col border-x border-slate-300 text-slate-700 shadow-none pb-16 relative">
+        
+        {/* 1. NAVBAR & 2. TAB BAR (Navy Background #1F3864) */}
+        <div className="bg-[#1F3864] text-white shrink-0">
+          {/* Navbar */}
+          <div className="px-4 py-3 flex items-center justify-between border-b border-white/10">
+            <div>
+              <span className="block text-[9px] text-white/50 tracking-wider uppercase font-medium">
+                Electrical Dept
+              </span>
+              <span className="block text-base font-medium text-white -mt-0.5">
+                Accountant dashboard
+              </span>
             </div>
-            <p className="stat-value-override" style={{ ...styles.statValue, ...darkStylesText }}>{students.length}</p>
-          </div>
-          
-          <div className="card-override stat-card-glow-2 stat-card-override" style={styles.statCard}>
-            <div style={styles.statHeader}>
-              <p style={styles.statLabel} className="text-muted">Cleared Dues</p>
-              <CheckCircle size={16} color="#10b981" />
-            </div>
-            <p className="stat-value-override" style={{ ...styles.statValue, color: '#10b981' }}>
-              {students.filter(s => s.status === 'CLEARED').length}
-            </p>
-          </div>
-          
-          <div className="card-override stat-card-glow-3 stat-card-override" style={styles.statCard}>
-            <div style={styles.statHeader}>
-              <p style={styles.statLabel} className="text-muted">Owing Dues</p>
-              <AlertCircle size={16} color="#ef4444" />
-            </div>
-            <p className="stat-value-override" style={{ ...styles.statValue, color: '#ef4444' }}>
-              {students.filter(s => s.status === 'OWING').length}
-            </p>
-          </div>
-          
-          <div className="card-override stat-card-glow-4 stat-card-override" style={styles.statCard}>
-            <div style={styles.statHeader}>
-              <p style={styles.statLabel} className="text-muted">Total Collected</p>
-              <CreditCard size={16} color="#8b5cf6" />
-            </div>
-            <p className="stat-value-override" style={{ ...styles.statValue, color: '#8b5cf6' }}>
-              ₵{totalCollected.toFixed(2)}
-            </p>
-          </div>
-        </div>
-
-        {/* Grid for Dues Config & Students */}
-        <div style={styles.gridContainer} className="grid-container-override">
-          {/* Configure Dues Section */}
-          <div className="card-override section-card-override" style={styles.section}>
-            <h2 style={styles.sectionTitle} className="text-title">
-              <Settings size={18} style={styles.titleIcon} />
-              Configure Semester Dues
-            </h2>
-            <p style={styles.configSubtitle} className="text-muted">Set academic fees configured per class level</p>
             
-            <div style={styles.duesGrid} className="dues-grid-override">
-              {duesForm.dues.map((due, index) => (
-                <div key={due.level} style={styles.dueItem} className="due-item-override">
-                  <label style={styles.dueLabel} className="text-muted">Level {due.level}</label>
-                  <div style={styles.inputWrapper} className="due-input-wrapper-override">
-                    <span style={styles.currencyPrefix}>₵</span>
-                    <input
-                      type="number"
-                      value={due.amount}
-                      onChange={(e) => {
-                        const updated = [...duesForm.dues];
-                        updated[index].amount = parseFloat(e.target.value) || 0;
-                        setDuesForm({ ...duesForm, dues: updated });
-                      }}
-                      style={styles.dueInput}
-                      className="input-override due-input-override"
-                    />
-                  </div>
+            <div className="flex items-center gap-2">
+              {/* Role chip pill (Accountant specifications) */}
+              <div className="rounded-full bg-[#E1F5EE] border-[0.5px] border-[#E1F5EE]/20 text-[#085041] px-2.5 py-0.5 pr-3.5 flex items-center gap-1.5 shrink-0">
+                <div className="w-5 h-5 rounded-full bg-[#0F6E56] flex items-center justify-center text-white shrink-0">
+                  <Calculator size={11} />
                 </div>
-              ))}
+                <div className="flex flex-col items-start leading-[1.1]">
+                  <span className="text-[7.5px] font-medium uppercase tracking-wider opacity-90">
+                    Accountant
+                  </span>
+                  <span className="text-[10px] font-medium truncate max-w-[80px]">
+                    {user?.full_name}
+                  </span>
+                </div>
+              </div>
+              
+              {/* Logout button */}
+              <button 
+                type="button" 
+                onClick={handleLogout}
+                className="w-8 h-8 rounded-[8px] border border-white/10 flex items-center justify-center bg-white/5 text-white/80 hover:text-red-500 hover:bg-red-50 hover:border-red-200 transition active:scale-95 shrink-0"
+                aria-label="Log out"
+              >
+                <LogOut size={14} />
+              </button>
             </div>
-            <button onClick={handleSetDues} style={styles.configBtn}>
-              💾 Save Dues Configuration
-            </button>
           </div>
 
-          {/* Students Directory */}
-          <div className="card-override section-card-override" style={{ ...styles.section, flex: 2 }}>
-            <div style={styles.directoryHeader} className="directory-header-override">
-              <h2 style={styles.sectionTitle} className="text-title">
-                👥 Student Ledger Directory
-              </h2>
-              
-              {/* Search Bar */}
-              <div style={styles.searchWrapper} className="search-wrapper-override">
-                <Search size={14} style={styles.searchIcon} className="text-muted" />
-                <input 
-                  type="text"
-                  placeholder="Search index or name..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  style={styles.searchInput}
-                  className="input-override search-input-override"
-                />
+          {/* Tab Bar */}
+          <div className="flex px-4 pt-1 gap-5 overflow-x-auto scrollbar-none">
+            {tabs.map((tab) => (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => {
+                  setActiveTab(tab);
+                  setError('');
+                  setSuccess('');
+                }}
+                className={`pb-2.5 text-xs font-medium transition-all relative flex items-center shrink-0 ${
+                  activeTab === tab ? "text-white" : "text-white/60 hover:text-white/80"
+                }`}
+              >
+                <span>{tab}</span>
+                {activeTab === tab && (
+                  <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-blue-500" />
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Global Error Banner inside view frame */}
+        {error && (
+          <div className="mx-4 mt-4 p-3 bg-red-50 border border-red-300 text-red-700 rounded-[12px] text-xs font-medium flex items-center justify-between">
+            <span>{error}</span>
+            <button onClick={() => setError('')} className="text-red-500 hover:text-red-700 text-sm">✕</button>
+          </div>
+        )}
+
+        {/* 3. OVERVIEW TAB content */}
+        {activeTab === 'Overview' && (
+          <div className="flex-1 p-4 flex flex-col gap-4">
+            <span className="text-[10px] font-medium tracking-wider text-slate-400 uppercase">Financial Summary</span>
+            
+            {/* 2x2 stats grid */}
+            <div className="grid grid-cols-2 gap-3">
+              {/* Total Students */}
+              <div className="border border-slate-300 rounded-[12px] bg-white p-3.5 flex flex-col justify-between h-[115px]">
+                <div className="w-8 h-8 rounded-[8px] bg-blue-50 flex items-center justify-center text-blue-600">
+                  <Users size={16} />
+                </div>
+                <div>
+                  <span className="block text-xl font-medium text-slate-900 leading-tight">
+                    {totalStudents}
+                  </span>
+                  <span className="block text-[11px] text-slate-400 font-medium">
+                    Total students
+                  </span>
+                </div>
+              </div>
+
+              {/* Cleared Dues */}
+              <div className="border border-slate-300 rounded-[12px] bg-white p-3.5 flex flex-col justify-between h-[115px]">
+                <div className="w-8 h-8 rounded-[8px] bg-green-50 flex items-center justify-center text-green-600">
+                  <CheckCircle size={16} />
+                </div>
+                <div>
+                  <span className="block text-xl font-medium text-green-700 leading-tight">
+                    {clearedStudentsCount}
+                  </span>
+                  <span className="block text-[11px] text-slate-400 font-medium">
+                    Cleared dues
+                  </span>
+                </div>
+              </div>
+
+              {/* Owing Dues */}
+              <div className="border border-slate-300 rounded-[12px] bg-white p-3.5 flex flex-col justify-between h-[115px]">
+                <div className="w-8 h-8 rounded-[8px] bg-red-50 flex items-center justify-center text-red-600">
+                  <AlertCircle size={16} />
+                </div>
+                <div>
+                  <span className="block text-xl font-medium text-red-700 leading-tight">
+                    {owingStudentsCount}
+                  </span>
+                  <span className="block text-[11px] text-slate-400 font-medium">
+                    Owing dues
+                  </span>
+                </div>
+              </div>
+
+              {/* Total Collected */}
+              <div className="border border-slate-300 rounded-[12px] bg-white p-3.5 flex flex-col justify-between h-[115px]">
+                <div className="w-8 h-8 rounded-[8px] bg-teal-50 flex items-center justify-center text-[#0F6E56]">
+                  <Coins size={16} />
+                </div>
+                <div>
+                  <span className="block text-xl font-medium text-[#0F6E56] leading-tight">
+                    ₵{totalCollectedAmount.toFixed(0)}
+                  </span>
+                  <span className="block text-[11px] text-slate-400 font-medium">
+                    Total collected
+                  </span>
+                </div>
               </div>
             </div>
 
-            {/* Desktop Table View */}
-            <div className="desktop-only" style={styles.tableWrapper}>
-              <table style={styles.table}>
-                <thead>
-                  <tr className="table-header-override">
-                    <th style={styles.th}>Index Number</th>
-                    <th style={styles.th}>Full Name</th>
-                    <th style={styles.th}>Level</th>
-                    <th style={styles.th}>Total Dues</th>
-                    <th style={styles.th}>Total Paid</th>
-                    <th style={styles.th}>Outstanding</th>
-                    <th style={styles.th}>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredStudents.length === 0 ? (
-                    <tr>
-                      <td colSpan="7" style={styles.emptyRow} className="text-muted">
-                        No students found matching your search
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredStudents.map((student) => (
-                      <tr key={student.id} className="table-row-override">
-                        <td style={{ ...styles.td, fontWeight: '600', fontFamily: 'monospace' }}>{student.index_number}</td>
-                        <td style={styles.td}>{student.full_name}</td>
-                        <td style={styles.td}>
-                          <span style={styles.levelBadge}>L{student.current_level}</span>
-                        </td>
-                        <td style={styles.td}>₵{parseFloat(student.total_dues || 0).toFixed(2)}</td>
-                        <td style={styles.td}>₵{parseFloat(student.total_paid || 0).toFixed(2)}</td>
-                        <td style={{ 
-                          ...styles.td, 
-                          color: parseFloat(student.outstanding) > 0 ? '#ef4444' : '#10b981',
-                          fontWeight: '600'
-                        }}>
-                          ₵{parseFloat(student.outstanding || 0).toFixed(2)}
-                        </td>
-                        <td style={styles.td}>
-                          <span style={student.status === 'CLEARED' ? styles.badgeCleared : styles.badgeOwing}>
-                            {student.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Mobile Card List View */}
-            <div className="mobile-only" style={styles.mobileCardList}>
-              {filteredStudents.length === 0 ? (
-                <div style={styles.emptyRow} className="text-muted">
-                  No students found matching your search
-                </div>
-              ) : (
-                filteredStudents.map((student) => (
-                  <div key={student.id} style={styles.mobileStudentCard} className="card-override">
-                    <div style={styles.mobileCardHeader}>
-                      <div>
-                        <h4 style={styles.mobileCardName} className="text-title">{student.full_name}</h4>
-                        <span style={styles.mobileCardIndex} className="text-muted">{student.index_number}</span>
-                      </div>
-                      <span style={student.status === 'CLEARED' ? styles.badgeCleared : styles.badgeOwing}>
-                        {student.status}
-                      </span>
-                    </div>
-
-                    <div style={styles.mobileCardDivider} />
-
-                    <div style={styles.mobileCardGrid}>
-                      <div style={styles.mobileCardCol}>
-                        <span style={styles.mobileColLabel} className="text-muted">Level</span>
-                        <span style={styles.mobileColValue} className="text-title">L{student.current_level}</span>
-                      </div>
-                      <div style={styles.mobileCardCol}>
-                        <span style={styles.mobileColLabel} className="text-muted">Paid</span>
-                        <span style={styles.mobileColValue} className="text-title">₵{parseFloat(student.total_paid || 0).toFixed(2)}</span>
-                      </div>
-                      <div style={styles.mobileCardCol}>
-                        <span style={styles.mobileColLabel} className="text-muted">Outstanding</span>
-                        <span style={{ 
-                          ...styles.mobileColValue, 
-                          color: parseFloat(student.outstanding) > 0 ? '#ef4444' : '#10b981',
-                          fontWeight: '700'
-                        }}>
-                          ₵{parseFloat(student.outstanding || 0).toFixed(2)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
+            {/* Quick Actions 2x2 Button Grid */}
+            <div className="flex flex-col gap-3">
+              <span className="text-[10px] font-medium tracking-wider text-slate-400 uppercase">Quick Actions</span>
+              <div className="grid grid-cols-2 gap-3">
+                <button 
+                  type="button"
+                  onClick={() => setActiveTab('Reconciliation')}
+                  className="border border-teal-300 bg-teal-50 text-[#085041] p-3.5 rounded-[12px] flex flex-col items-center justify-center gap-1.5 text-xs font-medium hover:bg-teal-100 transition active:scale-95 cursor-pointer"
+                >
+                  <Upload size={16} className="text-[#0F6E56]" />
+                  <span>Upload Momo CSV</span>
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => setActiveTab('Student ledger')}
+                  className="border border-blue-300 bg-blue-50 text-blue-700 p-3.5 rounded-[12px] flex flex-col items-center justify-center gap-1.5 text-xs font-medium hover:bg-blue-100 transition active:scale-95 cursor-pointer"
+                >
+                  <Users size={16} />
+                  <span>Student ledger</span>
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => setActiveTab('Google sync')}
+                  className="border border-amber-300 bg-amber-50 text-amber-700 p-3.5 rounded-[12px] flex flex-col items-center justify-center gap-1.5 text-xs font-medium hover:bg-amber-100 transition active:scale-95 cursor-pointer"
+                >
+                  <GoogleIcon size={16} className="text-amber-600" />
+                  <span>Google sync</span>
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => setActiveTab('Dues config')}
+                  className="border border-[#1F3864]/20 bg-[#1F3864]/5 text-[#1F3864] p-3.5 rounded-[12px] flex flex-col items-center justify-center gap-1.5 text-xs font-medium hover:bg-[#1F3864]/10 transition active:scale-95 cursor-pointer"
+                >
+                  <Settings size={16} />
+                  <span>Dues config</span>
+                </button>
+              </div>
             </div>
 
           </div>
-        </div>
+        )}
+
+        {/* 4. STUDENT LEDGER TAB content */}
+        {activeTab === 'Student ledger' && (
+          <div className="flex-1 p-4 flex flex-col gap-4">
+            <span className="text-[10px] font-medium tracking-wider text-slate-400 uppercase">Student Ledger Directory</span>
+            
+            {/* Search Bar */}
+            <div className="relative">
+              <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                <Search size={16} />
+              </span>
+              <input 
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search by index or name"
+                className="w-full text-xs pl-9 pr-4 py-2.5 border border-slate-300 rounded-[8px] bg-white text-slate-700 focus:outline-none focus:border-blue-500 font-medium"
+              />
+            </div>
+
+            {/* Students List */}
+            <div className="flex flex-col gap-3">
+              {filteredStudents.map((student) => {
+                const status = getStudentStatus(student);
+                const initials = student.full_name
+                  ? student.full_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
+                  : 'ST';
+                
+                // Color mapping for avatar initials
+                const statusStyles = {
+                  CLEARED: {
+                    avatar: 'bg-green-50 text-green-700 border border-green-300',
+                    pill: 'bg-green-50 text-green-700 border border-green-300',
+                    label: 'Cleared'
+                  },
+                  PARTIAL: {
+                    avatar: 'bg-amber-50 text-amber-700 border border-amber-300',
+                    pill: 'bg-amber-50 text-amber-700 border border-amber-300',
+                    label: 'Partial'
+                  },
+                  OWING: {
+                    avatar: 'bg-red-50 text-red-700 border border-red-300',
+                    pill: 'bg-red-50 text-red-700 border border-red-300',
+                    label: 'Owing'
+                  }
+                };
+
+                const style = statusStyles[status];
+
+                return (
+                  <div key={student.id} className="border border-slate-300 rounded-[12px] bg-white p-4 flex flex-col gap-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3 min-w-0">
+                        {/* Avatar */}
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center font-medium shrink-0 ${style.avatar}`}>
+                          {initials}
+                        </div>
+                        <div className="min-w-0">
+                          <span className="block text-sm font-medium text-slate-900 truncate">
+                            {student.full_name}
+                          </span>
+                          <span className="block text-[11px] font-mono text-slate-500 font-medium">
+                            {student.index_number}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      {/* Pill Badge */}
+                      <span className={`text-[9px] font-medium px-2 py-0.5 rounded-full ${style.pill}`}>
+                        {style.label}
+                      </span>
+                    </div>
+
+                    {/* Bottom ledger info row split by borders */}
+                    <div className="grid grid-cols-3 text-center border-t border-slate-300 mt-2 pt-2.5 text-[10px] text-slate-500 font-medium leading-tight">
+                      <div className="border-r border-slate-200">
+                        <span className="block text-[8px] text-slate-400 uppercase tracking-wide">Level</span>
+                        <span className="block mt-0.5 text-slate-900 font-medium">L{student.current_level}</span>
+                      </div>
+                      <div className="border-r border-slate-200">
+                        <span className="block text-[8px] text-slate-400 uppercase tracking-wide">Paid</span>
+                        <span className="block mt-0.5 text-green-700 font-medium">₵{parseFloat(student.total_paid || 0).toFixed(0)}</span>
+                      </div>
+                      <div>
+                        <span className="block text-[8px] text-slate-400 uppercase tracking-wide">Outstanding</span>
+                        <span className="block mt-0.5 text-red-600 font-medium">₵{parseFloat(student.outstanding || 0).toFixed(0)}</span>
+                      </div>
+                    </div>
+
+                  </div>
+                );
+              })}
+            </div>
+
+          </div>
+        )}
+
+        {/* 5. RECONCILIATION TAB content */}
+        {activeTab === 'Reconciliation' && (
+          <div className="flex-1 p-4 flex flex-col gap-4">
+            <span className="text-[10px] font-medium tracking-wider text-slate-400 uppercase">Momo CSV Reconciliation</span>
+            
+            {/* Dashed Dropzone Box */}
+            <label className="border-2 border-dashed border-slate-300 rounded-[12px] p-8 text-center flex flex-col items-center justify-center gap-3 bg-slate-50/50 hover:bg-slate-100/50 transition cursor-pointer">
+              <input 
+                type="file" 
+                accept=".csv, .xlsx"
+                className="hidden" 
+                onChange={handleMomoUpload}
+              />
+              <Upload size={24} className="text-slate-400" />
+              <div>
+                <span className="block text-sm font-medium text-slate-800">Upload Momo statement</span>
+                <span className="block text-[11px] text-slate-400 font-medium mt-1">CSV or XLSX · MTN, Vodafone, or AirtelTigo</span>
+              </div>
+            </label>
+
+            {/* Info Hint Box */}
+            <div className="bg-blue-50 border border-blue-300 text-blue-800 rounded-[8px] p-3 text-[11.5px] leading-normal flex items-start gap-2.5 font-medium">
+              <Info size={16} className="text-blue-600 shrink-0 mt-0.5" />
+              <span>
+                The system parses the Narration column and auto-matches payment references to student records for your confirmation.
+              </span>
+            </div>
+
+            <button 
+              type="button"
+              onClick={() => navigate('/reconcile')}
+              className="mt-1 w-full py-2.5 border border-blue-300 bg-blue-50 text-blue-700 rounded-[8px] text-xs font-medium hover:bg-blue-100 transition active:scale-95 cursor-pointer"
+            >
+              Open Reconciliation Wizard
+            </button>
+
+          </div>
+        )}
+
+        {/* 6. GOOGLE SYNC TAB content */}
+        {activeTab === 'Google sync' && (
+          <div className="flex-1 p-4 flex flex-col gap-4">
+            <span className="text-[10px] font-medium tracking-wider text-slate-400 uppercase">Google Workspace Sync</span>
+            
+            {/* Sync configuration card */}
+            <div className="border border-slate-300 rounded-[12px] bg-white p-4 flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center text-amber-600">
+                    <GoogleIcon size={14} />
+                  </div>
+                  <span className="text-sm font-medium text-slate-900">Directory sync</span>
+                </div>
+                <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-100">
+                  Connected
+                </span>
+              </div>
+
+              <div className="h-[0.5px] bg-slate-100 w-full" />
+              
+              <div className="flex flex-col gap-2.5 text-xs">
+                <div className="flex justify-between items-center font-medium">
+                  <span className="text-slate-500">Last synced</span>
+                  <span className="text-slate-950">{syncStats.lastSynced}</span>
+                </div>
+                <div className="flex justify-between items-center font-medium">
+                  <span className="text-slate-500">New accounts found</span>
+                  <span className="text-slate-950">{syncStats.newAccounts}</span>
+                </div>
+                <div className="flex justify-between items-center font-medium">
+                  <span className="text-slate-500">Suspended accounts</span>
+                  <span className="text-slate-950">{syncStats.suspendedAccounts}</span>
+                </div>
+                <div className="flex justify-between items-center font-medium">
+                  <span className="text-slate-500">Total synced students</span>
+                  <span className="text-blue-600">{totalStudents}</span>
+                </div>
+              </div>
+
+              <button 
+                type="button" 
+                onClick={handleSyncDirectory}
+                disabled={syncing}
+                className="mt-1 bg-[#E1F5EE] border border-[#0F6E56] text-[#085041] hover:bg-[#d0f0e4] font-medium py-2 rounded-[8px] flex items-center justify-center gap-2 text-xs w-full transition active:scale-95 cursor-pointer disabled:opacity-50"
+              >
+                <RefreshCw size={13} className={syncing ? 'animate-spin' : ''} />
+                <span>{syncing ? 'Synchronizing...' : 'Run sync now'}</span>
+              </button>
+            </div>
+
+            {/* Sync log card */}
+            <div className="border border-slate-300 rounded-[12px] bg-white p-4 flex flex-col gap-3">
+              <div className="flex items-center gap-2">
+                <ListTodo size={16} className="text-slate-400" />
+                <span className="text-sm font-medium text-slate-900">Sync log</span>
+              </div>
+              
+              <div className="h-[0.5px] bg-slate-100 w-full" />
+              
+              <div className="flex flex-col gap-3 text-xs">
+                {syncLogsList.slice(0, 3).map((log, index) => (
+                  <div key={index} className="flex justify-between items-center font-medium">
+                    <span className="text-slate-500">
+                      {log.timestamp || new Date(log.created_at).toLocaleString()}
+                    </span>
+                    <span className="text-green-700">
+                      {log.new_students_count} synced · {log.errors_count || 0} errors
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+          </div>
+        )}
+
+        {/* 7. DUES CONFIG TAB content */}
+        {activeTab === 'Dues config' && (
+          <div className="flex-1 p-4 flex flex-col gap-4">
+            <span className="text-[10px] font-medium tracking-wider text-slate-400 uppercase">Dues configuration</span>
+            
+            <form onSubmit={handleSetDues} className="border border-slate-300 rounded-[12px] bg-white p-4 flex flex-col gap-4">
+              <div className="flex items-center gap-2">
+                <Settings size={16} className="text-slate-400" />
+                <span className="text-sm font-medium text-slate-900">Configure semester dues</span>
+              </div>
+              
+              <p className="text-[11px] text-slate-400 font-medium leading-normal -mt-2">
+                Set the dues amount per level for the active semester.
+              </p>
+
+              <div className="h-[0.5px] bg-slate-100 w-full" />
+              
+              {/* 2x2 Input Grid */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] font-medium text-slate-400">Level 100</label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 pl-2.5 flex items-center text-slate-500 text-xs">₵</span>
+                    <input 
+                      type="number"
+                      required
+                      value={duesForm.level100}
+                      onChange={(e) => setDuesForm({...duesForm, level100: e.target.value})}
+                      className="w-full text-xs pl-6 pr-3 py-2 border border-slate-300 rounded-[8px] bg-white focus:outline-none focus:border-blue-500 font-medium text-slate-700"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] font-medium text-slate-400">Level 200</label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 pl-2.5 flex items-center text-slate-500 text-xs">₵</span>
+                    <input 
+                      type="number"
+                      required
+                      value={duesForm.level200}
+                      onChange={(e) => setDuesForm({...duesForm, level200: e.target.value})}
+                      className="w-full text-xs pl-6 pr-3 py-2 border border-slate-300 rounded-[8px] bg-white focus:outline-none focus:border-blue-500 font-medium text-slate-700"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] font-medium text-slate-400">Level 300</label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 pl-2.5 flex items-center text-slate-500 text-xs">₵</span>
+                    <input 
+                      type="number"
+                      required
+                      value={duesForm.level300}
+                      onChange={(e) => setDuesForm({...duesForm, level300: e.target.value})}
+                      className="w-full text-xs pl-6 pr-3 py-2 border border-slate-300 rounded-[8px] bg-white focus:outline-none focus:border-blue-500 font-medium text-slate-700"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] font-medium text-slate-400">Level 400</label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 pl-2.5 flex items-center text-slate-500 text-xs">₵</span>
+                    <input 
+                      type="number"
+                      required
+                      value={duesForm.level400}
+                      onChange={(e) => setDuesForm({...duesForm, level400: e.target.value})}
+                      className="w-full text-xs pl-6 pr-3 py-2 border border-slate-300 rounded-[8px] bg-white focus:outline-none focus:border-blue-500 font-medium text-slate-700"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <button 
+                type="submit"
+                className="mt-1 bg-[#1F3864] hover:bg-[#1a3055] text-white py-2 rounded-[8px] flex items-center justify-center gap-2 text-xs font-medium w-full transition active:scale-95 cursor-pointer"
+              >
+                <Save size={13} />
+                <span>Save dues configuration</span>
+              </button>
+            </form>
+
+          </div>
+        )}
+
+        {/* Global Toast Notification Card at bottom center */}
+        {toast && (
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#1F3864] text-white text-xs px-4 py-2.5 rounded-[12px] shadow-lg font-medium whitespace-nowrap animate-bounce">
+            {toast}
+          </div>
+        )}
+
       </div>
     </div>
   );
-};
-
-const styles = {
-  container: { minHeight: '100vh', transition: 'all 0.3s ease' },
-  loading: {
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    height: '100vh',
-    fontSize: '16px',
-    fontWeight: '500',
-    color: '#64748b'
-  },
-  navbar: {
-    color: '#fff',
-    padding: '12px 24px',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-    zIndex: 100,
-    position: 'relative'
-  },
-  navLeft: { display: 'flex', alignItems: 'center', gap: '10px' },
-  logoBadge: {
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    padding: '6px',
-    borderRadius: '8px',
-    fontSize: '16px'
-  },
-  navTitle: { margin: 0, fontSize: '15px', fontWeight: '700', letterSpacing: '0.3px' },
-  navRight: { display: 'flex', alignItems: 'center', gap: '12px' },
-  navUser: { fontSize: '13px', fontWeight: '500', opacity: 0.9, marginRight: '6px' },
-  navBtn: {
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    border: '1px solid rgba(255,255,255,0.15)',
-    color: '#fff',
-    padding: '6px 12px',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    fontSize: '12px',
-    fontWeight: '600',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
-    transition: 'background 0.2s',
-  },
-  btnIcon: { opacity: 0.9 },
-  logoutBtn: {
-    backgroundColor: '#ef4444',
-    border: 'none',
-    color: '#fff',
-    padding: '6px 12px',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    fontSize: '12px',
-    fontWeight: '600',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
-    transition: 'background 0.2s',
-  },
-  mobileNavActions: { display: 'flex', alignItems: 'center' },
-  hamburgerBtn: {
-    backgroundColor: 'transparent',
-    border: 'none',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '4px'
-  },
-  mobileMenu: {
-    width: '100%',
-    padding: '16px 24px',
-    boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-    zIndex: 99,
-    position: 'relative',
-    boxSizing: 'border-box'
-  },
-  mobileMenuHeader: {
-    marginBottom: '16px',
-    borderBottom: '1px solid rgba(255,255,255,0.1)',
-    paddingBottom: '12px'
-  },
-  mobileMenuUser: {
-    color: '#ffffff',
-    fontSize: '13px'
-  },
-  mobileMenuContent: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '12px'
-  },
-  mobileMenuBtn: {
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    border: '1px solid rgba(255,255,255,0.15)',
-    color: '#ffffff',
-    padding: '10px 16px',
-    borderRadius: '8px',
-    fontSize: '13px',
-    fontWeight: '600',
-    textAlign: 'left',
-    display: 'flex',
-    alignItems: 'center',
-    cursor: 'pointer',
-    width: '100%',
-    boxSizing: 'border-box'
-  },
-  mobileMenuLogoutBtn: {
-    backgroundColor: '#ef4444',
-    border: 'none',
-    color: '#ffffff',
-    padding: '10px 16px',
-    borderRadius: '8px',
-    fontSize: '13px',
-    fontWeight: '600',
-    textAlign: 'left',
-    display: 'flex',
-    alignItems: 'center',
-    cursor: 'pointer',
-    marginTop: '8px',
-    width: '100%',
-    boxSizing: 'border-box'
-  },
-  content: { maxWidth: '1280px', margin: '0 auto', padding: '24px' },
-  error: {
-    backgroundColor: '#fef2f2',
-    border: '1px solid #fecaca',
-    color: '#dc2626',
-    padding: '12px 16px',
-    borderRadius: '8px',
-    marginBottom: '20px',
-    fontSize: '13px',
-    fontWeight: '500'
-  },
-  success: {
-    backgroundColor: '#f0fdf4',
-    border: '1px solid #bbf7d0',
-    color: '#16a34a',
-    padding: '12px 16px',
-    borderRadius: '8px',
-    marginBottom: '20px',
-    fontSize: '13px',
-    fontWeight: '500'
-  },
-  cardsRow: { display: 'flex', gap: '16px', marginBottom: '24px', flexWrap: 'wrap' },
-  statCard: {
-    flex: 1,
-    minWidth: '200px',
-    borderRadius: '12px',
-    padding: '16px 20px',
-    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
-  },
-  statHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' },
-  statLabel: { margin: 0, fontSize: '12px', fontWeight: '600', letterSpacing: '0.3px' },
-  statValue: { margin: 0, fontSize: '24px', fontWeight: '800' },
-  gridContainer: { display: 'flex', gap: '20px', flexWrap: 'wrap', alignItems: 'flex-start' },
-  section: {
-    borderRadius: '12px',
-    padding: '24px',
-    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
-    flex: 1,
-    minWidth: '320px'
-  },
-  sectionTitle: { margin: '0 0 16px 0', fontSize: '15px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' },
-  titleIcon: { color: '#3b82f6' },
-  configSubtitle: { margin: '-10px 0 20px 0', fontSize: '12px' },
-  duesGrid: { display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' },
-  dueItem: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' },
-  dueLabel: { fontSize: '13px', fontWeight: '600' },
-  inputWrapper: { position: 'relative', display: 'flex', alignItems: 'center' },
-  currencyPrefix: { position: 'absolute', left: '10px', fontSize: '13px', color: '#94a3b8', fontWeight: '600' },
-  dueInput: {
-    padding: '8px 12px 8px 24px',
-    borderRadius: '6px',
-    fontSize: '13px',
-    width: '100px',
-    textAlign: 'right',
-    fontWeight: '600'
-  },
-  configBtn: {
-    backgroundColor: '#10b981',
-    color: '#fff',
-    padding: '10px 16px',
-    borderRadius: '8px',
-    border: 'none',
-    fontSize: '13px',
-    fontWeight: '700',
-    cursor: 'pointer',
-    width: '100%',
-    textAlign: 'center',
-    transition: 'opacity 0.2s',
-  },
-  directoryHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '20px' },
-  searchWrapper: { position: 'relative', display: 'flex', alignItems: 'center' },
-  searchIcon: { position: 'absolute', left: '10px' },
-  searchInput: {
-    padding: '6px 12px 6px 28px',
-    borderRadius: '6px',
-    fontSize: '13px',
-    width: '200px'
-  },
-  tableWrapper: { overflowX: 'auto' },
-  table: { width: '100%', borderCollapse: 'collapse' },
-  th: { padding: '10px 14px', textAlign: 'left', fontSize: '11px', fontWeight: '700', letterSpacing: '0.5px', textTransform: 'uppercase' },
-  td: { padding: '10px 14px', fontSize: '13px' },
-  levelBadge: {
-    backgroundColor: '#eff6ff',
-    color: '#3b82f6',
-    padding: '2px 6px',
-    borderRadius: '4px',
-    fontSize: '11px',
-    fontWeight: '600'
-  },
-  badgeCleared: {
-    backgroundColor: 'rgba(16,185,129,0.1)',
-    color: '#10b981',
-    border: '1px solid rgba(16,185,129,0.2)',
-    padding: '3px 8px',
-    borderRadius: '20px',
-    fontSize: '10px',
-    fontWeight: '700',
-    letterSpacing: '0.3px',
-    boxShadow: '0 0 8px rgba(16,185,129,0.1)'
-  },
-  badgeOwing: {
-    backgroundColor: 'rgba(239,68,68,0.1)',
-    color: '#ef4444',
-    border: '1px solid rgba(239,68,68,0.2)',
-    padding: '3px 8px',
-    borderRadius: '20px',
-    fontSize: '10px',
-    fontWeight: '700',
-    letterSpacing: '0.3px',
-    boxShadow: '0 0 8px rgba(239,68,68,0.1)'
-  },
-  emptyRow: { padding: '24px 0', textAlign: 'center', fontSize: '13px', fontWeight: '500' },
-  toggleTrack: {
-    width: '32px',
-    height: '16px',
-    borderRadius: '8px',
-    padding: '1px',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    transition: 'background-color 0.2s',
-  },
-  toggleThumb: {
-    width: '14px',
-    height: '14px',
-    borderRadius: '7px',
-    transition: 'transform 0.2s',
-  },
-
-  // Mobile Student Card specific styling
-  mobileCardList: { display: 'none' },
-  mobileStudentCard: {
-    padding: '16px',
-    borderRadius: '12px',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '12px',
-    transition: 'all 0.3s ease'
-  },
-  mobileCardHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: '12px'
-  },
-  mobileCardName: {
-    margin: 0,
-    fontSize: '14px',
-    fontWeight: '700',
-    lineHeight: '1.2'
-  },
-  mobileCardIndex: {
-    fontSize: '11px',
-    fontFamily: 'monospace',
-    marginTop: '2px',
-    display: 'block'
-  },
-  mobileCardDivider: {
-    height: '1px',
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    width: '100%',
-    margin: '4px 0'
-  },
-  mobileCardGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(3, 1fr)',
-    gap: '8px'
-  },
-  mobileCardCol: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '4px'
-  },
-  mobileColLabel: {
-    fontSize: '10px',
-    textTransform: 'uppercase',
-    letterSpacing: '0.3px',
-    fontWeight: '600'
-  },
-  mobileColValue: {
-    fontSize: '12px',
-    fontWeight: '600'
-  }
 };
 
 export default AccountantDashboard;

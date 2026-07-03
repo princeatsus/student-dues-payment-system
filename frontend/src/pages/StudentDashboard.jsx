@@ -49,6 +49,7 @@ const StudentDashboard = () => {
   const [momoProvider, setMomoProvider] = useState('MOMO_MTN');
   const [momoStep, setMomoStep] = useState(1); // 1 = Input, 2 = Pin Prompt, 3 = Success
   const [momoPin, setMomoPin] = useState('');
+  const [showNotifications, setShowNotifications] = useState(false);
 
   // Hamburger Menu Mobile Toggle
   const [menuOpen, setMenuOpen] = useState(false);
@@ -574,11 +575,43 @@ const StudentDashboard = () => {
         </div>
 
         <div style={styles.navRight}>
-          {/* Notification Bell with Badge */}
-          <div style={styles.bellWrapper}>
-            <Bell size={20} style={{ color: '#475569' }} className="bell-icon" />
-            {hasOutstanding && (
-              <span style={styles.bellBadge}>1</span>
+          <div style={styles.notificationWrapper}>
+            {/* Notification Bell with Badge */}
+            <button
+              type="button"
+              style={{
+                ...styles.bellWrapper,
+                border: 'none',
+                background: 'transparent',
+                padding: 0,
+                margin: 0,
+              }}
+              onClick={() => setShowNotifications((prev) => !prev)}
+              aria-label="Open notifications"
+              aria-expanded={showNotifications}
+              aria-haspopup="true"
+            >
+              <Bell size={20} style={{ color: '#475569' }} className="bell-icon" />
+              {hasOutstanding && (
+                <span style={styles.bellBadge}>1</span>
+              )}
+            </button>
+            {showNotifications && (
+              <div style={styles.notificationMenu}>
+                <div style={styles.notificationTitle}>Notifications</div>
+                <div style={styles.notificationItem}>
+                  {reference ? (
+                    <>
+                      <strong>Payment reference ready:</strong><br />
+                      {reference.reference} — {reference.amount}
+                    </>
+                  ) : hasOutstanding ? (
+                    'You have outstanding dues. Please review your balance and make a payment.'
+                  ) : (
+                    'No new notifications at this time.'
+                  )}
+                </div>
+              </div>
             )}
           </div>
 
@@ -1209,6 +1242,11 @@ const styles = {
     display: 'flex',
     alignItems: 'center'
   },
+  notificationWrapper: {
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center'
+  },
   bellBadge: {
     position: 'absolute',
     top: '-6px',
@@ -1223,6 +1261,33 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center'
+  },
+  notificationMenu: {
+    position: 'absolute',
+    top: '100%',
+    right: '0',
+    marginTop: '8px',
+    width: '320px',
+    backgroundColor: '#ffffff',
+    border: '1px solid #e2e8f0',
+    borderRadius: '16px',
+    boxShadow: '0 14px 30px rgba(15, 23, 42, 0.08)',
+    zIndex: 1000,
+    padding: '12px',
+    color: '#0f172a'
+  },
+  notificationTitle: {
+    margin: '0 0 8px 0',
+    fontSize: '12px',
+    fontWeight: '700',
+    color: '#0f172a',
+    textTransform: 'uppercase',
+    letterSpacing: '0.08em'
+  },
+  notificationItem: {
+    fontSize: '13px',
+    color: '#475569',
+    lineHeight: '1.6'
   },
   chatWrapper: {
     cursor: 'pointer',

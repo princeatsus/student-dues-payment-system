@@ -2,6 +2,20 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getExpenses, submitExpense, approveExpense, rejectExpense, disburseExpense } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
+import { 
+  ArrowLeft, 
+  FileText, 
+  CheckCircle, 
+  Clock, 
+  AlertCircle, 
+  Upload, 
+  X, 
+  FolderOpen, 
+  ArrowRight,
+  TrendingUp,
+  DollarSign,
+  Info
+} from 'lucide-react';
 
 const ExpenseDashboard = () => {
   const [expenses, setExpenses] = useState([]);
@@ -9,24 +23,13 @@ const ExpenseDashboard = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [formStep, setFormStep] = useState(1);
   const [showDisburseModal, setShowDisburseModal] = useState(false);
   const [selectedDisburseId, setSelectedDisburseId] = useState(null);
   
   // File Preview Modal
   const [previewImage, setPreviewImage] = useState(null);
-
-  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
-  const [menuOpen, setMenuOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState('ALL');
-
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth <= 768);
-      if (window.innerWidth > 768) setMenuOpen(false);
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
   const [formData, setFormData] = useState({
     item_description: '',
@@ -92,6 +95,7 @@ const ExpenseDashboard = () => {
       await submitExpense(formData);
       setSuccess('Expense request submitted successfully!');
       setShowModal(false);
+      setFormStep(1);
       setFormData({
         item_description: '',
         amount: '',
@@ -140,6 +144,7 @@ const ExpenseDashboard = () => {
   const handleOpenModal = () => {
     setError('');
     setSuccess('');
+    setFormStep(1);
     setShowModal(true);
   };
 
@@ -169,6 +174,13 @@ const ExpenseDashboard = () => {
     navigate('/');
   };
 
+  const handleBack = () => {
+    if (user?.role === 'STUDENT') navigate('/student');
+    else if (user?.role === 'ACCOUNTANT') navigate('/accountant');
+    else if (user?.role === 'HOD') navigate('/hod');
+    else navigate('/');
+  };
+
   const isCourseRep = user?.role === 'COURSE_REP';
   const isHOD = user?.role === 'HOD';
   const isAccountant = user?.role === 'ACCOUNTANT';
@@ -176,7 +188,7 @@ const ExpenseDashboard = () => {
   const sumAmountByStatus = (statusList) => {
     return expenses
       .filter(e => statusList.includes(e.status))
-      .reduce((sum, e) => sum + parseFloat(e.amount), 0);
+      .reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
   };
 
   const totalRequestedAmount = sumAmountByStatus(['PENDING_HOD', 'PENDING_FINANCE', 'DISBURSED']);
@@ -189,805 +201,586 @@ const ExpenseDashboard = () => {
     return exp.status === statusFilter;
   });
 
-  if (loading) return <div style={styles.loading}>Loading expenses...</div>;
+  const getStatusBadgeClass = (status) => {
+    switch (status) {
+      case 'PENDING_HOD':
+        return 'bg-amber-50 text-amber-800 border border-amber-200';
+      case 'PENDING_FINANCE':
+        return 'bg-teal-50 text-teal-800 border border-teal-200';
+      case 'DISBURSED':
+        return 'bg-teal-100 text-teal-900 border border-teal-300';
+      case 'REJECTED':
+        return 'bg-red-50 text-red-800 border border-red-200';
+      default:
+        return 'bg-slate-50 text-slate-600 border border-slate-200';
+    }
+  };
+
+  const getStatusLabel = (status) => {
+    switch (status) {
+      case 'PENDING_HOD':
+        return 'Pending HOD';
+      case 'PENDING_FINANCE':
+        return 'Pending finance';
+      case 'DISBURSED':
+        return 'Disbursed';
+      case 'REJECTED':
+        return 'Rejected';
+      default:
+        return status.toLowerCase().replace('_', ' ');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <div className="text-slate-900 font-semibold text-sm">Loading expenses...</div>
+      </div>
+    );
+  }
 
   return (
-    <div style={styles.container}>
-      {/* Navbar */}
-      <div style={styles.navbar}>
-        <h1 style={styles.navTitle}>💰 {isMobile ? 'Expenses' : 'Expense Management'}</h1>
+    <div className="min-h-screen bg-slate-100 flex justify-center items-start">
+      <div className="w-full max-w-[420px] bg-white min-h-screen border-x border-slate-200 flex flex-col relative text-slate-700 font-sans shadow-none">
         
-        {isMobile ? (
-          <button onClick={() => setMenuOpen(!menuOpen)} style={styles.hamburgerBtn}>
-            {menuOpen ? '✕' : '☰'}
-          </button>
-        ) : (
-          <div style={styles.navRight}>
-            <span style={styles.navUser}>👋 {user?.full_name} ({user?.role})</span>
-            {isHOD && (
-              <button onClick={() => navigate('/hod')} style={styles.navBtn}>📋 HOD Dashboard</button>
-            )}
-            {isAccountant && (
-              <button onClick={() => navigate('/accountant')} style={styles.navBtn}>📊 Accountant Dashboard</button>
-            )}
-            {isCourseRep && (
-              <>
-                <button onClick={() => navigate('/roster')} style={styles.navBtn}>📋 Class Roster</button>
-                <button onClick={() => navigate('/student')} style={styles.navBtn}>🎓 Student Dashboard</button>
-              </>
-            )}
-            <button onClick={handleLogout} style={styles.logoutBtn}>Logout</button>
-          </div>
-        )}
-      </div>
-
-      {/* Mobile Drawer */}
-      {isMobile && menuOpen && (
-        <div style={styles.mobileDrawer}>
-          <div style={styles.drawerUser}>
-            <div style={styles.avatarCircle}>
-              {user?.full_name ? user.full_name.charAt(0).toUpperCase() : 'U'}
-            </div>
-            <div>
-              <p style={styles.drawerUserName}>{user?.full_name}</p>
-              <p style={styles.drawerUserRole}>{user?.role?.replace('_', ' ')}</p>
-            </div>
-          </div>
-          
-          <div style={styles.drawerDivider} />
-
-          <div style={styles.drawerLinks}>
-            {isHOD && (
-              <button onClick={() => { setMenuOpen(false); navigate('/hod'); }} style={styles.drawerBtn}>📋 HOD Dashboard</button>
-            )}
-            {isAccountant && (
-              <button onClick={() => { setMenuOpen(false); navigate('/accountant'); }} style={styles.drawerBtn}>📊 Accountant Dashboard</button>
-            )}
-            {isCourseRep && (
-              <>
-                <button onClick={() => { setMenuOpen(false); navigate('/roster'); }} style={styles.drawerBtn}>📋 Class Roster</button>
-                <button onClick={() => { setMenuOpen(false); navigate('/student'); }} style={styles.drawerBtn}>🎓 Student Dashboard</button>
-              </>
-            )}
-            <button onClick={handleLogout} style={{ ...styles.drawerBtn, ...styles.drawerLogout }}>Logout</button>
-          </div>
-        </div>
-      )}
-
-      <div style={styles.content}>
-        {error && <div style={styles.error}>{error}</div>}
-        {success && <div style={styles.success}>{success}</div>}
-
-        <div style={styles.pageHeader}>
-          <div>
-            <p style={styles.deptLabel}>ELECTRICAL DEPT</p>
-            <h1 style={styles.pageTitle}>Expense requests</h1>
-          </div>
-          {isCourseRep && (
-            <button onClick={handleOpenModal} style={styles.newRequestBtn}>
-              + New request
-            </button>
-          )}
-        </div>
-
-        {/* Approval Pipeline */}
-        <div style={styles.pipelineCard}>
-          <p style={styles.pipelineTitle}>APPROVAL PIPELINE</p>
-          <div style={styles.pipelineSteps}>
-            <div style={styles.pipelineStep}>
-              <div style={{ ...styles.stepCircle, backgroundColor: '#ebf5ff', color: '#1e40af' }}>
-                {expenses.filter(e => e.status !== 'REJECTED').length}
+        {/* VIEW 1: Expense Request Multi-Step Form */}
+        {showModal ? (
+          <div className="flex-1 flex flex-col bg-white pb-6">
+            {/* Header */}
+            <div className="p-4 border-b border-slate-100 flex items-center gap-3">
+              <button 
+                type="button"
+                onClick={() => {
+                  if (formStep > 1) setFormStep(formStep - 1);
+                  else setShowModal(false);
+                }} 
+                className="p-1 text-slate-600 hover:bg-slate-50 rounded"
+              >
+                <ArrowLeft size={20} />
+              </button>
+              <div>
+                <h1 className="text-lg font-bold text-slate-950">New expense request</h1>
+                <p className="text-xs text-slate-500">
+                  Level {user?.assigned_level || '300'} · Electrical Dept
+                </p>
               </div>
-              <span style={styles.stepLabel}>Total</span>
             </div>
-            <div style={styles.stepArrow}>&gt;</div>
-            <div style={styles.pipelineStep}>
-              <div style={{ ...styles.stepCircle, backgroundColor: '#fef3c7', color: '#92400e' }}>
-                {expenses.filter(e => e.status === 'PENDING_HOD').length}
+
+            {/* Form Progress */}
+            <div className="px-6 py-4 flex items-center justify-between text-xs font-semibold text-slate-500 bg-slate-50 border-b border-slate-100">
+              <div className="flex items-center gap-1.5">
+                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${formStep >= 1 ? 'bg-slate-950 text-white font-bold' : 'bg-slate-200 text-slate-600'}`}>1</span>
+                <span className={formStep >= 1 ? 'text-slate-950 font-bold' : ''}>Details</span>
               </div>
-              <span style={styles.stepLabel}>Pending HOD</span>
-            </div>
-            <div style={styles.stepArrow}>&gt;</div>
-            <div style={styles.pipelineStep}>
-              <div style={{ ...styles.stepCircle, backgroundColor: '#e6fffa', color: '#006d5b' }}>
-                {expenses.filter(e => e.status === 'PENDING_FINANCE').length}
+              <div className="flex-1 h-[1px] bg-slate-200 mx-3"></div>
+              <div className="flex items-center gap-1.5">
+                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${formStep >= 2 ? 'bg-slate-950 text-white font-bold' : 'bg-slate-200 text-slate-600'}`}>2</span>
+                <span className={formStep >= 2 ? 'text-slate-950 font-bold' : ''}>Amount</span>
               </div>
-              <span style={styles.stepLabel}>Pending finance</span>
-            </div>
-            <div style={styles.stepArrow}>&gt;</div>
-            <div style={styles.pipelineStep}>
-              <div style={{ ...styles.stepCircle, backgroundColor: '#def7ec', color: '#03543f' }}>
-                {expenses.filter(e => e.status === 'DISBURSED').length}
+              <div className="flex-1 h-[1px] bg-slate-200 mx-3"></div>
+              <div className="flex items-center gap-1.5">
+                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${formStep >= 3 ? 'bg-slate-950 text-white font-bold' : 'bg-slate-200 text-slate-600'}`}>3</span>
+                <span className={formStep >= 3 ? 'text-slate-950 font-bold' : ''}>Review</span>
               </div>
-              <span style={styles.stepLabel}>Disbursed</span>
             </div>
-          </div>
-        </div>
 
-        {/* Statistics Cards Grid */}
-        <div style={styles.cardsGrid}>
-          <div style={{ ...styles.newStatCard, borderLeft: '4px solid #3b82f6' }}>
-            <p style={styles.newStatLabel}>Total requested</p>
-            <p style={{ ...styles.newStatValue, color: '#2563eb' }}>₵{totalRequestedAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-            <p style={styles.newStatSub}>this semester</p>
-          </div>
-          <div style={{ ...styles.newStatCard, borderLeft: '4px solid #10b981' }}>
-            <p style={styles.newStatLabel}>Disbursed</p>
-            <p style={{ ...styles.newStatValue, color: '#059669' }}>₵{disbursedAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-            <p style={styles.newStatSub}>released to rep</p>
-          </div>
-          <div style={{ ...styles.newStatCard, borderLeft: '4px solid #f59e0b' }}>
-            <p style={styles.newStatLabel}>Awaiting HOD</p>
-            <p style={{ ...styles.newStatValue, color: '#d97706' }}>₵{awaitingHodAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-            <p style={styles.newStatSub}>pending approval</p>
-          </div>
-          <div style={{ ...styles.newStatCard, borderLeft: '4px solid #0d9488' }}>
-            <p style={styles.newStatLabel}>Awaiting finance</p>
-            <p style={{ ...styles.newStatValue, color: '#0d9488' }}>₵{awaitingFinanceAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-            <p style={styles.newStatSub}>approved, undisbursed</p>
-          </div>
-        </div>
-
-        {/* Submit Button (Course Rep only) */}
-        {isCourseRep && (
-          <button onClick={handleOpenModal} style={styles.submitBtn}>
-            + Submit New Expense Request
-          </button>
-        )}
-
-        {/* Filter Buttons */}
-        <div style={styles.filterTabsRow}>
-          <button 
-            onClick={() => setStatusFilter('ALL')} 
-            style={{ ...styles.tabBtn, ...(statusFilter === 'ALL' ? styles.tabBtnActive : {}) }}
-          >
-            All
-          </button>
-          <button 
-            onClick={() => setStatusFilter('PENDING_HOD')} 
-            style={{ ...styles.tabBtn, ...(statusFilter === 'PENDING_HOD' ? styles.tabBtnActive : {}) }}
-          >
-            Pending HOD
-          </button>
-          <button 
-            onClick={() => setStatusFilter('PENDING_FINANCE')} 
-            style={{ ...styles.tabBtn, ...(statusFilter === 'PENDING_FINANCE' ? styles.tabBtnActive : {}) }}
-          >
-            Pending finance
-          </button>
-          <button 
-            onClick={() => setStatusFilter('DISBURSED')} 
-            style={{ ...styles.tabBtn, ...(statusFilter === 'DISBURSED' ? styles.tabBtnActive : {}) }}
-          >
-            Disbursed
-          </button>
-        </div>
-
-        {/* Expenses Table */}
-        <div style={styles.section}>
-          <div style={{ marginBottom: '16px' }}>
-            <span style={styles.sectionTitleUpper}>REQUESTS</span>
-          </div>
-          {filteredExpenses.length === 0 ? (
-            <div style={styles.emptyState}>
-              <div style={styles.emptyIcon}>📋</div>
-              <p style={styles.emptyText}>No expense requests found</p>
-              <p style={styles.emptySub}>All digital requisitions and reimbursement proofs will appear here.</p>
+            {/* Banner Warning */}
+            <div className="m-4 p-3 bg-blue-50 border border-blue-100 rounded-[12px] flex gap-2.5">
+              <Info size={16} className="text-blue-800 shrink-0 mt-0.5" />
+              <p className="text-xs text-blue-900 leading-normal">
+                This request will go to the HOD for approval before the accountant can release funds.
+              </p>
             </div>
-          ) : (
-            <div style={styles.cardsList}>
-              {filteredExpenses.map((exp) => {
-                const description = exp.item_description?.trim() || 'Expense request';
-                const createdAtText = exp.created_at
-                  ? new Date(exp.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-                  : 'No date';
-                const statusLabel = exp.status ? exp.status.replace('_', ' ') : 'Unknown';
-                return (
-                  <div key={exp.id} style={styles.expenseListItem} onClick={() => {
-                    if (exp.attachment_url) setPreviewImage(exp.attachment_url);
-                  }}>
-                    <div style={styles.itemLeft}>
-                      <div style={styles.itemAvatar}>
-                        {description.charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <h4 style={styles.itemDesc}>{description}</h4>
-                        <p style={styles.itemMeta}>
-                          {createdAtText} • by {exp.requested_by_name || 'Unknown'}
-                        </p>
-                        <p style={styles.itemVendor}>
-                          {exp.vendor_name || 'No vendor'} • Level {exp.target_level || 'N/A'}
-                        </p>
+
+            <form onSubmit={handleSubmit} className="flex-1 flex flex-col px-4 pb-6">
+              {error && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-[12px] text-xs text-red-800 font-medium">
+                  ⚠️ {error}
+                </div>
+              )}
+
+              {/* STEP 1: Details */}
+              {formStep === 1 && (
+                <div className="flex-1 flex flex-col gap-4">
+                  <div className="bg-white border border-slate-200 rounded-[12px] p-4 flex flex-col gap-4">
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-semibold text-slate-800">Item description *</label>
+                      <input
+                        type="text"
+                        name="item_description"
+                        value={formData.item_description}
+                        onChange={handleChange}
+                        placeholder="e.g. Arduino Mega Kits ×5"
+                        className="w-full px-3 py-2 border border-slate-200 rounded-[8px] text-sm focus:outline-none focus:border-slate-400 focus:bg-slate-50"
+                        required
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-semibold text-slate-800">Purpose / justification *</label>
+                      <textarea
+                        name="purpose_justification"
+                        value={formData.purpose_justification}
+                        onChange={handleChange}
+                        placeholder="Explain why this purchase is needed for the class..."
+                        rows="4"
+                        className="w-full px-3 py-2 border border-slate-200 rounded-[8px] text-sm focus:outline-none focus:border-slate-400 focus:bg-slate-50 resize-none"
+                        required
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-semibold text-slate-800">Vendor name (optional)</label>
+                      <input
+                        type="text"
+                        name="vendor_name"
+                        value={formData.vendor_name}
+                        onChange={handleChange}
+                        placeholder="e.g. ElectroLab Ghana"
+                        className="w-full px-3 py-2 border border-slate-200 rounded-[8px] text-sm focus:outline-none focus:border-slate-400 focus:bg-slate-50"
+                      />
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (formData.item_description.trim() && formData.purpose_justification.trim()) {
+                        setFormStep(2);
+                      } else {
+                        alert('Please fill out all required fields.');
+                      }
+                    }}
+                    className="w-full mt-auto py-3 bg-slate-950 text-white rounded-[12px] font-semibold text-sm hover:bg-slate-900 transition flex items-center justify-center gap-1.5"
+                  >
+                    Next step <ArrowRight size={16} />
+                  </button>
+                </div>
+              )}
+
+              {/* STEP 2: Amount & Target */}
+              {formStep === 2 && (
+                <div className="flex-1 flex flex-col gap-4">
+                  <div className="bg-white border border-slate-200 rounded-[12px] p-4 flex flex-col gap-4">
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-semibold text-slate-800">Amount (₵) *</label>
+                      <input
+                        type="number"
+                        name="amount"
+                        value={formData.amount}
+                        onChange={handleChange}
+                        placeholder="850"
+                        className="w-full px-3 py-2 border border-slate-200 rounded-[8px] text-sm focus:outline-none focus:border-slate-400 focus:bg-slate-50"
+                        required
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-semibold text-slate-800">Target level *</label>
+                      <select
+                        name="target_level"
+                        value={formData.target_level}
+                        onChange={handleChange}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-[8px] text-sm bg-white focus:outline-none focus:border-slate-400 focus:bg-slate-50"
+                        required
+                      >
+                        <option value="">Select level</option>
+                        <option value="100">Level 100</option>
+                        <option value="200">Level 200</option>
+                        <option value="300">Level 300</option>
+                        <option value="400">Level 400</option>
+                      </select>
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-semibold text-slate-800">Target class group</label>
+                      <input
+                        type="text"
+                        name="target_class_group"
+                        value={formData.target_class_group}
+                        onChange={handleChange}
+                        placeholder="e.g. A"
+                        className="w-full px-3 py-2 border border-slate-200 rounded-[8px] text-sm focus:outline-none focus:border-slate-400 focus:bg-slate-50"
+                      />
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (formData.amount && formData.target_level) {
+                        setFormStep(3);
+                      } else {
+                        alert('Please fill out all required fields.');
+                      }
+                    }}
+                    className="w-full mt-auto py-3 bg-slate-950 text-white rounded-[12px] font-semibold text-sm hover:bg-slate-900 transition flex items-center justify-center gap-1.5"
+                  >
+                    Next step <ArrowRight size={16} />
+                  </button>
+                </div>
+              )}
+
+              {/* STEP 3: Review & Upload */}
+              {formStep === 3 && (
+                <div className="flex-1 flex flex-col gap-4">
+                  <div className="bg-white border border-slate-200 rounded-[12px] p-4 flex flex-col gap-4">
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-semibold text-slate-800">Supporting document *</label>
                       
-                        {/* Attachment Link indicators inside the meta section */}
-                        <div style={{ marginTop: '6px', display: 'flex', gap: '8px' }}>
-                          {exp.attachment_url && (
-                            <span style={styles.cardLinkBadge}>📄 Invoice</span>
-                          )}
-                          {exp.disbursement_proof_url && (
-                            <span onClick={(e) => { e.stopPropagation(); setPreviewImage(exp.disbursement_proof_url); }} style={{ ...styles.cardLinkBadge, backgroundColor: '#e0f2fe', color: '#0369a1' }}>
-                              🧾 Receipt
-                            </span>
-                          )}
+                      <div className="relative border border-dashed border-slate-200 hover:border-slate-400 transition rounded-[8px] p-6 text-center cursor-pointer bg-slate-50/50 flex flex-col items-center justify-center gap-2">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleFileChange(e, false)}
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                          required={!formData.attachment_url}
+                        />
+                        <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600">
+                          <Upload size={16} />
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold text-slate-800">Tap to attach quote or receipt</p>
+                          <p className="text-[10px] text-slate-400 mt-0.5">PDF, JPG, or PNG · max 2MB</p>
                         </div>
                       </div>
-                    </div>
-                    <div style={styles.itemRight}>
-                      <span style={styles.itemAmount}>₵{Number(exp.amount || 0).toFixed(2)}</span>
-                      <span style={{
-                        ...styles.statusBadge,
-                        fontSize: '10px',
-                        padding: '4px 8px',
-                        marginTop: '4px',
-                        display: 'inline-block',
-                        backgroundColor: 
-                          exp.status === 'PENDING_HOD' ? '#fefcbf' :
-                          exp.status === 'PENDING_FINANCE' ? '#bee3f8' :
-                          exp.status === 'DISBURSED' ? '#c6f6d5' :
-                          exp.status === 'REJECTED' ? '#fed7d7' : '#e2e8f0',
-                        color:
-                          exp.status === 'PENDING_HOD' ? '#975a16' :
-                          exp.status === 'PENDING_FINANCE' ? '#2a69ac' :
-                          exp.status === 'DISBURSED' ? '#276749' :
-                          exp.status === 'REJECTED' ? '#9b2c2c' : '#4a5568',
-                      }}>
-                        {statusLabel}
-                      </span>
-                    {/* Action buttons if applicable */}
-                    <div style={{ marginTop: '8px', display: 'flex', gap: '6px', justifyContent: 'flex-end' }} onClick={(e) => e.stopPropagation()}>
-                      {isHOD && exp.status === 'PENDING_HOD' && (
-                        <>
-                          <button onClick={() => handleApprove(exp.id)} style={{ ...styles.actionBtn, backgroundColor: '#10b981' }}>Approve</button>
-                          <button onClick={() => handleReject(exp.id)} style={{ ...styles.actionBtn, backgroundColor: '#ef4444' }}>Reject</button>
-                        </>
-                      )}
-                      {isAccountant && exp.status === 'PENDING_FINANCE' && (
-                        <button onClick={() => handleOpenDisburseModal(exp.id)} style={{ ...styles.actionBtn, backgroundColor: '#3b82f6' }}>Disburse</button>
-                      )}
-                      {isCourseRep && exp.status === 'PENDING_HOD' && (
-                        <span style={{ fontSize: '11px', color: '#94a3b8' }}>Awaiting HOD</span>
-                      )}
-                      {isCourseRep && exp.status === 'PENDING_FINANCE' && (
-                        <span style={{ fontSize: '11px', color: '#94a3b8' }}>Awaiting Finance</span>
-                      )}
-                      {exp.status === 'DISBURSED' && (
-                        <span style={{ fontSize: '11px', color: '#10b981', fontWeight: 'bold' }}>✅ Disbursed</span>
-                      )}
-                      {exp.status === 'REJECTED' && (
-                        <span style={{ fontSize: '11px', color: '#ef4444', fontWeight: 'bold' }}>❌ Rejected</span>
+
+                      {formData.attachment_url && (
+                        <div className="mt-2 p-2 bg-slate-50 border border-slate-200 rounded-[8px] flex items-center justify-between">
+                          <span className="text-xs text-teal-800 font-semibold flex items-center gap-1">
+                            <CheckCircle size={14} className="text-teal-600" /> document_attached.jpg
+                          </span>
+                          <button 
+                            type="button" 
+                            onClick={() => setFormData(prev => ({ ...prev, attachment_url: '' }))}
+                            className="p-1 text-slate-500 hover:text-red-500"
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>
+                  
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="w-full mt-auto py-3 bg-slate-950 text-white rounded-[12px] font-semibold text-sm hover:bg-slate-900 transition disabled:opacity-60 flex items-center justify-center gap-1.5"
+                  >
+                    {submitting ? 'Submitting request...' : 'Submit request'}
+                  </button>
                 </div>
-              );
-            }) }
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Modal for submitting expense */}
-      {showModal && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.modal}>
-            <h3 style={styles.modalTitle}>Submit Expense Request</h3>
-            {error && <div style={styles.modalError}>⚠️ {error}</div>}
-            <form onSubmit={handleSubmit}>
-              <div style={styles.modalGroup}>
-                <label style={styles.modalLabel}>Item Description *</label>
-                <input
-                  type="text"
-                  name="item_description"
-                  value={formData.item_description}
-                  onChange={handleChange}
-                  placeholder="e.g., 5x Arduino Kits"
-                  style={styles.modalInput}
-                  required
-                />
-              </div>
-              <div style={styles.modalGroup}>
-                <label style={styles.modalLabel}>Amount (₵) *</label>
-                <input
-                  type="number"
-                  name="amount"
-                  value={formData.amount}
-                  onChange={handleChange}
-                  placeholder="850"
-                  style={styles.modalInput}
-                  required
-                />
-              </div>
-              <div style={styles.modalGroup}>
-                <label style={styles.modalLabel}>Vendor Name</label>
-                <input
-                  type="text"
-                  name="vendor_name"
-                  value={formData.vendor_name}
-                  onChange={handleChange}
-                  placeholder="ElectroLab Ghana"
-                  style={styles.modalInput}
-                />
-              </div>
-              <div style={styles.modalGroup}>
-                <label style={styles.modalLabel}>Purpose Justification *</label>
-                <textarea
-                  name="purpose_justification"
-                  value={formData.purpose_justification}
-                  onChange={handleChange}
-                  placeholder="Required for project exhibition..."
-                  style={styles.modalTextarea}
-                  rows="3"
-                  required
-                />
-              </div>
-              <div style={styles.modalGroup}>
-                <label style={styles.modalLabel}>Target Level *</label>
-                <select
-                  name="target_level"
-                  value={formData.target_level}
-                  onChange={handleChange}
-                  style={styles.modalSelect}
-                  required
+              )}
+            </form>
+          </div>
+        ) : (
+          /* VIEW 2: Dashboard Main Roster and Requests List */
+          <div className="flex-1 flex flex-col pb-20">
+            {/* Navbar Header */}
+            <div className="p-4 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white/95 backdrop-blur z-20">
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={handleBack} 
+                  className="p-1 hover:bg-slate-100 rounded text-slate-700"
+                  title="Back to Dashboard"
                 >
-                  <option value="">Select Level</option>
-                  <option value="100">100</option>
-                  <option value="200">200</option>
-                  <option value="300">300</option>
-                  <option value="400">400</option>
-                </select>
+                  <ArrowLeft size={20} />
+                </button>
+                <div>
+                  <p className="text-[11px] font-bold text-slate-400 tracking-wider">ELECTRICAL DEPT</p>
+                  <h1 className="text-lg font-bold text-slate-950 -mt-0.5">Expense requests</h1>
+                </div>
               </div>
-              <div style={styles.modalGroup}>
-                <label style={styles.modalLabel}>Target Class Group</label>
-                <input
-                  type="text"
-                  name="target_class_group"
-                  value={formData.target_class_group}
-                  onChange={handleChange}
-                  placeholder="A"
-                  style={styles.modalInput}
-                />
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 font-semibold border border-slate-200 text-slate-700">
+                  {user?.role?.replace('_', ' ')}
+                </span>
+                <button 
+                  onClick={handleLogout} 
+                  className="text-xs font-semibold text-red-600 hover:bg-red-50 px-2 py-1 rounded"
+                >
+                  Logout
+                </button>
               </div>
+            </div>
+
+            {/* Notification messages */}
+            {success && (
+              <div className="m-4 p-3 bg-teal-50 border border-teal-200 text-teal-800 rounded-[12px] text-xs font-semibold flex items-center justify-between">
+                <span>{success}</span>
+                <button onClick={() => setSuccess('')} className="text-teal-600 text-sm">✕</button>
+              </div>
+            )}
+
+            {/* 2x2 Stats Cards Grid */}
+            <div className="p-4 grid grid-cols-2 gap-3 bg-slate-50/50">
+              <div className="bg-white border-[0.5px] border-slate-200 rounded-[12px] p-3 flex flex-col justify-between">
+                <span className="text-[10px] text-slate-500 font-semibold">Total requested</span>
+                <span className="text-sm font-bold text-slate-950 mt-1">₵{totalRequestedAmount.toFixed(2)}</span>
+                <span className="text-[9px] text-slate-400 mt-0.5">this semester</span>
+              </div>
+              <div className="bg-white border-[0.5px] border-slate-200 rounded-[12px] p-3 flex flex-col justify-between">
+                <span className="text-[10px] text-slate-500 font-semibold">Disbursed</span>
+                <span className="text-sm font-bold text-slate-950 mt-1">₵{disbursedAmount.toFixed(2)}</span>
+                <span className="text-[9px] text-slate-400 mt-0.5">released to rep</span>
+              </div>
+              <div className="bg-white border-[0.5px] border-slate-200 rounded-[12px] p-3 flex flex-col justify-between">
+                <span className="text-[10px] text-slate-500 font-semibold">Awaiting HOD</span>
+                <span className="text-sm font-bold text-slate-950 mt-1 text-amber-700">₵{awaitingHodAmount.toFixed(2)}</span>
+                <span className="text-[9px] text-slate-400 mt-0.5">pending HOD</span>
+              </div>
+              <div className="bg-white border-[0.5px] border-slate-200 rounded-[12px] p-3 flex flex-col justify-between">
+                <span className="text-[10px] text-slate-500 font-semibold">Awaiting finance</span>
+                <span className="text-sm font-bold text-slate-950 mt-1 text-teal-700">₵{awaitingFinanceAmount.toFixed(2)}</span>
+                <span className="text-[9px] text-slate-400 mt-0.5">approved funds</span>
+              </div>
+            </div>
+
+            {/* Filter Toggle Buttons */}
+            <div className="px-4 py-2 flex gap-1.5 overflow-x-auto scrollbar-none border-y border-slate-100 bg-white">
+              <button 
+                onClick={() => setStatusFilter('ALL')}
+                className={`text-xs px-3.5 py-1.5 font-bold rounded-full border transition shrink-0 ${statusFilter === 'ALL' ? 'bg-slate-950 text-white border-slate-950' : 'bg-white text-slate-600 border-slate-200'}`}
+              >
+                All
+              </button>
+              <button 
+                onClick={() => setStatusFilter('PENDING_HOD')}
+                className={`text-xs px-3.5 py-1.5 font-bold rounded-full border transition shrink-0 ${statusFilter === 'PENDING_HOD' ? 'bg-slate-950 text-white border-slate-950' : 'bg-white text-slate-600 border-slate-200'}`}
+              >
+                Pending HOD
+              </button>
+              <button 
+                onClick={() => setStatusFilter('PENDING_FINANCE')}
+                className={`text-xs px-3.5 py-1.5 font-bold rounded-full border transition shrink-0 ${statusFilter === 'PENDING_FINANCE' ? 'bg-slate-950 text-white border-slate-950' : 'bg-white text-slate-600 border-slate-200'}`}
+              >
+                Pending finance
+              </button>
+              <button 
+                onClick={() => setStatusFilter('DISBURSED')}
+                className={`text-xs px-3.5 py-1.5 font-bold rounded-full border transition shrink-0 ${statusFilter === 'DISBURSED' ? 'bg-slate-950 text-white border-slate-950' : 'bg-white text-slate-600 border-slate-200'}`}
+              >
+                Disbursed
+              </button>
+            </div>
+
+            {/* Requests List */}
+            <div className="mt-4 flex-1">
+              <h2 className="text-[11px] font-bold text-slate-400 tracking-wider px-4 mb-2">REQUESTS</h2>
               
-              {/* File Attachment Upload (Quote) */}
-              <div style={styles.modalGroup}>
-                <label style={styles.modalLabel}>Upload Quote/Invoice Image *</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => handleFileChange(e, false)}
-                  style={styles.modalInput}
-                  required
-                />
-                <span style={styles.fileHelp}>Max Size: 2MB. Image files only.</span>
-              </div>
+              {filteredExpenses.length === 0 ? (
+                <div className="m-4 p-8 border border-slate-200 border-dashed rounded-[12px] bg-white text-center flex flex-col items-center justify-center gap-3">
+                  <div className="w-12 h-12 bg-slate-50 border border-slate-100 rounded-full flex items-center justify-center text-slate-400">
+                    <FolderOpen size={20} />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-950">No requests found</h4>
+                    <p className="text-xs text-slate-500 mt-1 max-w-[280px]">
+                      All digital requisitions and reimbursement proofs will appear here.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-3 px-4">
+                  {filteredExpenses.map((exp) => {
+                    const description = exp.item_description?.trim() || 'Expense request';
+                    const createdAtText = exp.created_at
+                      ? new Date(exp.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                      : 'No date';
 
-              <div style={styles.modalActions}>
-                <button type="button" onClick={() => setShowModal(false)} style={styles.modalCancel}>
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  style={submitting ? { ...styles.modalConfirm, opacity: 0.6 } : styles.modalConfirm}
-                  disabled={submitting}
-                >
-                  {submitting ? 'Submitting...' : 'Submit Request'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+                    return (
+                      <div 
+                        key={exp.id} 
+                        onClick={() => {
+                          if (exp.attachment_url) setPreviewImage(exp.attachment_url);
+                        }}
+                        className="bg-white border-[0.5px] border-slate-200 rounded-[12px] p-4 flex flex-col gap-3 hover:border-slate-400 transition cursor-pointer"
+                      >
+                        <div className="flex justify-between items-start gap-4">
+                          <div className="flex gap-3">
+                            {/* Avatar */}
+                            <div className="w-10 h-10 rounded-[8px] bg-slate-100 text-slate-700 flex items-center justify-center font-bold text-sm shrink-0">
+                              {description.charAt(0).toUpperCase()}
+                            </div>
+                            
+                            {/* Meta details */}
+                            <div className="min-w-0">
+                              <h4 className="text-sm font-semibold text-slate-950 truncate leading-snug">{description}</h4>
+                              <p className="text-[11px] text-slate-500 mt-0.5">
+                                {exp.vendor_name || 'No vendor'} · {createdAtText}
+                              </p>
+                              <p className="text-[10px] text-slate-400 mt-0.5">
+                                by {exp.requested_by_name || 'Unknown'} · Level {exp.target_level || 'N/A'}
+                              </p>
+                            </div>
+                          </div>
+                          
+                          <div className="text-right shrink-0">
+                            <span className="text-sm font-bold text-slate-950">₵{Number(exp.amount || 0).toFixed(2)}</span>
+                          </div>
+                        </div>
 
-      {/* Modal for disbursement upload */}
-      {showDisburseModal && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.modal}>
-            <h3 style={styles.modalTitle}>Complete Disbursement</h3>
-            <p style={styles.modalSub}>Upload signed receipt voucher before releasing cash.</p>
-            <form onSubmit={handleConfirmDisbursement}>
-              <div style={styles.modalGroup}>
-                <label style={styles.modalLabel}>Upload Scanned Receipt Voucher *</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => handleFileChange(e, true)}
-                  style={styles.modalInput}
-                  required
-                />
-                <span style={styles.fileHelp}>Max Size: 2MB. Image files only.</span>
-              </div>
-              <div style={styles.modalActions}>
-                <button type="button" onClick={() => setShowDisburseModal(false)} style={styles.modalCancel}>
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  style={submitting ? { ...styles.modalConfirm, opacity: 0.6 } : styles.modalConfirm}
-                  disabled={submitting}
-                >
-                  {submitting ? 'Confirming...' : 'Disburse Cash'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+                        {/* Badges and Actions Row */}
+                        <div className="flex items-center justify-between border-t border-slate-50 pt-2 gap-2 flex-wrap">
+                          {/* File indicators */}
+                          <div className="flex gap-1.5">
+                            {exp.attachment_url && (
+                              <span className="text-[10px] font-semibold bg-slate-50 text-slate-700 border border-slate-200 px-2 py-0.5 rounded-[4px]">
+                                📄 Invoice
+                              </span>
+                            )}
+                            {exp.disbursement_proof_url && (
+                              <span 
+                                onClick={(e) => { 
+                                  e.stopPropagation(); 
+                                  setPreviewImage(exp.disbursement_proof_url); 
+                                }} 
+                                className="text-[10px] font-semibold bg-blue-50 text-blue-800 border border-blue-100 px-2 py-0.5 rounded-[4px] cursor-pointer"
+                              >
+                                🧾 Receipt
+                              </span>
+                            )}
+                          </div>
 
-      {/* Inline Image Preview Modal */}
-      {previewImage && (
-        <div style={styles.modalOverlay} onClick={() => setPreviewImage(null)}>
-          <div style={styles.previewCard} onClick={(e) => e.stopPropagation()}>
-            <div style={styles.previewHeader}>
-              <span>Attachment View</span>
-              <button onClick={() => setPreviewImage(null)} style={styles.closePreviewBtn}>×</button>
+                          <div className="flex items-center gap-1.5">
+                            {/* Status badge */}
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${getStatusBadgeClass(exp.status)}`}>
+                              {getStatusLabel(exp.status)}
+                            </span>
+
+                            {/* Action triggers */}
+                            <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                              {isHOD && exp.status === 'PENDING_HOD' && (
+                                <>
+                                  <button 
+                                    onClick={() => handleApprove(exp.id)} 
+                                    className="text-[10px] font-bold bg-teal-600 text-white px-2.5 py-1 rounded-[6px]"
+                                  >
+                                    Approve
+                                  </button>
+                                  <button 
+                                    onClick={() => handleReject(exp.id)} 
+                                    className="text-[10px] font-bold bg-red-600 text-white px-2.5 py-1 rounded-[6px]"
+                                  >
+                                    Reject
+                                  </button>
+                                </>
+                              )}
+                              {isAccountant && exp.status === 'PENDING_FINANCE' && (
+                                <button 
+                                  onClick={() => handleOpenDisburseModal(exp.id)} 
+                                  className="text-[10px] font-bold bg-slate-900 text-white px-2.5 py-1 rounded-[6px]"
+                                >
+                                  Disburse
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
-            <img src={previewImage} alt="Attachment Quote/Voucher" style={styles.previewImg} />
+
+            {/* Sticky submit button at bottom inside w-full frame */}
+            {isCourseRep && (
+              <div className="absolute bottom-0 left-0 right-0 p-4 bg-white border-t border-slate-100 z-10">
+                <button 
+                  onClick={handleOpenModal}
+                  className="w-full py-3 bg-slate-950 text-white rounded-[12px] font-semibold text-sm hover:bg-slate-900 transition text-center"
+                >
+                  + Submit expense request
+                </button>
+              </div>
+            )}
           </div>
-        </div>
-      )}
+        )}
+
+        {/* VIEW 3: Disbursement proof upload view */}
+        {showDisburseModal && (
+          <div className="fixed inset-0 bg-slate-950/45 backdrop-blur-[2px] flex justify-center items-center p-4 z-50">
+            <div className="w-full max-w-[360px] bg-white border border-slate-200 rounded-[12px] p-5 flex flex-col gap-4 font-sans">
+              <div>
+                <h3 className="text-base font-bold text-slate-950">Complete disbursement</h3>
+                <p className="text-xs text-slate-500 mt-1">Upload the signed receipt voucher before releasing cash.</p>
+              </div>
+              <form onSubmit={handleConfirmDisbursement} className="flex flex-col gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold text-slate-800">Scanned receipt voucher *</label>
+                  <div className="relative border border-dashed border-slate-200 hover:border-slate-400 transition rounded-[8px] p-4 text-center cursor-pointer bg-slate-50 flex flex-col items-center justify-center gap-1.5">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleFileChange(e, true)}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      required
+                    />
+                    <Upload size={16} className="text-slate-600" />
+                    <div>
+                      <p className="text-xs font-semibold text-slate-800">Upload voucher image</p>
+                      <span className="text-[10px] text-slate-400">Max size 2MB</span>
+                    </div>
+                  </div>
+
+                  {disbursementProof && (
+                    <div className="p-2 bg-slate-50 border border-slate-200 rounded-[8px] text-xs text-teal-800 font-semibold flex items-center gap-1 mt-2">
+                      <CheckCircle size={14} className="text-teal-600" /> voucher_attached.jpg
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex gap-2">
+                  <button 
+                    type="button" 
+                    onClick={() => setShowDisburseModal(false)}
+                    className="flex-1 py-2 text-xs font-semibold border border-slate-200 rounded-[8px] text-slate-600 hover:bg-slate-50"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit" 
+                    disabled={submitting}
+                    className="flex-1 py-2 text-xs font-semibold bg-slate-950 text-white rounded-[8px] hover:bg-slate-900 disabled:opacity-60"
+                  >
+                    {submitting ? 'Confirming...' : 'Disburse cash'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* VIEW 4: Inline image view detail overlay */}
+        {previewImage && (
+          <div 
+            onClick={() => setPreviewImage(null)}
+            className="fixed inset-0 bg-slate-950/80 backdrop-blur-[2px] flex justify-center items-center p-4 z-50 cursor-pointer"
+          >
+            <div 
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-[380px] bg-white border border-slate-200 rounded-[12px] flex flex-col overflow-hidden"
+            >
+              <div className="p-3 border-b border-slate-100 flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-950 flex items-center gap-1.5">
+                  <FileText size={14} /> Attachment preview
+                </span>
+                <button 
+                  onClick={() => setPreviewImage(null)}
+                  className="p-1 hover:bg-slate-100 rounded text-slate-500"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+              <div className="p-4 bg-slate-50 flex items-center justify-center max-h-[70vh] overflow-y-auto">
+                <img 
+                  src={previewImage} 
+                  alt="Attachment Preview" 
+                  className="max-w-full h-auto object-contain rounded"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+      </div>
     </div>
   );
-};
-
-const styles = {
-  container: { minHeight: '100vh', backgroundColor: '#f8fafc', fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" },
-  loading: { display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontSize: '15px', color: '#1a56db', fontWeight: 'bold' },
-  navbar: {
-    backgroundColor: '#ffffff', color: '#1e293b',
-    padding: '14px 24px', display: 'flex',
-    justifyContent: 'space-between', alignItems: 'center',
-    borderBottom: '1px solid #f1f5f9',
-    position: 'sticky', top: 0, zIndex: 100,
-    boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
-  },
-  navTitle: { margin: 0, fontSize: '18px', fontWeight: '800', color: '#1e293b' },
-  navRight: { display: 'flex', alignItems: 'center', gap: '16px' },
-  navUser: { fontSize: '13px', color: '#64748b', fontWeight: '600' },
-  navBtn: {
-    backgroundColor: '#f1f5f9', color: '#475569', border: 'none',
-    padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontSize: '12px', fontWeight: '600',
-    transition: 'all 0.2s ease', marginRight: '6px'
-  },
-  logoutBtn: {
-    backgroundColor: '#fee2e2', border: 'none',
-    color: '#ef4444', padding: '8px 16px', borderRadius: '8px',
-    cursor: 'pointer', fontSize: '12px', fontWeight: '600',
-    transition: 'all 0.2s ease'
-  },
-  content: { maxWidth: '1200px', margin: '0 auto', padding: '32px 24px 48px' },
-  pageHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    gap: '20px',
-    marginBottom: '24px',
-    flexWrap: 'wrap'
-  },
-  deptLabel: {
-    margin: 0,
-    fontSize: '11px',
-    fontWeight: '700',
-    letterSpacing: '0.2em',
-    color: '#64748b',
-    textTransform: 'uppercase'
-  },
-  pageTitle: {
-    margin: '6px 0 0 0',
-    fontSize: '34px',
-    fontWeight: '800',
-    color: '#0f172a'
-  },
-  newRequestBtn: {
-    backgroundColor: '#1d4ed8',
-    color: '#ffffff',
-    border: 'none',
-    borderRadius: '12px',
-    padding: '14px 22px',
-    fontSize: '14px',
-    fontWeight: '700',
-    cursor: 'pointer',
-    boxShadow: '0 12px 24px rgba(59, 130, 246, 0.16)',
-    transition: 'transform 0.18s ease, box-shadow 0.18s ease'
-  },
-  newRequestBtnHover: {
-    transform: 'translateY(-1px)'
-  },
-  error: {
-    backgroundColor: '#fef2f2', border: '1px solid #fca5a5',
-    color: '#b91c1c', padding: '14px', borderRadius: '12px', marginBottom: '24px', fontSize: '13px', fontWeight: '500'
-  },
-  success: {
-    backgroundColor: '#f0fdf4', border: '1px solid #86efac',
-    color: '#15803d', padding: '14px', borderRadius: '12px', marginBottom: '24px', fontSize: '13px', fontWeight: '500'
-  },
-  cardsRow: { display: 'flex', gap: '20px', marginBottom: '32px', flexWrap: 'wrap' },
-  statCard: {
-    flex: 1, minWidth: '200px', backgroundColor: '#fff', borderRadius: '16px', padding: '24px',
-    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
-    borderTop: '4px solid #3b82f6',
-    transition: 'transform 0.2s ease'
-  },
-  statLabel: { margin: '0 0 8px 0', color: '#64748b', fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' },
-  statValue: { margin: 0, fontSize: '28px', fontWeight: '800', color: '#1e293b' },
-  submitBtn: {
-    backgroundColor: '#1a56db', color: '#fff', padding: '12px 24px', borderRadius: '10px',
-    border: 'none', cursor: 'pointer', fontSize: '14px', fontWeight: '700', marginBottom: '32px',
-    boxShadow: '0 4px 12px rgba(26, 86, 219, 0.2)', transition: 'all 0.2s ease'
-  },
-  section: { 
-    backgroundColor: '#fff', borderRadius: '16px', padding: '28px', 
-    boxShadow: '0 4px 6px -1px rgba(15, 23, 42, 0.08), 0 2px 4px -1px rgba(15, 23, 42, 0.06)',
-    borderTop: '3px solid #e2e8f0'
-  },
-  sectionTitle: { margin: '0 0 20px 0', fontSize: '16px', fontWeight: '800', color: '#1e293b' },
-  emptyState: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 24px', textAlign: 'center' },
-  emptyIcon: { fontSize: '48px', marginBottom: '16px' },
-  emptyText: { margin: '0 0 6px 0', fontSize: '16px', fontWeight: '700', color: '#1e293b' },
-  emptySub: { margin: 0, fontSize: '13px', color: '#64748b' },
-  tableWrapper: { overflowX: 'auto' },
-  table: { width: '100%', borderCollapse: 'collapse', fontSize: '13px' },
-  tableHeader: { borderBottom: '2.5px solid #e2e8f0', backgroundColor: '#f8fafc' },
-  th: { padding: '14px 16px', color: '#475569', fontWeight: '700', textAlign: 'left', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' },
-  tableRow: { borderBottom: '1px solid #f1f5f9' },
-  td: { padding: '16px', color: '#334155', verticalAlign: 'middle' },
-  previewBtn: {
-    backgroundColor: '#f1f5f9', border: '1px solid #e2e8f0', color: '#475569',
-    padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '11px', fontWeight: '600',
-    transition: 'all 0.2s'
-  },
-  statusBadge: {
-    padding: '6px 12px', borderRadius: '9999px', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.03em'
-  },
-  actionBtn: {
-    color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '11px', fontWeight: '700', transition: 'all 0.2s'
-  },
-  modalOverlay: {
-    position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
-    backgroundColor: 'rgba(15, 23, 42, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
-  },
-  modal: { backgroundColor: '#fff', borderRadius: '16px', padding: '32px', maxWidth: '520px', width: '90%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' },
-  modalTitle: { margin: '0 0 16px 0', color: '#1e293b', fontWeight: '800' },
-  modalSub: { margin: '-8px 0 20px 0', color: '#64748b', fontSize: '13px' },
-  modalGroup: { marginBottom: '16px' },
-  modalLabel: { display: 'block', fontSize: '12px', fontWeight: '700', color: '#475569', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.02em' },
-  modalInput: { width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.2s' },
-  modalTextarea: { width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', outline: 'none', resize: 'vertical', boxSizing: 'border-box', transition: 'border-color 0.2s' },
-  modalSelect: { width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', outline: 'none', backgroundColor: '#fff', boxSizing: 'border-box', transition: 'border-color 0.2s' },
-  fileHelp: { display: 'block', fontSize: '11px', color: '#64748b', marginTop: '4px' },
-  modalActions: { display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '24px' },
-  modalCancel: { backgroundColor: '#f1f5f9', color: '#475569', border: 'none', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '600' },
-  modalConfirm: { backgroundColor: '#1a56db', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '700' },
-  previewCard: {
-    backgroundColor: '#fff', borderRadius: '16px', overflow: 'hidden', maxWidth: '640px', width: '92%', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
-  },
-  previewHeader: {
-    backgroundColor: '#1e293b', color: '#fff', padding: '14px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 'bold', fontSize: '13px'
-  },
-  closePreviewBtn: { border: 'none', background: 'transparent', color: '#fff', fontSize: '20px', cursor: 'pointer' },
-  previewImg: { width: '100%', maxHeight: '72vh', objectFit: 'contain', backgroundColor: '#f8fafc' },
-  hamburgerBtn: {
-    backgroundColor: 'transparent',
-    border: 'none',
-    fontSize: '24px',
-    cursor: 'pointer',
-    color: '#1e293b',
-    padding: '4px 8px'
-  },
-  mobileDrawer: {
-    backgroundColor: '#ffffff',
-    borderBottom: '1px solid #f1f5f9',
-    padding: '20px',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '16px',
-    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'
-  },
-  drawerUser: { display: 'flex', alignItems: 'center', gap: '12px' },
-  avatarCircle: {
-    width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#1a56db', color: '#fff',
-    display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '16px'
-  },
-  drawerUserName: { margin: 0, fontWeight: '700', color: '#1e293b', fontSize: '14px' },
-  drawerUserRole: { margin: 0, fontSize: '12px', color: '#64748b', fontWeight: '600' },
-  drawerDivider: { height: '1px', backgroundColor: '#f1f5f9' },
-  drawerLinks: { display: 'flex', flexDirection: 'column', gap: '10px' },
-  drawerBtn: {
-    width: '100%', padding: '12px', borderRadius: '8px', border: 'none', backgroundColor: '#f1f5f9',
-    color: '#475569', fontSize: '13px', fontWeight: '600', textAlign: 'left', cursor: 'pointer'
-  },
-  drawerLogout: {
-    backgroundColor: '#fee2e2', color: '#ef4444'
-  },
-  modalError: {
-    backgroundColor: '#fef2f2', border: '1px solid #fca5a5',
-    color: '#b91c1c', padding: '10px 14px', borderRadius: '8px', marginBottom: '16px', fontSize: '13px', fontWeight: '600'
-  },
-  pipelineCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: '16px',
-    padding: '24px',
-    marginBottom: '28px',
-    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
-    border: '1px solid #f1f5f9'
-  },
-  pipelineTitle: {
-    margin: '0 0 16px 0',
-    fontSize: '12px',
-    fontWeight: '700',
-    color: '#94a3b8',
-    textTransform: 'uppercase',
-    letterSpacing: '0.05em'
-  },
-  pipelineSteps: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    flexWrap: 'wrap',
-    gap: '12px'
-  },
-  pipelineStep: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: '8px',
-    minWidth: '80px'
-  },
-  stepCircle: {
-    width: '44px',
-    height: '44px',
-    borderRadius: '50%',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontWeight: '800',
-    fontSize: '16px'
-  },
-  stepLabel: {
-    fontSize: '12px',
-    fontWeight: '600',
-    color: '#64748b',
-    textAlign: 'center'
-  },
-  stepArrow: {
-    fontSize: '18px',
-    color: '#cbd5e1',
-    fontWeight: 'bold',
-    userSelect: 'none'
-  },
-  cardsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-    gap: '20px',
-    marginBottom: '32px'
-  },
-  newStatCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: '16px',
-    padding: '24px',
-    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '6px'
-  },
-  newStatLabel: {
-    margin: 0,
-    fontSize: '12px',
-    fontWeight: '600',
-    color: '#94a3b8',
-    textTransform: 'capitalize'
-  },
-  newStatValue: {
-    margin: 0,
-    fontSize: '24px',
-    fontWeight: '800'
-  },
-  newStatSub: {
-    margin: 0,
-    fontSize: '12px',
-    color: '#64748b'
-  },
-  filterTabsRow: {
-    display: 'flex',
-    gap: '10px',
-    marginBottom: '24px',
-    flexWrap: 'wrap'
-  },
-  tabBtn: {
-    padding: '12px 20px',
-    borderRadius: '999px',
-    border: '1px solid #e2e8f0',
-    backgroundColor: '#ffffff',
-    color: '#475569',
-    fontSize: '13px',
-    fontWeight: '700',
-    cursor: 'pointer',
-    transition: 'all 0.2s'
-  },
-  tabBtnActive: {
-    backgroundColor: '#f8fafc',
-    color: '#0f172a',
-    borderColor: '#cbd5e1',
-    boxShadow: 'inset 0 1px 2px rgba(15, 23, 42, 0.08)'
-  },
-  sectionTitleUpper: {
-    fontSize: '12px',
-    fontWeight: '700',
-    color: '#94a3b8',
-    textTransform: 'uppercase',
-    letterSpacing: '0.05em'
-  },
-  cardsList: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '12px',
-    marginTop: '16px'
-  },
-  expenseListItem: {
-    backgroundColor: '#ffffff',
-    borderRadius: '18px',
-    padding: '18px 22px',
-    border: '1px solid #e2e8f0',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    cursor: 'pointer',
-    transition: 'transform 0.15s ease, box-shadow 0.15s ease',
-    boxShadow: '0 8px 18px rgba(15, 23, 42, 0.04)',
-    boxSizing: 'border-box'
-  },
-  itemLeft: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '16px'
-  },
-  itemAvatar: {
-    width: '44px',
-    height: '44px',
-    borderRadius: '50%',
-    backgroundColor: '#f1f5f9',
-    color: '#475569',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontWeight: '800',
-    fontSize: '16px'
-  },
-  itemDesc: {
-    margin: '0 0 4px 0',
-    fontSize: '15px',
-    fontWeight: '700',
-    color: '#1e293b'
-  },
-  itemMeta: {
-    margin: 0,
-    fontSize: '12px',
-    color: '#64748b'
-  },
-  itemVendor: {
-    margin: '4px 0 0 0',
-    fontSize: '11px',
-    color: '#94a3b8',
-    fontStyle: 'italic'
-  },
-  itemRight: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'flex-end'
-  },
-  itemAmount: {
-    fontSize: '18px',
-    fontWeight: '800',
-    color: '#0f172a'
-  },
-  cardLinkBadge: {
-    fontSize: '11px',
-    fontWeight: '600',
-    backgroundColor: '#f8fafc',
-    color: '#0f172a',
-    padding: '4px 8px',
-    borderRadius: '999px',
-    display: 'inline-block'
-  }
 };
 
 export default ExpenseDashboard;

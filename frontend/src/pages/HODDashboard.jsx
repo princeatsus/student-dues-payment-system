@@ -2,9 +2,59 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getDefaulters, grantOverride, getAllOverrides, getHODStats } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
-import AppHeader from '../components/AppHeader';
+import { 
+  AlertTriangle, 
+  ShieldCheck, 
+  Users, 
+  CheckCircle, 
+  Download, 
+  Receipt, 
+  LogOut, 
+  X 
+} from 'lucide-react';
+
+// Custom UserStar Icon SVG (compliant with specifications)
+const UserStar = ({ size = 16, className = "" }) => (
+  <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    width={size} 
+    height={size} 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="2" 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    className={className}
+  >
+    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+    <circle cx="12" cy="7" r="4" />
+    <path d="m22 10-1.25-.25L20 8.5l-.75 1.25L18 10l1.25.25.75 1.25.75-1.25L22 10z" />
+  </svg>
+);
+
+// Custom ShieldPlus Icon SVG
+const ShieldPlus = ({ size = 16, className = "" }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+    <line x1="12" y1="8" x2="12" y2="14" />
+    <line x1="9" y1="11" x2="15" y2="11" />
+  </svg>
+);
 
 const HODDashboard = () => {
+  const [activeTab, setActiveTab] = useState('Overview'); // Overview, Defaulters, Expenses
   const [defaulters, setDefaulters] = useState([]);
   const [overrides, setOverrides] = useState([]);
   const [stats, setStats] = useState({
@@ -18,13 +68,17 @@ const HODDashboard = () => {
     remaining_budget: 0,
     spend_ratio: 0
   });
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  
+  // Override Modal Dialog state
   const [showModal, setShowModal] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [reason, setReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
   const { user, logoutUser } = useAuth();
   const navigate = useNavigate();
 
@@ -54,6 +108,7 @@ const HODDashboard = () => {
   const handleOpenModal = (student) => {
     setSelectedStudent(student);
     setReason('');
+    setError('');
     setShowModal(true);
   };
 
@@ -69,11 +124,11 @@ const HODDashboard = () => {
         student_id: selectedStudent.id,
         reason: reason,
       });
-      setSuccess(`Override granted for ${selectedStudent.full_name}`);
+      setSuccess(`Clearance exception granted for ${selectedStudent.full_name}`);
       setShowModal(false);
       fetchData();
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to grant override.');
+      setError(err.response?.data?.message || 'Failed to grant clearance.');
     } finally {
       setSubmitting(false);
     }
@@ -81,7 +136,7 @@ const HODDashboard = () => {
 
   const handleExportDefaulters = () => {
     if (defaulters.length === 0) return;
-    const headers = ['Index Number', 'Full Name', 'Level', 'Class Group', 'Outstanding Dues (GHS)'];
+    const headers = ['Index number', 'Full name', 'Level', 'Class group', 'Outstanding dues (GHS)'];
     const rows = defaulters.map(student => [
       student.index_number,
       student.full_name,
@@ -96,7 +151,7 @@ const HODDashboard = () => {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `Defaulters_List_HTU_Computer_Science.csv`);
+    link.setAttribute('download', `Defaulters_list_HTU_computer_science.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -107,525 +162,416 @@ const HODDashboard = () => {
     navigate('/');
   };
 
-  if (loading) return <div style={styles.loading}>Loading dashboard...</div>;
-
-  return (
-    <div style={styles.container}>
-      <AppHeader 
-        role="HOD" 
-        userName={user?.full_name} 
-        pageTitle="HOD dashboard" 
-        subtitle="Department Governance & Academic Overrides" 
-        onBack={() => navigate('/expenses')} 
-        onLogout={handleLogout}
-      />
-
-      <div style={styles.content}>
-        {error && <div style={styles.error}>{error}</div>}
-        {success && <div style={styles.success}>{success}</div>}
-
-        {/* Executive Dashboard Summary */}
-        <div style={styles.dashboardSection}>
-          <div style={styles.metricGrid}>
-            <div style={styles.metricCard}>
-              <div style={styles.metricHeader}>
-                <span style={{ ...styles.metricIcon, backgroundColor: '#ffebe9', color: '#e53e3e' }}>📋</span>
-                <p style={styles.metricLabel}>Total Defaulters</p>
-              </div>
-              <p style={{ ...styles.metricValue, color: '#e53e3e' }}>{defaulters.length}</p>
-            </div>
-            
-            <div style={styles.metricCard}>
-              <div style={styles.metricHeader}>
-                <span style={{ ...styles.metricIcon, backgroundColor: '#e6fffa', color: '#2d6a4f' }}>🛡️</span>
-                <p style={styles.metricLabel}>Active Overrides</p>
-              </div>
-              <p style={{ ...styles.metricValue, color: '#2d6a4f' }}>{overrides.length}</p>
-            </div>
-
-            <div style={styles.metricCard}>
-              <div style={styles.metricHeader}>
-                <span style={{ ...styles.metricIcon, backgroundColor: '#ebf8ff', color: '#2b6cb0' }}>👥</span>
-                <p style={styles.metricLabel}>Total Enrollment</p>
-              </div>
-              <p style={{ ...styles.metricValue, color: '#2b6cb0' }}>{stats.total_students}</p>
-            </div>
-          </div>
-
-          <div style={styles.chartsRow}>
-            {/* Collection Efficiency Card */}
-            <div style={styles.chartCard}>
-              <h3 style={styles.chartCardTitle}>📊 Dues Collection Efficiency</h3>
-              <div style={styles.chartCardBody}>
-                <div style={styles.progressRingContainer}>
-                  <svg width="100" height="100">
-                    <circle cx="50" cy="50" r="35" stroke="#edf2f7" strokeWidth="8" fill="transparent" />
-                    <circle 
-                      cx="50" 
-                      cy="50" 
-                      r="35" 
-                      stroke="#003087" 
-                      strokeWidth="8" 
-                      fill="transparent" 
-                      strokeDasharray={2 * Math.PI * 35}
-                      strokeDashoffset={(2 * Math.PI * 35) - (stats.collection_efficiency / 100) * (2 * Math.PI * 35)}
-                      strokeLinecap="round"
-                      transform="rotate(-90 50 50)"
-                    />
-                  </svg>
-                  <div style={styles.progressRingText}>{stats.collection_efficiency}%</div>
-                </div>
-                <div style={styles.chartStatsList}>
-                  <div style={styles.chartStatItem}>
-                    <span style={styles.chartStatDot} />
-                    <div style={styles.chartStatContent}>
-                      <span style={styles.chartStatLabel}>Paid in Full</span>
-                      <span style={styles.chartStatVal}>{stats.paid_students} students</span>
-                    </div>
-                  </div>
-                  <div style={styles.chartStatItem}>
-                    <span style={{ ...styles.chartStatDot, backgroundColor: '#e53e3e' }} />
-                    <div style={styles.chartStatContent}>
-                      <span style={styles.chartStatLabel}>Owing Dues</span>
-                      <span style={styles.chartStatVal}>{stats.owing_students} students</span>
-                    </div>
-                  </div>
-                  <div style={styles.chartStatDivider} />
-                  <div style={styles.chartStatContent}>
-                    <span style={styles.chartStatLabel}>Total Dues Collected</span>
-                    <span style={{ ...styles.chartStatVal, fontSize: '15px', color: '#003087', fontWeight: 'bold' }}>₵{stats.total_collected.toFixed(2)}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Class Budget Spend Card */}
-            <div style={styles.chartCard}>
-              <h3 style={styles.chartCardTitle}>💸 Class Budget Spend Ratio</h3>
-              <div style={styles.chartCardBody}>
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '14px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                    <div>
-                      <span style={styles.chartStatLabel}>Approved & Disbursed</span>
-                      <p style={{ margin: '4px 0 0 0', fontSize: '18px', fontWeight: 'bold', color: '#e53e3e' }}>₵{stats.total_disbursed.toFixed(2)}</p>
-                    </div>
-                    <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#718096' }}>{stats.spend_ratio}% Spent</span>
-                  </div>
-
-                  <div style={styles.linearProgressBarBg}>
-                    <div style={{ ...styles.linearProgressBarFill, width: `${Math.min(100, stats.spend_ratio)}%` }} />
-                  </div>
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginTop: '4px' }}>
-                    <div>
-                      <span style={styles.chartStatLabel}>Pending HOD/Finance</span>
-                      <p style={{ margin: '2px 0 0 0', fontWeight: 'bold', color: '#dd6b20' }}>₵{stats.total_pending.toFixed(2)}</p>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <span style={styles.chartStatLabel}>Net Remaining Balance</span>
-                      <p style={{ margin: '2px 0 0 0', fontWeight: 'bold', color: '#2d6a4f' }}>₵{stats.remaining_budget.toFixed(2)}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Defaulters Table */}
-        <div style={styles.section}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <h2 style={{ ...styles.sectionTitle, margin: 0 }}>📋 Defaulters List</h2>
-            {defaulters.length > 0 && (
-              <button onClick={handleExportDefaulters} style={styles.exportBtn}>
-                📥 Export Defaulters to Excel (CSV)
-              </button>
-            )}
-          </div>
-          {defaulters.length === 0 ? (
-            <p style={styles.empty}>✅ No defaulters — all students are cleared!</p>
-          ) : (
-            <div style={styles.tableWrapper}>
-              <table style={styles.table}>
-                <thead>
-                  <tr style={styles.tableHeader}>
-                    <th style={styles.th}>Index</th>
-                    <th style={styles.th}>Full Name</th>
-                    <th style={styles.th}>Level</th>
-                    <th style={styles.th}>Outstanding</th>
-                    <th style={styles.th}>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {defaulters.map((student) => (
-                    <tr key={student.id} style={styles.tableRow}>
-                      <td style={styles.td}>{student.index_number}</td>
-                      <td style={styles.td}>{student.full_name}</td>
-                      <td style={styles.td}>Level {student.current_level}</td>
-                      <td style={styles.td}>₵{parseFloat(student.outstanding || 0).toFixed(2)}</td>
-                      <td style={styles.td}>
-                        <button
-                          onClick={() => handleOpenModal(student)}
-                          style={styles.overrideBtn}
-                        >
-                          Grant Override
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-
-        {/* Active Overrides */}
-        <div style={styles.section}>
-          <h2 style={styles.sectionTitle}>📌 Active Overrides</h2>
-          {overrides.length === 0 ? (
-            <p style={styles.empty}>No active overrides at this time.</p>
-          ) : (
-            <div style={styles.tableWrapper}>
-              <table style={styles.table}>
-                <thead>
-                  <tr style={styles.tableHeader}>
-                    <th style={styles.th}>Student</th>
-                    <th style={styles.th}>Index</th>
-                    <th style={styles.th}>Reason</th>
-                    <th style={styles.th}>Granted By</th>
-                    <th style={styles.th}>Date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {overrides.map((ov) => (
-                    <tr key={ov.id} style={styles.tableRow}>
-                      <td style={styles.td}>{ov.student_name}</td>
-                      <td style={styles.td}>{ov.index_number}</td>
-                      <td style={styles.td}>{ov.reason}</td>
-                      <td style={styles.td}>{ov.overridden_by_name}</td>
-                      <td style={styles.td}>{new Date(ov.created_at).toLocaleDateString()}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+  if (loading) {
+    return (
+      <div className="w-full min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <div className="text-center flex flex-col items-center gap-3">
+          <div className="w-8 h-8 rounded-full border-2 border-[#534AB7] border-t-transparent animate-spin" />
+          <span className="text-xs text-slate-500 font-medium">Loading department dashboard...</span>
         </div>
       </div>
+    );
+  }
 
-      {/* Modal for Override */}
-      {showModal && selectedStudent && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.modal}>
-            <h3 style={styles.modalTitle}>Grant Exam Clearance Override</h3>
-            <p style={styles.modalSub}>
-              Student: <strong>{selectedStudent.full_name}</strong> ({selectedStudent.index_number})
-            </p>
-            <p style={styles.modalSub}>
-              Outstanding: ₵{parseFloat(selectedStudent.outstanding || 0).toFixed(2)}
-            </p>
-            <div style={styles.modalGroup}>
-              <label style={styles.modalLabel}>Reason for Override (required)</label>
-              <textarea
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                placeholder="e.g., Student lost father, financial hardship..."
-                style={styles.modalTextarea}
-                rows="4"
-              />
+  const tabs = ['Overview', 'Defaulters', 'Expenses'];
+
+  return (
+    <div className="w-full min-h-screen bg-slate-50 flex justify-center py-0 md:py-8 font-sans">
+      <div className="w-full max-w-[420px] min-h-screen bg-white flex flex-col border-x border-slate-200 text-slate-700 shadow-none pb-16 relative">
+        
+        {/* 1. NAVBAR & 2. TAB BAR (Navy Background #1F3864) */}
+        <div className="bg-[#1F3864] text-white shrink-0">
+          {/* Navbar */}
+          <div className="px-4 py-3 flex items-center justify-between border-b border-white/10">
+            <div>
+              <span className="block text-[9px] text-white/50 tracking-wider uppercase font-medium">
+                HTU · Computer Science
+              </span>
+              <span className="block text-base font-medium text-white -mt-0.5">
+                HOD Dashboard
+              </span>
             </div>
-            <div style={styles.modalActions}>
-              <button onClick={() => setShowModal(false)} style={styles.modalCancel}>
-                Cancel
-              </button>
-              <button
-                onClick={handleGrantOverride}
-                style={submitting ? { ...styles.modalConfirm, opacity: 0.6 } : styles.modalConfirm}
-                disabled={submitting}
+            
+            <div className="flex items-center gap-2">
+              {/* Role chip pill (HOD specifications) */}
+              <div className="rounded-full bg-[#EEEDFE] border-[0.5px] border-[#EEEDFE]/20 text-[#3C3489] px-2.5 py-0.5 pr-3.5 flex items-center gap-1.5 shrink-0">
+                <div className="w-5 h-5 rounded-full bg-[#534AB7] flex items-center justify-center text-white shrink-0">
+                  <UserStar size={11} />
+                </div>
+                <div className="flex flex-col items-start leading-[1.1]">
+                  <span className="text-[7.5px] font-medium uppercase tracking-wider opacity-90">
+                    HOD
+                  </span>
+                  <span className="text-[10px] font-medium truncate max-w-[80px]">
+                    {user?.full_name}
+                  </span>
+                </div>
+              </div>
+              
+              {/* Logout button */}
+              <button 
+                type="button" 
+                onClick={handleLogout}
+                className="w-8 h-8 rounded-[8px] border border-white/10 flex items-center justify-center bg-white/5 text-white/80 hover:text-red-500 hover:bg-red-50 hover:border-red-200 transition active:scale-95 shrink-0"
+                aria-label="Log out"
               >
-                {submitting ? 'Granting...' : 'Grant Override'}
+                <LogOut size={14} />
               </button>
             </div>
           </div>
+
+          {/* Tab Bar */}
+          <div className="flex px-4 pt-1 gap-6">
+            {tabs.map((tab) => (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => {
+                  setActiveTab(tab);
+                  setError('');
+                  setSuccess('');
+                }}
+                className={`pb-2.5 text-xs font-medium transition-all relative flex items-center ${
+                  activeTab === tab ? "text-white" : "text-white/60 hover:text-white/80"
+                }`}
+              >
+                <span>{tab}</span>
+                {tab === 'Defaulters' && defaulters.length > 0 && (
+                  <span className="ml-1.5 px-1.5 py-0.5 rounded-full bg-red-600 text-white text-[8px] font-medium leading-none">
+                    {defaulters.length}
+                  </span>
+                )}
+                {activeTab === tab && (
+                  <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-blue-500" />
+                )}
+              </button>
+            ))}
+          </div>
         </div>
-      )}
+
+        {/* Success/Error Toasts inside content */}
+        {error && (
+          <div className="mx-4 mt-4 p-3 bg-red-50 border-[0.5px] border-red-200 text-red-700 rounded-[12px] text-xs font-medium flex items-center justify-between">
+            <span>{error}</span>
+            <button onClick={() => setError('')} className="text-red-500 hover:text-red-700 text-sm">✕</button>
+          </div>
+        )}
+        {success && (
+          <div className="mx-4 mt-4 p-3 bg-green-50 border-[0.5px] border-green-200 text-green-700 rounded-[12px] text-xs font-medium flex items-center justify-between">
+            <span>{success}</span>
+            <button onClick={() => setSuccess('')} className="text-green-500 hover:text-green-700 text-sm">✕</button>
+          </div>
+        )}
+
+        {/* 3. OVERVIEW TAB content */}
+        {activeTab === 'Overview' && (
+          <div className="flex-1 p-4 flex flex-col gap-4">
+            <span className="text-[10px] font-medium tracking-wider text-slate-400 uppercase">At a glance</span>
+            
+            {/* 2x2 stats grid */}
+            <div className="grid grid-cols-2 gap-3">
+              {/* Total Defaulters */}
+              <div className="border-[0.5px] border-slate-200 rounded-[12px] bg-white p-3.5 flex flex-col justify-between h-[115px]">
+                <div className="flex items-center justify-between">
+                  <div className="w-8 h-8 rounded-[8px] bg-red-50 flex items-center justify-center text-red-600">
+                    <AlertTriangle size={16} />
+                  </div>
+                  <span className="text-[9px] font-medium px-2 py-0.5 rounded-full bg-red-50 text-red-700 border-[0.5px] border-red-100">
+                    Action needed
+                  </span>
+                </div>
+                <div>
+                  <span className="block text-xl font-medium text-slate-900 leading-tight">
+                    {defaulters.length}
+                  </span>
+                  <span className="block text-[11px] text-slate-400 font-medium">
+                    Total defaulters
+                  </span>
+                </div>
+              </div>
+
+              {/* Override Exceptions */}
+              <div className="border-[0.5px] border-slate-200 rounded-[12px] bg-white p-3.5 flex flex-col justify-between h-[115px]">
+                <div className="flex items-center justify-between">
+                  <div className="w-8 h-8 rounded-[8px] bg-amber-50 flex items-center justify-center text-amber-600">
+                    <ShieldCheck size={16} />
+                  </div>
+                  <span className="text-[9px] font-medium px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border-[0.5px] border-amber-100">
+                    Active
+                  </span>
+                </div>
+                <div>
+                  <span className="block text-xl font-medium text-slate-900 leading-tight">
+                    {overrides.length}
+                  </span>
+                  <span className="block text-[11px] text-slate-400 font-medium">
+                    Override exceptions
+                  </span>
+                </div>
+              </div>
+
+              {/* Total Enrolled */}
+              <div className="border-[0.5px] border-slate-200 rounded-[12px] bg-white p-3.5 flex flex-col justify-between h-[115px]">
+                <div className="flex items-center justify-between">
+                  <div className="w-8 h-8 rounded-[8px] bg-blue-50 flex items-center justify-center text-blue-600">
+                    <Users size={16} />
+                  </div>
+                </div>
+                <div>
+                  <span className="block text-xl font-medium text-slate-900 leading-tight">
+                    {stats.total_students}
+                  </span>
+                  <span className="block text-[11px] text-slate-400 font-medium">
+                    Total enrolled
+                  </span>
+                </div>
+              </div>
+
+              {/* Fully Cleared */}
+              <div className="border-[0.5px] border-slate-200 rounded-[12px] bg-white p-3.5 flex flex-col justify-between h-[115px]">
+                <div className="flex items-center justify-between">
+                  <div className="w-8 h-8 rounded-[8px] bg-green-50 flex items-center justify-center text-green-600">
+                    <CheckCircle size={16} />
+                  </div>
+                </div>
+                <div>
+                  <span className="block text-xl font-medium text-slate-900 leading-tight">
+                    {stats.paid_students}
+                  </span>
+                  <span className="block text-[11px] text-slate-400 font-medium">
+                    Fully cleared
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Collection Efficiency Card */}
+            <div className="border-[0.5px] border-slate-200 rounded-[12px] bg-white p-4 flex flex-col gap-3">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium text-slate-900">Collection efficiency</span>
+                <span className="text-base font-medium text-blue-600">{stats.collection_efficiency}%</span>
+              </div>
+              
+              {/* Progress bar (blue fill, gray track) */}
+              <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-blue-600 transition-all duration-500" 
+                  style={{ width: `${stats.collection_efficiency}%` }} 
+                />
+              </div>
+
+              {/* Stats breakdown list */}
+              <div className="flex flex-col gap-2.5 mt-1 text-xs">
+                <div className="flex justify-between items-center">
+                  <span className="flex items-center gap-2 font-medium text-slate-500">
+                    <span className="w-2 h-2 rounded-full bg-green-500 block" />
+                    Paid in full
+                  </span>
+                  <span className="font-medium text-slate-900">{stats.paid_students} student{stats.paid_students !== 1 ? 's' : ''}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="flex items-center gap-2 font-medium text-slate-500">
+                    <span className="w-2 h-2 rounded-full bg-red-500 block" />
+                    Owing dues
+                  </span>
+                  <span className="font-medium text-slate-900">{defaulters.length} student{defaulters.length !== 1 ? 's' : ''}</span>
+                </div>
+                
+                <div className="h-[0.5px] bg-slate-100 w-full my-0.5" />
+                
+                <div className="flex justify-between items-center">
+                  <span className="font-medium text-slate-900">Total collected</span>
+                  <span className="font-medium text-blue-600">₵{stats.total_collected.toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Class Budget Card */}
+            <div className="border-[0.5px] border-slate-200 rounded-[12px] bg-white p-4 flex flex-col gap-3">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium text-slate-900">Class budget</span>
+                <span className="text-xs font-medium text-slate-400">{stats.spend_ratio || 0}% spent</span>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-2 mt-1">
+                <div className="bg-slate-50 border-[0.5px] border-slate-100 rounded-[8px] p-2.5 flex flex-col gap-0.5">
+                  <span className="text-[10px] text-slate-400 font-medium">Approved & disbursed</span>
+                  <span className="text-xs font-medium text-green-600">₵{stats.total_disbursed.toFixed(2)}</span>
+                </div>
+                <div className="bg-slate-50 border-[0.5px] border-slate-100 rounded-[8px] p-2.5 flex flex-col gap-0.5">
+                  <span className="text-[10px] text-slate-400 font-medium">Pending HOD/Finance</span>
+                  <span className="text-xs font-medium text-amber-600">₵{stats.total_pending.toFixed(2)}</span>
+                </div>
+                <div className="bg-slate-50 border-[0.5px] border-slate-100 rounded-[8px] p-2.5 flex flex-col gap-0.5">
+                  <span className="text-[10px] text-slate-400 font-medium">Total collected</span>
+                  <span className="text-xs font-medium text-blue-600">₵{stats.total_collected.toFixed(2)}</span>
+                </div>
+                <div className="bg-slate-50 border-[0.5px] border-slate-100 rounded-[8px] p-2.5 flex flex-col gap-0.5">
+                  <span className="text-[10px] text-slate-400 font-medium">Remaining balance</span>
+                  <span className="text-xs font-medium text-slate-700">₵{stats.remaining_budget.toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        )}
+
+        {/* 4. DEFAULTERS TAB content */}
+        {activeTab === 'Defaulters' && (
+          <div className="flex-1 p-4 flex flex-col gap-4">
+            <div className="flex justify-between items-center">
+              <div>
+                <span className="text-[10px] font-medium tracking-wider text-slate-400 uppercase">Defaulters list</span>
+                <p className="text-xs text-slate-500 font-medium mt-0.5">{defaulters.length} student{defaulters.length !== 1 ? 's' : ''} with outstanding dues</p>
+              </div>
+              
+              <button 
+                type="button" 
+                onClick={handleExportDefaulters}
+                className="border-[0.5px] border-blue-200 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-[12px] flex items-center gap-1.5 text-xs font-medium hover:bg-blue-100 transition active:scale-95 shrink-0"
+              >
+                <Download size={13} />
+                <span>Export</span>
+              </button>
+            </div>
+
+            {defaulters.length === 0 ? (
+              <div className="border-[0.5px] border-slate-200 rounded-[12px] p-8 text-center bg-white flex flex-col items-center gap-2 mt-4">
+                <CheckCircle size={32} className="text-green-600" />
+                <span className="text-sm font-medium text-slate-900">All cleared</span>
+                <span className="text-xs text-slate-500 font-medium">No students are currently owing departmental dues.</span>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {defaulters.map((student) => {
+                  const initials = student.full_name
+                    ? student.full_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
+                    : 'ST';
+                  return (
+                    <div key={student.id} className="border-[0.5px] border-slate-200 rounded-[12px] bg-white p-4 flex items-center justify-between">
+                      <div className="flex items-center gap-3 min-w-0">
+                        {/* Red initials avatar */}
+                        <div className="w-10 h-10 rounded-full bg-red-50 text-red-600 flex items-center justify-center font-medium shrink-0">
+                          {initials}
+                        </div>
+                        <div className="min-w-0">
+                          <span className="block text-sm font-medium text-slate-900 truncate">
+                            {student.full_name}
+                          </span>
+                          <span className="block text-[11px] font-mono text-slate-500 font-medium">
+                            {student.index_number}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-3 shrink-0">
+                        <div className="text-right">
+                          <span className="inline-block text-[9px] font-medium px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">
+                            L{student.current_level || '100'}
+                          </span>
+                          <span className="block text-xs font-medium text-red-600 mt-1">
+                            ₵{parseFloat(student.outstanding || 0).toFixed(2)}
+                          </span>
+                        </div>
+
+                        {/* HOD Clearance Exception override button */}
+                        <button 
+                          type="button" 
+                          onClick={() => handleOpenModal(student)}
+                          title="Grant exam clearance exception"
+                          className="w-8 h-8 rounded-[8px] border border-slate-200 flex items-center justify-center bg-white text-slate-500 hover:text-amber-600 hover:bg-amber-50 hover:border-amber-200 active:scale-95 transition shrink-0"
+                        >
+                          <ShieldPlus size={15} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 5. EXPENSES TAB content */}
+        {activeTab === 'Expenses' && (
+          <div className="flex-1 p-4 flex flex-col justify-center items-center py-20">
+            <div className="border-[0.5px] border-slate-200 rounded-[12px] bg-white p-8 text-center flex flex-col items-center gap-2 max-w-[280px]">
+              <div className="w-10 h-10 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400">
+                <Receipt size={18} />
+              </div>
+              <span className="text-sm font-medium text-slate-900 mt-1">No pending expenses</span>
+              <span className="text-xs text-slate-500 font-medium leading-normal">
+                All expense requisitions have been approved or disbursed.
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Override Exception Text Area Dialog Modal */}
+        {showModal && selectedStudent && (
+          <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white border-[0.5px] border-slate-200 rounded-[12px] w-full max-w-[340px] flex flex-col overflow-hidden">
+              <div className="px-4 py-3 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+                <span className="text-xs font-medium text-slate-900">Grant exam clearance</span>
+                <button 
+                  type="button" 
+                  onClick={() => setShowModal(false)}
+                  className="w-6 h-6 rounded-[6px] hover:bg-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-600 transition"
+                  aria-label="Close"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+              
+              <div className="p-4 flex flex-col gap-3">
+                <div className="bg-amber-50 border-[0.5px] border-amber-200 rounded-[8px] p-3 text-[11px] text-amber-800 leading-normal font-medium">
+                  You are granting an exam clearance exception to <strong className="text-amber-950 font-medium">{selectedStudent.full_name}</strong> ({selectedStudent.index_number}).
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] uppercase tracking-wider text-slate-400 font-medium">
+                    Reason for clearance
+                  </label>
+                  <textarea 
+                    required
+                    rows={4}
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                    placeholder="Enter detailed reason (minimum 10 characters)..."
+                    className="w-full text-xs p-2.5 border border-slate-200 rounded-[8px] focus:outline-none focus:border-blue-500 resize-none font-medium text-slate-700 bg-white"
+                  />
+                  {reason.length > 0 && reason.length < 10 && (
+                    <span className="text-[10px] text-red-600 font-medium">
+                      Reason must be at least 10 characters (currently {reason.length}).
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="px-4 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2">
+                <button 
+                  type="button" 
+                  onClick={() => setShowModal(false)}
+                  className="px-3 py-1.5 rounded-[8px] border border-slate-200 bg-white text-slate-700 text-xs font-medium hover:bg-slate-100 transition"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="button" 
+                  disabled={submitting || reason.length < 10}
+                  onClick={handleGrantOverride}
+                  className="px-3 py-1.5 rounded-[8px] bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 disabled:opacity-50 disabled:hover:bg-blue-600 transition flex items-center justify-center"
+                >
+                  {submitting ? 'Granting...' : 'Grant Exception'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+      </div>
     </div>
   );
-};
-
-const styles = {
-  container: { minHeight: '100vh', backgroundColor: '#f7fafc' },
-  loading: {
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    height: '100vh',
-    fontSize: '18px',
-  },
-  navbar: {
-    backgroundColor: '#1a365d',
-    color: '#fff',
-    padding: '16px 24px',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  navTitle: { margin: 0, fontSize: '18px', fontWeight: 'bold' },
-  navRight: { display: 'flex', alignItems: 'center', gap: '16px' },
-  navUser: { fontSize: '14px' },
-  navBtn: {  // NEW style
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    border: '1px solid rgba(255,255,255,0.3)',
-    color: '#fff',
-    padding: '6px 14px',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    fontSize: '14px',
-    transition: 'background 0.2s',
-  },
-  logoutBtn: {
-    backgroundColor: 'transparent',
-    border: '1px solid #fff',
-    color: '#fff',
-    padding: '6px 14px',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    fontSize: '14px',
-  },
-  content: { maxWidth: '1000px', margin: '0 auto', padding: '24px' },
-  error: {
-    backgroundColor: '#fff5f5',
-    border: '1px solid #fed7d7',
-    color: '#c53030',
-    padding: '12px',
-    borderRadius: '8px',
-    marginBottom: '20px',
-  },
-  success: {
-    backgroundColor: '#f0fff4',
-    border: '1px solid #9ae6b4',
-    color: '#276749',
-    padding: '12px',
-    borderRadius: '8px',
-    marginBottom: '20px',
-  },
-  dashboardSection: {
-    marginBottom: '28px',
-  },
-  metricGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-    gap: '16px',
-    marginBottom: '20px',
-  },
-  metricCard: {
-    backgroundColor: '#fff',
-    borderRadius: '12px',
-    padding: '16px 20px',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'center',
-  },
-  metricHeader: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px',
-    marginBottom: '8px',
-  },
-  metricIcon: {
-    width: '32px',
-    height: '32px',
-    borderRadius: '50%',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontSize: '16px',
-  },
-  metricLabel: {
-    margin: 0,
-    color: '#718096',
-    fontSize: '13px',
-    fontWeight: '600',
-  },
-  metricValue: {
-    margin: '0 0 0 42px',
-    fontSize: '24px',
-    fontWeight: 'bold',
-    color: '#1a202c',
-  },
-  chartsRow: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-    gap: '16px',
-  },
-  chartCard: {
-    backgroundColor: '#fff',
-    borderRadius: '12px',
-    padding: '20px',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-  },
-  chartCardTitle: {
-    margin: '0 0 16px 0',
-    fontSize: '15px',
-    color: '#1a365d',
-    fontWeight: '600',
-  },
-  chartCardBody: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '24px',
-    minHeight: '120px',
-  },
-  progressRingContainer: {
-    position: 'relative',
-    width: '100px',
-    height: '100px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  progressRingText: {
-    position: 'absolute',
-    fontSize: '18px',
-    fontWeight: 'bold',
-    color: '#003087',
-  },
-  chartStatsList: {
-    flex: 1,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '10px',
-  },
-  chartStatItem: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px',
-  },
-  chartStatDot: {
-    width: '8px',
-    height: '8px',
-    borderRadius: '50%',
-    backgroundColor: '#003087',
-  },
-  chartStatContent: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    width: '100%',
-    alignItems: 'center',
-    fontSize: '13px',
-  },
-  chartStatLabel: {
-    color: '#718096',
-    fontWeight: '500',
-  },
-  chartStatVal: {
-    color: '#2d3748',
-    fontWeight: '600',
-  },
-  chartStatDivider: {
-    height: '1px',
-    backgroundColor: '#edf2f7',
-    margin: '4px 0',
-  },
-  linearProgressBarBg: {
-    width: '100%',
-    height: '12px',
-    backgroundColor: '#edf2f7',
-    borderRadius: '6px',
-    overflow: 'hidden',
-  },
-  linearProgressBarFill: {
-    height: '100%',
-    backgroundColor: '#e53e3e',
-    borderRadius: '6px',
-    transition: 'width 0.3s ease',
-  },
-  section: {
-    backgroundColor: '#fff',
-    borderRadius: '12px',
-    padding: '24px',
-    marginBottom: '24px',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-  },
-  sectionTitle: { margin: '0 0 20px 0', color: '#1a365d', fontSize: '18px' },
-  empty: { color: '#718096', fontSize: '14px' },
-  tableWrapper: { overflowX: 'auto' },
-  table: { width: '100%', borderCollapse: 'collapse' },
-  tableHeader: { backgroundColor: '#edf2f7' },
-  th: { padding: '12px 16px', textAlign: 'left', fontSize: '13px', fontWeight: '600', color: '#4a5568' },
-  tableRow: { borderBottom: '1px solid #e2e8f0' },
-  td: { padding: '12px 16px', fontSize: '14px', color: '#2d3748' },
-  overrideBtn: {
-    backgroundColor: '#2d6a4f',
-    color: '#fff',
-    border: 'none',
-    padding: '6px 14px',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    fontSize: '13px',
-  },
-  modalOverlay: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    width: '100%',
-    height: '100%',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 1000,
-  },
-  modal: {
-    backgroundColor: '#fff',
-    borderRadius: '12px',
-    padding: '32px',
-    maxWidth: '500px',
-    width: '90%',
-    boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
-  },
-  modalTitle: { margin: '0 0 8px 0', color: '#1a365d' },
-  modalSub: { margin: '4px 0', color: '#2d3748', fontSize: '14px' },
-  modalGroup: { margin: '16px 0' },
-  modalLabel: { display: 'block', fontSize: '14px', fontWeight: '600', color: '#2d3748', marginBottom: '6px' },
-  modalTextarea: {
-    width: '100%',
-    padding: '10px',
-    borderRadius: '6px',
-    border: '1px solid #e2e8f0',
-    fontSize: '14px',
-    resize: 'vertical',
-  },
-  modalActions: { display: 'flex', gap: '12px', justifyContent: 'flex-end' },
-  modalCancel: {
-    backgroundColor: '#e2e8f0',
-    color: '#2d3748',
-    border: 'none',
-    padding: '10px 20px',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    fontSize: '14px',
-  },
-  modalConfirm: {
-    backgroundColor: '#2d6a4f',
-    color: '#fff',
-    border: 'none',
-    padding: '10px 24px',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    fontSize: '14px',
-  },
-  exportBtn: {
-    backgroundColor: '#003087',
-    color: '#fff',
-    border: 'none',
-    padding: '8px 16px',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    fontSize: '12px',
-    fontWeight: 'bold',
-  },
 };
 
 export default HODDashboard;

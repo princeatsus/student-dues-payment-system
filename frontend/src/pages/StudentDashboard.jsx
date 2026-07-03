@@ -561,7 +561,7 @@ const StudentDashboard = () => {
         role="STUDENT" 
         userName={student?.full_name} 
         pageTitle="Student dashboard" 
-        subtitle={`Level ${student?.level || '100'} · Semester ${activeSession?.semester || '1'}, ${activeSession?.academic_year || '2025/2026'}`} 
+        subtitle={`Level ${student?.level || '100'} · Semester ${session?.semester || '1'}, ${session?.academic_year || '2025/2026'}`} 
         onBack={() => navigate('/expenses')} 
         onLogout={handleLogout}
       />

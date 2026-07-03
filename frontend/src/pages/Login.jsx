@@ -96,6 +96,7 @@ const Login = () => {
     else if (user.role === 'ACCOUNTANT') navigate('/accountant');
     else if (user.role === 'HOD') navigate('/hod');
     else if (user.role === 'COURSE_REP') navigate('/expenses');
+    else if (user.role === 'ADMIN') navigate('/accountant');
     else navigate('/');
   };
 

@@ -163,7 +163,7 @@ const sendReminderEmail = async (req, res) => {
       `INSERT INTO audit_logs (actor_id, action, target_type, target_id, new_value)
        VALUES ($1, $2, $3, $4, $5)`,
       [
-        repId,
+        req.user.id,
         'REMINDER_EMAIL_SENT',
         'STUDENT',
         student.id,

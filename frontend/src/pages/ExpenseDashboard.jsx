@@ -480,7 +480,7 @@ const ExpenseDashboard = () => {
               onLogout={handleLogout}
             />
 
-            <div className="w-full max-w-7xl mx-auto px-4 py-6 flex-1 flex flex-col gap-5">
+            <div className="w-full px-4 lg:px-8 py-6 flex-1 flex flex-col gap-5">
               {/* Notification messages */}
               {success && (
                 <div className="p-3 bg-teal-50 border border-teal-200 text-teal-800 rounded-[12px] text-xs font-semibold flex items-center justify-between">
@@ -683,7 +683,7 @@ const ExpenseDashboard = () => {
             {/* Sticky submit button at bottom inside w-full frame */}
             {isCourseRep && (
               <div className="fixed lg:absolute bottom-0 left-0 right-0 p-4 bg-white border-t border-slate-100 z-10 w-full">
-                <div className="max-w-7xl mx-auto px-4 w-full">
+                <div className="w-full px-4 lg:px-8">
                   <button 
                     onClick={handleOpenModal}
                     className="w-full py-3 bg-[#1F3864] text-white rounded-[12px] font-semibold text-sm hover:bg-[#1a3055] transition text-center"

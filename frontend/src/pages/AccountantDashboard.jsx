@@ -160,27 +160,32 @@ const AccountantDashboard = () => {
     }
   };
 
-  const handleMomoUpload = async (e) => {
+  const handleMomoUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    
-    // Verify extension (US-3.1.1 compliance)
+
     const ext = file.name.split('.').pop().toLowerCase();
     if (ext !== 'csv' && ext !== 'xlsx') {
       setError('Please upload a valid MoMo CSV or Excel file.');
       return;
     }
 
-    const formData = new FormData();
-    formData.append('statement', file);
-    
-    try {
-      await reconcileUpload(formData);
-      showToast('MoMo statement parsed successfully');
-      navigate('/reconcile');
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to upload MoMo statement.');
-    }
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const response = await reconcileUpload({ csvText: event.target.result });
+        showToast('MoMo statement parsed successfully');
+        navigate('/reconcile', {
+          state: {
+            matched: response.data.matched,
+            unmatched: response.data.unmatched,
+          },
+        });
+      } catch (err) {
+        setError(err.response?.data?.message || 'Failed to upload MoMo statement.');
+      }
+    };
+    reader.readAsText(file);
   };
 
   const handleLogout = () => {
@@ -229,7 +234,7 @@ const AccountantDashboard = () => {
         <div className="bg-[#1F3864] text-white shrink-0 w-full">
           {/* Navbar */}
           <div className="w-full border-b border-white/10">
-            <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div className="w-full px-4 lg:px-8 py-3 flex items-center justify-between">
               <div>
                 <span className="block text-[9px] text-white/50 tracking-wider uppercase font-medium">
                   Electrical Dept
@@ -270,7 +275,7 @@ const AccountantDashboard = () => {
 
           {/* Tab Bar */}
           <div className="w-full">
-            <div className="max-w-7xl mx-auto flex px-4 pt-1 gap-5 overflow-x-auto scrollbar-none">
+            <div className="w-full flex px-4 lg:px-8 pt-1 gap-5 overflow-x-auto scrollbar-none">
               {tabs.map((tab) => (
                 <button
                   key={tab}
@@ -296,7 +301,7 @@ const AccountantDashboard = () => {
 
         {/* Global Error Banner inside view frame */}
         {error && (
-          <div className="w-full max-w-7xl mx-auto px-4 mt-4">
+          <div className="w-full px-4 lg:px-8 mt-4">
             <div className="p-3 bg-red-50 border border-red-300 text-red-700 rounded-[12px] text-xs font-medium flex items-center justify-between">
               <span>{error}</span>
               <button onClick={() => setError('')} className="text-red-500 hover:text-red-700 text-sm">✕</button>
@@ -307,7 +312,7 @@ const AccountantDashboard = () => {
         {/* 3. OVERVIEW TAB content */}
         {activeTab === 'Overview' && (
           <div className="flex-1 w-full lg:bg-slate-50">
-            <div className="max-w-7xl mx-auto px-4 py-6 flex flex-col gap-5">
+            <div className="w-full px-4 lg:px-8 py-6 flex flex-col gap-5">
               <span className="text-[10px] font-medium tracking-wider text-slate-400 uppercase">Financial Summary</span>
               
               {/* 2x2 stats grid (becomes 4-column on desktop) */}
@@ -418,7 +423,7 @@ const AccountantDashboard = () => {
         {/* 4. STUDENT LEDGER TAB content */}
         {activeTab === 'Student ledger' && (
           <div className="flex-1 w-full lg:bg-slate-50">
-            <div className="max-w-7xl mx-auto px-4 py-6 flex flex-col gap-4">
+            <div className="w-full px-4 lg:px-8 py-6 flex flex-col gap-4">
               <span className="text-[10px] font-medium tracking-wider text-slate-400 uppercase">Student Ledger Directory</span>
               
               {/* Search Bar */}
@@ -515,7 +520,7 @@ const AccountantDashboard = () => {
         {/* 5. RECONCILIATION TAB content */}
         {activeTab === 'Reconciliation' && (
           <div className="flex-1 w-full lg:bg-slate-50">
-            <div className="max-w-7xl mx-auto px-4 py-6 flex flex-col gap-4">
+            <div className="w-full px-4 lg:px-8 py-6 flex flex-col gap-4">
               <span className="text-[10px] font-medium tracking-wider text-slate-400 uppercase">Momo CSV Reconciliation</span>
               
               <div className="flex flex-col lg:flex-row gap-4 items-stretch">
@@ -559,7 +564,7 @@ const AccountantDashboard = () => {
         {/* 6. GOOGLE SYNC TAB content */}
         {activeTab === 'Google sync' && (
           <div className="flex-1 w-full lg:bg-slate-50">
-            <div className="max-w-7xl mx-auto px-4 py-6 flex flex-col gap-4">
+            <div className="w-full px-4 lg:px-8 py-6 flex flex-col gap-4">
               <span className="text-[10px] font-medium tracking-wider text-slate-400 uppercase">Google Workspace Sync</span>
               
               <div className="flex flex-col lg:flex-row gap-4 items-start w-full">
@@ -639,7 +644,7 @@ const AccountantDashboard = () => {
         {/* 7. DUES CONFIG TAB content */}
         {activeTab === 'Dues config' && (
           <div className="flex-1 w-full lg:bg-slate-50">
-            <div className="max-w-7xl mx-auto px-4 py-6 flex flex-col gap-4">
+            <div className="w-full px-4 lg:px-8 py-6 flex flex-col gap-4">
               <span className="text-[10px] font-medium tracking-wider text-slate-400 uppercase">Dues configuration</span>
               
               <form onSubmit={handleSetDues} className="border border-slate-300 rounded-[12px] bg-white p-4 flex flex-col gap-4 max-w-md lg:mx-auto lg:w-full lg:mt-6">

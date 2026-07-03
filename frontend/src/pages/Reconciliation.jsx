@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { reconcileUpload, reconcileConfirm, getAllStudents, confirmPayment, manualAssignPayment } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import AppHeader from '../components/AppHeader';
@@ -18,9 +18,21 @@ const Reconciliation = () => {
 
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     fetchStudents();
+    if (location.state?.matched) {
+      setMatched(location.state.matched);
+      setUnmatched(location.state.unmatched || []);
+      const selection = {};
+      location.state.matched.forEach((item) => {
+        if (item.matched_amount) {
+          selection[item.transaction_id] = true;
+        }
+      });
+      setSelectedMatched(selection);
+    }
   }, []);
 
   const fetchStudents = async () => {

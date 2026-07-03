@@ -566,7 +566,7 @@ const StudentDashboard = () => {
         onLogout={handleLogout}
       />
 
-      <div style={styles.content}>
+      <div className="w-full px-4 lg:px-8 py-6">
         {error && <div style={styles.errorBox}>⚠️ {error}</div>}
         {successMsg && <div style={styles.successBox}>✅ {successMsg}</div>}
 

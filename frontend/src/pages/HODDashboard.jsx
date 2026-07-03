@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getDefaulters, grantOverride, getAllOverrides, getHODStats } from '../utils/api';
+import { getDefaulters, grantOverride, getAllOverrides, getHODStats, getExpenses, approveExpense, rejectExpense } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { 
   AlertTriangle, 
@@ -57,6 +57,7 @@ const HODDashboard = () => {
   const [activeTab, setActiveTab] = useState('Overview'); // Overview, Defaulters, Expenses
   const [defaulters, setDefaulters] = useState([]);
   const [overrides, setOverrides] = useState([]);
+  const [expenses, setExpenses] = useState([]);
   const [stats, setStats] = useState({
     total_students: 0,
     paid_students: 0,
@@ -88,13 +89,15 @@ const HODDashboard = () => {
 
   const fetchData = async () => {
     try {
-      const [defRes, ovRes, statsRes] = await Promise.all([
+      const [defRes, ovRes, statsRes, expRes] = await Promise.all([
         getDefaulters(),
         getAllOverrides(),
         getHODStats(),
+        getExpenses(),
       ]);
       setDefaulters(defRes.data.defaulters || []);
       setOverrides(ovRes.data.overrides || []);
+      setExpenses(expRes.data.expenses || []);
       if (statsRes.data.stats) {
         setStats(statsRes.data.stats);
       }
@@ -162,6 +165,30 @@ const HODDashboard = () => {
     navigate('/');
   };
 
+  const pendingExpenses = expenses.filter((exp) => exp.status === 'PENDING_HOD');
+
+  const handleApproveExpense = async (id) => {
+    try {
+      await approveExpense(id);
+      setSuccess('Expense approved and sent to accountant.');
+      fetchData();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to approve expense.');
+    }
+  };
+
+  const handleRejectExpense = async (id) => {
+    const reason = prompt('Enter rejection reason:');
+    if (!reason) return;
+    try {
+      await rejectExpense(id, { reason });
+      setSuccess('Expense rejected.');
+      fetchData();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to reject expense.');
+    }
+  };
+
   if (loading) {
     return (
       <div className="w-full min-h-screen bg-slate-50 flex items-center justify-center p-4">
@@ -176,13 +203,13 @@ const HODDashboard = () => {
   const tabs = ['Overview', 'Defaulters', 'Expenses'];
 
   return (
-    <div className="w-full min-h-screen bg-slate-50 flex justify-center py-0 md:py-8 font-sans">
-      <div className="w-full max-w-[420px] min-h-screen bg-white flex flex-col border-x border-slate-300 text-slate-700 shadow-none pb-16 relative">
+    <div className="w-full min-h-screen bg-slate-50 flex justify-center font-sans">
+      <div className="w-full max-w-[420px] lg:max-w-none min-h-screen bg-white lg:bg-slate-50 flex flex-col border-x border-slate-300 lg:border-none text-slate-700 shadow-none pb-16 relative">
         
         {/* 1. NAVBAR & 2. TAB BAR (Navy Background #1F3864) */}
         <div className="bg-[#1F3864] text-white shrink-0">
           {/* Navbar */}
-          <div className="px-4 py-3 flex items-center justify-between border-b border-white/10">
+          <div className="w-full px-4 lg:px-8 py-3 flex items-center justify-between border-b border-white/10">
             <div>
               <span className="block text-[9px] text-white/50 tracking-wider uppercase font-medium">
                 HTU · Computer Science
@@ -221,7 +248,7 @@ const HODDashboard = () => {
           </div>
 
           {/* Tab Bar */}
-          <div className="flex px-4 pt-1 gap-6">
+          <div className="w-full flex px-4 lg:px-8 pt-1 gap-6">
             {tabs.map((tab) => (
               <button
                 key={tab}
@@ -265,11 +292,11 @@ const HODDashboard = () => {
 
         {/* 3. OVERVIEW TAB content */}
         {activeTab === 'Overview' && (
-          <div className="flex-1 p-4 flex flex-col gap-4">
+          <div className="flex-1 w-full lg:bg-slate-50 p-4 lg:px-8 py-6 flex flex-col gap-4">
             <span className="text-[10px] font-medium tracking-wider text-slate-400 uppercase">At a glance</span>
             
             {/* 2x2 stats grid */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
               {/* Total Defaulters */}
               <div className="border border-slate-300 rounded-[12px] bg-white p-3.5 flex flex-col justify-between h-[115px]">
                 <div className="flex items-center justify-between">
@@ -346,8 +373,9 @@ const HODDashboard = () => {
             </div>
 
             {/* Collection Efficiency Card */}
-            <div className="border border-slate-300 rounded-[12px] bg-white p-4 flex flex-col gap-3">
-              <div className="flex justify-between items-center">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 lg:gap-4 mt-2">
+              <div className="border border-slate-300 rounded-[12px] bg-white p-4 flex flex-col gap-3">
+                <div className="flex justify-between items-center">
                 <span className="text-sm font-medium text-slate-900">Collection efficiency</span>
                 <span className="text-base font-medium text-blue-600">{stats.collection_efficiency}%</span>
               </div>
@@ -386,29 +414,30 @@ const HODDashboard = () => {
               </div>
             </div>
 
-            {/* Class Budget Card */}
-            <div className="border border-slate-300 rounded-[12px] bg-white p-4 flex flex-col gap-3">
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-slate-900">Class budget</span>
-                <span className="text-xs font-medium text-slate-400">{stats.spend_ratio || 0}% spent</span>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-2 mt-1">
-                <div className="bg-slate-50 border border-slate-200 rounded-[8px] p-2.5 flex flex-col gap-0.5">
-                  <span className="text-[10px] text-slate-400 font-medium">Approved & disbursed</span>
-                  <span className="text-xs font-medium text-green-600">₵{stats.total_disbursed.toFixed(2)}</span>
+              {/* Class Budget Card */}
+              <div className="border border-slate-300 rounded-[12px] bg-white p-4 flex flex-col gap-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-slate-900">Class budget</span>
+                  <span className="text-xs font-medium text-slate-400">{stats.spend_ratio || 0}% spent</span>
                 </div>
-                <div className="bg-slate-50 border border-slate-200 rounded-[8px] p-2.5 flex flex-col gap-0.5">
-                  <span className="text-[10px] text-slate-400 font-medium">Pending HOD/Finance</span>
-                  <span className="text-xs font-medium text-amber-600">₵{stats.total_pending.toFixed(2)}</span>
-                </div>
-                <div className="bg-slate-50 border border-slate-200 rounded-[8px] p-2.5 flex flex-col gap-0.5">
-                  <span className="text-[10px] text-slate-400 font-medium">Total collected</span>
-                  <span className="text-xs font-medium text-blue-600">₵{stats.total_collected.toFixed(2)}</span>
-                </div>
-                <div className="bg-slate-50 border border-slate-200 rounded-[8px] p-2.5 flex flex-col gap-0.5">
-                  <span className="text-[10px] text-slate-400 font-medium">Remaining balance</span>
-                  <span className="text-xs font-medium text-slate-700">₵{stats.remaining_budget.toFixed(2)}</span>
+                
+                <div className="grid grid-cols-2 gap-2 mt-1">
+                  <div className="bg-slate-50 border border-slate-200 rounded-[8px] p-2.5 flex flex-col gap-0.5">
+                    <span className="text-[10px] text-slate-400 font-medium">Approved & disbursed</span>
+                    <span className="text-xs font-medium text-green-600">₵{stats.total_disbursed.toFixed(2)}</span>
+                  </div>
+                  <div className="bg-slate-50 border border-slate-200 rounded-[8px] p-2.5 flex flex-col gap-0.5">
+                    <span className="text-[10px] text-slate-400 font-medium">Pending HOD/Finance</span>
+                    <span className="text-xs font-medium text-amber-600">₵{stats.total_pending.toFixed(2)}</span>
+                  </div>
+                  <div className="bg-slate-50 border border-slate-200 rounded-[8px] p-2.5 flex flex-col gap-0.5">
+                    <span className="text-[10px] text-slate-400 font-medium">Total collected</span>
+                    <span className="text-xs font-medium text-blue-600">₵{stats.total_collected.toFixed(2)}</span>
+                  </div>
+                  <div className="bg-slate-50 border border-slate-200 rounded-[8px] p-2.5 flex flex-col gap-0.5">
+                    <span className="text-[10px] text-slate-400 font-medium">Remaining balance</span>
+                    <span className="text-xs font-medium text-slate-700">₵{stats.remaining_budget.toFixed(2)}</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -418,7 +447,7 @@ const HODDashboard = () => {
 
         {/* 4. DEFAULTERS TAB content */}
         {activeTab === 'Defaulters' && (
-          <div className="flex-1 p-4 flex flex-col gap-4">
+          <div className="flex-1 w-full lg:bg-slate-50 p-4 lg:px-8 py-6 flex flex-col gap-4">
             <div className="flex justify-between items-center">
               <div>
                 <span className="text-[10px] font-medium tracking-wider text-slate-400 uppercase">Defaulters list</span>
@@ -442,7 +471,7 @@ const HODDashboard = () => {
                 <span className="text-xs text-slate-500 font-medium">No students are currently owing departmental dues.</span>
               </div>
             ) : (
-              <div className="flex flex-col gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {defaulters.map((student) => {
                   const initials = student.full_name
                     ? student.full_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
@@ -494,16 +523,65 @@ const HODDashboard = () => {
 
         {/* 5. EXPENSES TAB content */}
         {activeTab === 'Expenses' && (
-          <div className="flex-1 p-4 flex flex-col justify-center items-center py-20">
-            <div className="border border-slate-300 rounded-[12px] bg-white p-8 text-center flex flex-col items-center gap-2 max-w-[280px]">
-              <div className="w-10 h-10 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400">
-                <Receipt size={18} />
+          <div className="flex-1 w-full lg:bg-slate-50 p-4 lg:px-8 py-6 flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-sm font-semibold text-slate-900">Pending expense approvals</h2>
+                <p className="text-xs text-slate-500 mt-0.5">{pendingExpenses.length} awaiting HOD review</p>
               </div>
-              <span className="text-sm font-medium text-slate-900 mt-1">No pending expenses</span>
-              <span className="text-xs text-slate-500 font-medium leading-normal">
-                All expense requisitions have been approved or disbursed.
-              </span>
+              <button
+                type="button"
+                onClick={() => navigate('/expenses')}
+                className="text-xs font-medium text-blue-600 hover:text-blue-700"
+              >
+                Open full expenses page →
+              </button>
             </div>
+
+            {pendingExpenses.length === 0 ? (
+              <div className="border border-slate-300 rounded-[12px] bg-white p-8 text-center flex flex-col items-center gap-2 max-w-[280px] mx-auto mt-12">
+                <div className="w-10 h-10 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400">
+                  <Receipt size={18} />
+                </div>
+                <span className="text-sm font-medium text-slate-900 mt-1">No pending expenses</span>
+                <span className="text-xs text-slate-500 font-medium leading-normal">
+                  All expense requisitions have been approved or disbursed.
+                </span>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {pendingExpenses.map((exp) => (
+                  <div
+                    key={exp.id}
+                    className="border border-slate-300 rounded-[12px] bg-white p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                  >
+                    <div className="flex flex-col gap-1">
+                      <span className="text-sm font-medium text-slate-900">{exp.item_description}</span>
+                      <span className="text-xs text-slate-500">
+                        {exp.requested_by_name} · Level {exp.target_level}{exp.target_class_group} · GHS {parseFloat(exp.amount).toFixed(2)}
+                      </span>
+                      <span className="text-xs text-slate-400">{exp.purpose_justification}</span>
+                    </div>
+                    <div className="flex gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleApproveExpense(exp.id)}
+                        className="text-xs font-bold bg-teal-600 text-white px-3 py-1.5 rounded-[6px] hover:bg-teal-700"
+                      >
+                        Approve
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleRejectExpense(exp.id)}
+                        className="text-xs font-bold bg-red-600 text-white px-3 py-1.5 rounded-[6px] hover:bg-red-700"
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

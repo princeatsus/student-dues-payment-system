@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getClassRoster, sendReminderEmail } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
+import AppHeader from '../components/AppHeader';
 import { 
   GraduationCap, 
   LogOut, 
@@ -145,60 +146,14 @@ const ClassRoster = () => {
 
   return (
     <div style={styles.container}>
-      {/* Premium Navbar */}
-      <div style={styles.navbar}>
-        <div style={styles.navBrand}>
-          <div style={styles.navIconContainer}>
-            <GraduationCap size={24} style={{ color: '#a5b4fc' }} />
-          </div>
-          <div>
-            <h1 style={styles.navTitle}>COMPSSA SDMS</h1>
-            <p style={styles.navSubtitle}>Ho Technical University</p>
-          </div>
-        </div>
-
-        {/* Desktop Navigation Links */}
-        {!isMobile && (
-          <div style={styles.navActions}>
-            <span style={styles.navUser}>👋 Rep: <strong>{user?.full_name}</strong></span>
-            <button onClick={() => navigate('/expenses')} style={styles.expensesBtn}>
-              <DollarSign size={14} style={{ marginRight: '4px' }} />
-              Expenses
-            </button>
-            <button onClick={handleLogout} style={styles.logoutBtn}>
-              <LogOut size={13} style={{ marginRight: '4px' }} />
-              Logout
-            </button>
-          </div>
-        )}
-
-        {/* Mobile Hamburger Toggle Button */}
-        {isMobile && (
-          <button onClick={() => setMenuOpen(!menuOpen)} style={styles.menuToggleBtn}>
-            {menuOpen ? <X size={22} /> : <Menu size={22} />}
-          </button>
-        )}
-      </div>
-
-      {/* Mobile Drawer Dropdown Menu */}
-      {isMobile && menuOpen && (
-        <div style={styles.mobileMenu}>
-          <div style={styles.mobileMenuHeader}>
-            <span style={styles.mobileMenuUser}>👋 Rep: <strong>{user?.full_name}</strong></span>
-          </div>
-          <button 
-            onClick={() => { setMenuOpen(false); navigate('/expenses'); }} 
-            style={styles.mobileMenuBtn}
-          >
-            <DollarSign size={16} style={{ marginRight: '8px' }} />
-            Expenses Dashboard
-          </button>
-          <button onClick={handleLogout} style={styles.mobileMenuLogoutBtn}>
-            <LogOut size={14} style={{ marginRight: '8px' }} />
-            Logout
-          </button>
-        </div>
-      )}
+      <AppHeader 
+        role="COURSE_REP" 
+        userName={user?.full_name} 
+        pageTitle="Class roster" 
+        subtitle={`Level ${rosterData?.level || '200'}${rosterData?.class_group || 'A'} · Semester ${rosterData?.session?.semester || '1'}, ${rosterData?.session?.academic_year || '2025/2026'}`} 
+        onBack={() => navigate('/expenses')} 
+        onLogout={handleLogout}
+      />
 
       {/* Main Content Body */}
       <div style={styles.content}>

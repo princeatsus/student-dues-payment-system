@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getDefaulters, grantOverride, getAllOverrides, getHODStats } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
+import AppHeader from '../components/AppHeader';
 
 const HODDashboard = () => {
   const [defaulters, setDefaulters] = useState([]);
@@ -110,16 +111,14 @@ const HODDashboard = () => {
 
   return (
     <div style={styles.container}>
-      {/* Navbar */}
-      <div style={styles.navbar}>
-        <h1 style={styles.navTitle}>HTU Computer Science — HOD Dashboard</h1>
-        <div style={styles.navRight}>
-          <span style={styles.navUser}>👋 {user?.full_name}</span>
-          {/* NEW: Expense navigation button */}
-          <button onClick={() => navigate('/expenses')} style={styles.navBtn}>💰 Expenses</button>
-          <button onClick={handleLogout} style={styles.logoutBtn}>Logout</button>
-        </div>
-      </div>
+      <AppHeader 
+        role="HOD" 
+        userName={user?.full_name} 
+        pageTitle="HOD dashboard" 
+        subtitle="Department Governance & Academic Overrides" 
+        onBack={() => navigate('/expenses')} 
+        onLogout={handleLogout}
+      />
 
       <div style={styles.content}>
         {error && <div style={styles.error}>{error}</div>}

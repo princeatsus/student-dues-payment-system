@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAllStudents, confirmPayment, setDuesConfig, syncGoogleDirectory } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
+import AppHeader from '../components/AppHeader';
 import { 
   Users, CheckCircle, AlertCircle, CreditCard, Search, 
   Database, RefreshCw, LogOut, Sun, Moon, Settings, Coins,
@@ -257,157 +258,14 @@ const AccountantDashboard = () => {
         }
         }
       `}</style>
-
-      {/* Navbar */}
-      <div style={{ 
-        ...styles.navbar, 
-        background: darkMode 
-          ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)' 
-          : 'linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%)',
-        borderBottom: darkMode ? '1px solid #334155' : 'none'
-      }}>
-        <div style={styles.navLeft}>
-          <div style={styles.logoBadge}>🎓</div>
-          <h1 style={styles.navTitle}>HTU Computer Science</h1>
-        </div>
-        
-        {isMobile ? (
-          <div style={styles.mobileNavActions}>
-            {/* Dark Mode Switcher for Mobile Header */}
-            <div 
-              onClick={() => setDarkMode(!darkMode)}
-              style={{ 
-                ...styles.toggleTrack, 
-                backgroundColor: darkMode ? '#10b981' : '#cbd5e1',
-                marginRight: '12px'
-              }}
-            >
-              <div 
-                style={{ 
-                  ...styles.toggleThumb, 
-                  transform: darkMode ? 'translateX(16px)' : 'translateX(0px)',
-                  backgroundColor: '#ffffff',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}
-              >
-                {darkMode ? <Moon size={8} color="#10b981" /> : <Sun size={8} color="#f59e0b" />}
-              </div>
-            </div>
-            
-            <button 
-              onClick={() => setMenuOpen(!menuOpen)} 
-              style={styles.hamburgerBtn}
-            >
-              {menuOpen ? <X size={20} color="#fff" /> : <Menu size={20} color="#fff" />}
-            </button>
-          </div>
-        ) : (
-          <div style={styles.navRight}>
-            <span style={styles.navUser}>👋 {user?.full_name}</span>
-            
-            {/* Dark Mode Switcher */}
-            <div 
-              onClick={() => setDarkMode(!darkMode)}
-              style={{ 
-                ...styles.toggleTrack, 
-                backgroundColor: darkMode ? '#10b981' : '#cbd5e1' 
-              }}
-            >
-              <div 
-                style={{ 
-                  ...styles.toggleThumb, 
-                  transform: darkMode ? 'translateX(16px)' : 'translateX(0px)',
-                  backgroundColor: '#ffffff',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}
-              >
-                {darkMode ? <Moon size={8} color="#10b981" /> : <Sun size={8} color="#f59e0b" />}
-              </div>
-            </div>
-
-            <button onClick={handleSyncDirectory} disabled={syncing} style={styles.navBtn}>
-              <Database size={13} style={styles.btnIcon} />
-              {syncing ? 'Syncing...' : 'Google Sync'}
-            </button>
-            
-            <button onClick={() => navigate('/reconcile')} style={styles.navBtn}>
-              <RefreshCw size={13} style={styles.btnIcon} />
-              Reconciliation
-            </button>
-            
-            <button onClick={() => navigate('/expenses')} style={styles.navBtn}>
-              <Coins size={13} style={styles.btnIcon} />
-              Expenses
-            </button>
-            
-            <button onClick={handleLogout} style={styles.logoutBtn}>
-              <LogOut size={13} style={styles.btnIcon} />
-              Logout
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Mobile Drawer Menu */}
-      {isMobile && menuOpen && (
-        <div 
-          className="mobile-menu-animate"
-          style={{
-            ...styles.mobileMenu,
-            background: darkMode 
-              ? 'linear-gradient(180deg, #1e293b 0%, #0f172a 100%)' 
-              : 'linear-gradient(180deg, #1e3a8a 0%, #172554 100%)',
-            borderBottom: darkMode ? '1px solid #334155' : '1px solid rgba(255,255,255,0.1)'
-          }}
-        >
-          <div style={styles.mobileMenuHeader}>
-            <span style={styles.mobileMenuUser}>👋 Accountant: <strong>{user?.full_name}</strong></span>
-          </div>
-
-          <div style={styles.mobileMenuContent}>
-            <button 
-              onClick={() => { handleSyncDirectory(); setMenuOpen(false); }} 
-              disabled={syncing} 
-              style={styles.mobileMenuBtn}
-              className="mobile-menu-btn-override"
-            >
-              <Database size={14} style={{ marginRight: '8px' }} />
-              {syncing ? 'Google Syncing...' : 'Google Directory Sync'}
-            </button>
-            
-            <button 
-              onClick={() => { navigate('/reconcile'); setMenuOpen(false); }} 
-              style={styles.mobileMenuBtn}
-              className="mobile-menu-btn-override"
-            >
-              <RefreshCw size={14} style={{ marginRight: '8px' }} />
-              MoMo Reconciliation
-            </button>
-            
-            <button 
-              onClick={() => { navigate('/expenses'); setMenuOpen(false); }} 
-              style={styles.mobileMenuBtn}
-              className="mobile-menu-btn-override"
-            >
-              <Coins size={14} style={{ marginRight: '8px' }} />
-              Expense Requisitions
-            </button>
-            
-            <button 
-              onClick={handleLogout} 
-              style={styles.mobileMenuLogoutBtn}
-              className="mobile-menu-btn-override"
-            >
-              <LogOut size={14} style={{ marginRight: '8px' }} />
-              Logout from Portal
-            </button>
-          </div>
-        </div>
-      )}
+      <AppHeader 
+        role="ACCOUNTANT" 
+        userName={user?.full_name} 
+        pageTitle="Accountant dashboard" 
+        subtitle="Department Dues & Financial Statements" 
+        onBack={() => navigate('/expenses')} 
+        onLogout={handleLogout}
+      />
 
       <div style={styles.content} className="content-override">
         {error && <div style={styles.error}>{error}</div>}

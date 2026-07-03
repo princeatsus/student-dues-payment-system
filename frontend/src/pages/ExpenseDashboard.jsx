@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getExpenses, submitExpense, approveExpense, rejectExpense, disburseExpense } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
+import AppHeader from '../components/AppHeader';
 import { 
   ArrowLeft, 
   FileText, 
@@ -470,33 +471,14 @@ const ExpenseDashboard = () => {
         ) : (
           /* VIEW 2: Dashboard Main Roster and Requests List */
           <div className="flex-1 flex flex-col pb-20">
-            {/* Navbar Header */}
-            <div className="p-4 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white/95 backdrop-blur z-20">
-              <div className="flex items-center gap-2">
-                <button 
-                  onClick={handleBack} 
-                  className="p-1 hover:bg-slate-100 rounded text-slate-700"
-                  title="Back to Dashboard"
-                >
-                  <ArrowLeft size={20} />
-                </button>
-                <div>
-                  <p className="text-[11px] font-bold text-slate-400 tracking-wider">ELECTRICAL DEPT</p>
-                  <h1 className="text-lg font-bold text-slate-950 -mt-0.5">Expense requests</h1>
-                </div>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 font-semibold border border-slate-200 text-slate-700">
-                  {user?.role?.replace('_', ' ')}
-                </span>
-                <button 
-                  onClick={handleLogout} 
-                  className="text-xs font-semibold text-red-600 hover:bg-red-50 px-2 py-1 rounded"
-                >
-                  Logout
-                </button>
-              </div>
-            </div>
+            <AppHeader 
+              role={user?.role} 
+              userName={user?.full_name} 
+              pageTitle="Expense requests" 
+              subtitle={`Level ${user?.assigned_level || user?.current_level || '300'} · Semester 1, 2025/2026`} 
+              onBack={handleBack} 
+              onLogout={handleLogout}
+            />
 
             {/* Notification messages */}
             {success && (

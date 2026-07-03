@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { reconcileUpload, reconcileConfirm, getAllStudents, confirmPayment, manualAssignPayment } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
+import AppHeader from '../components/AppHeader';
 
 const Reconciliation = () => {
   const [students, setStudents] = useState([]);
@@ -164,16 +165,13 @@ const Reconciliation = () => {
 
   return (
     <div style={styles.container}>
-      {/* Navbar */}
-      <div style={styles.navbar}>
-        <div>
-          <h1 style={styles.navTitle}>💼 Accountant Portal — Reconciliation Wizard</h1>
-        </div>
-        <div style={styles.navRight}>
-          <span style={styles.navUser}>👋 Accountant: {user?.full_name}</span>
-          <button onClick={() => navigate('/accountant')} style={styles.backBtn}>Accountant Dashboard</button>
-        </div>
-      </div>
+      <AppHeader 
+        role="ACCOUNTANT" 
+        userName={user?.full_name} 
+        pageTitle="Reconciliation wizard" 
+        subtitle="MTN / Telecel Cash CSV Statement Parser" 
+        onBack={() => navigate('/accountant')} 
+      />
 
       <div style={styles.content}>
         {error && <div style={styles.error}>{error}</div>}

@@ -8,6 +8,7 @@ import {
   confirmPayment
 } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
+import AppHeader from '../components/AppHeader';
 import jsPDF from 'jspdf';
 import { 
   Menu, 
@@ -556,213 +557,16 @@ const StudentDashboard = () => {
           }
         `}</style>
       )}
-      {/* Official HTU SDMS Style Header */}
-      <div style={styles.navbar} className="navbar-override">
-        <div style={styles.navLeft}>
-          {isMobile && (
-            <button onClick={() => setMenuOpen(!menuOpen)} style={styles.menuBtn}>
-              {menuOpen ? <X size={20} style={{ color: '#1e3a8a' }} /> : <Menu size={20} style={{ color: '#1e3a8a' }} />}
-            </button>
-          )}
-          <div style={styles.logoContainer}>
-            <div style={styles.htuBadgeWrapper}>
-              <div style={styles.htuBadgeCircle}>
-                <span style={{ fontSize: '10px', color: '#1e3a8a', fontWeight: 'bold' }}>HTU</span>
-              </div>
-            </div>
-            <span style={styles.sdmsText} className="logo-text">SDMS</span>
-          </div>
-        </div>
+      <AppHeader 
+        role="STUDENT" 
+        userName={student?.full_name} 
+        pageTitle="Student dashboard" 
+        subtitle={`Level ${student?.level || '100'} · Semester ${activeSession?.semester || '1'}, ${activeSession?.academic_year || '2025/2026'}`} 
+        onBack={() => navigate('/expenses')} 
+        onLogout={handleLogout}
+      />
 
-        <div style={styles.navRight}>
-          <div style={styles.notificationWrapper}>
-            {/* Notification Bell with Badge */}
-            <button
-              type="button"
-              style={{
-                ...styles.bellWrapper,
-                border: 'none',
-                background: 'transparent',
-                padding: 0,
-                margin: 0,
-              }}
-              onClick={() => setShowNotifications((prev) => !prev)}
-              aria-label="Open notifications"
-              aria-expanded={showNotifications}
-              aria-haspopup="true"
-            >
-              <Bell size={20} style={{ color: '#475569' }} className="bell-icon" />
-              {hasOutstanding && (
-                <span style={styles.bellBadge}>1</span>
-              )}
-            </button>
-            {showNotifications && (
-              <div style={styles.notificationMenu}>
-                <div style={styles.notificationTitle}>Notifications</div>
-                <div style={styles.notificationItem}>
-                  {reference ? (
-                    <>
-                      <strong>Payment reference ready:</strong><br />
-                      {reference.reference} — {reference.amount}
-                    </>
-                  ) : hasOutstanding ? (
-                    'You have outstanding dues. Please review your balance and make a payment.'
-                  ) : (
-                    'No new notifications at this time.'
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Secondary controls shown ONLY on desktop to prevent mobile crowding */}
-          {!isMobile && (
-            <>
-              {/* Chat Icon */}
-              <div style={styles.chatWrapper}>
-                <MessageSquare size={20} style={{ color: '#475569' }} />
-              </div>
-
-              {/* Student Profile Initial Circle */}
-              <div style={{ position: 'relative' }}>
-                <div 
-                  onClick={() => setProfileMenuOpen(!profileMenuOpen)} 
-                  style={styles.profileCircle}
-                >
-                  {initial}
-                </div>
-                {profileMenuOpen && (
-                  <div 
-                    className="profile-dropdown-override"
-                    style={{
-                      position: 'absolute',
-                      top: '40px',
-                      right: '0',
-                      width: '240px',
-                      backgroundColor: '#ffffff',
-                      borderRadius: '8px',
-                      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-                      border: '1px solid #e2e8f0',
-                      padding: '16px',
-                      zIndex: '1000',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '12px',
-                      textAlign: 'left'
-                    }}
-                  >
-                    <div style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '8px' }}>
-                      <div className="profile-dropdown-name-override" style={{ fontWeight: 'bold', fontSize: '14px', color: '#1e293b' }}>
-                        {student?.full_name}
-                      </div>
-                      <div style={{ fontSize: '12px', color: '#64748b' }}>
-                        {student?.index_number}
-                      </div>
-                    </div>
-                    <div style={{ fontSize: '12px', color: '#334155', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      <div><strong>Level:</strong> {student?.level}</div>
-                      <div><strong>Group:</strong> {student?.class_group}</div>
-                      <div style={{ wordBreak: 'break-all' }}><strong>Email:</strong> {student?.email}</div>
-                    </div>
-                    <button 
-                      onClick={handleLogout} 
-                      style={{
-                        backgroundColor: '#ef4444',
-                        color: '#ffffff',
-                        border: 'none',
-                        borderRadius: '6px',
-                        padding: '8px',
-                        fontSize: '12px',
-                        fontWeight: 'bold',
-                        cursor: 'pointer',
-                        width: '100%',
-                        textAlign: 'center'
-                      }}
-                    >
-                      Logout from Portal
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Styled Dark Mode Toggle Mockup */}
-              <div 
-                onClick={() => setDarkMode(!darkMode)}
-                style={{ 
-                  ...styles.toggleTrack, 
-                  backgroundColor: darkMode ? '#10b981' : '#cbd5e1' 
-                }}
-              >
-                <div 
-                  style={{ 
-                    ...styles.toggleThumb, 
-                    transform: darkMode ? 'translateX(16px)' : 'translateX(0px)' 
-                  }}
-                ></div>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Mobile Drawer Dropdown Menu */}
-      {isMobile && menuOpen && (
-        <div style={styles.mobileMenu}>
-          <div style={styles.mobileMenuHeader}>
-            <span style={styles.mobileMenuUser}>👋 Student: <strong>{student?.full_name}</strong></span>
-            <span style={styles.mobileMenuIndex}>{student?.index_number}</span>
-          </div>
-
-          {/* Mobile Profile Display */}
-          <div style={styles.mobileMenuRow}>
-            <div style={{ ...styles.profileCircle, width: '28px', height: '28px', fontSize: '12px' }}>
-              {initial}
-            </div>
-            <div style={{ color: '#93c5fd', fontSize: '11px', fontWeight: '600' }}>
-              Level {student?.level} Class Group {student?.class_group}
-            </div>
-          </div>
-
-          {/* Mobile Chat Link */}
-          <div style={styles.mobileMenuItem}>
-            <MessageSquare size={14} style={{ marginRight: '8px', color: '#93c5fd' }} />
-            <span style={{ color: '#ffffff', fontSize: '12px', fontWeight: '600' }}>Class Messages</span>
-          </div>
-
-          {/* Mobile Dark Mode Toggle */}
-          <div style={styles.mobileMenuToggleRow}>
-            <span style={{ color: '#ffffff', fontSize: '12px', fontWeight: '600' }}>Dark Mode Theme</span>
-            <div 
-              onClick={() => setDarkMode(!darkMode)}
-              style={{ 
-                ...styles.toggleTrack, 
-                backgroundColor: darkMode ? '#10b981' : '#475569',
-                border: '1px solid #475569'
-              }}
-            >
-              <div 
-                style={{ 
-                  ...styles.toggleThumb, 
-                  transform: darkMode ? 'translateX(16px)' : 'translateX(0px)' 
-                }}
-              ></div>
-            </div>
-          </div>
-
-          <button onClick={handleLogout} style={styles.mobileMenuLogoutBtn}>
-            <LogOut size={14} style={{ marginRight: '8px' }} />
-            Logout from SDMS
-          </button>
-        </div>
-      )}
-
-      {/* Main Content Body */}
       <div style={styles.content}>
-        {/* Page Title */}
-        <div style={styles.titleContainer}>
-          <h2 style={styles.dashboardTitle} className="text-title">Dashboard</h2>
-        </div>
-
         {error && <div style={styles.errorBox}>⚠️ {error}</div>}
         {successMsg && <div style={styles.successBox}>✅ {successMsg}</div>}
 

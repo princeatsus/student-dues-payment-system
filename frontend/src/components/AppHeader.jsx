@@ -96,14 +96,14 @@ const AppHeader = ({
     <div className="w-full bg-white flex flex-col font-sans">
       
       {/* Top Navbar */}
-      <div className="px-4 py-3 flex items-center justify-between border-b border-slate-100">
+      <div className="px-4 py-3 flex items-center justify-between border-b border-slate-300">
         
         {/* Left Side: Back Arrow + Breadcrumb */}
         <div className="flex items-center gap-2.5 min-w-0">
           <button 
             type="button"
             onClick={handleDefaultBack}
-            className="w-8 h-8 rounded-[8px] border border-slate-200 flex items-center justify-center bg-white text-slate-700 hover:bg-slate-50 active:scale-95 transition shrink-0"
+            className="w-8 h-8 rounded-[8px] border border-slate-300 flex items-center justify-center bg-white text-slate-700 hover:bg-slate-50 active:scale-95 transition shrink-0"
             aria-label="Back"
           >
             <ArrowLeft size={16} />
@@ -122,7 +122,7 @@ const AppHeader = ({
         {/* Right Side: Role Chip + Logout */}
         <div className="flex items-center gap-2 shrink-0">
           {/* Role Chip Pill */}
-          <div className={`rounded-full border-[0.5px] px-2.5 py-0.5 pr-3.5 flex items-center gap-2 ${config.bgClass} ${config.textClass}`}>
+          <div className={`rounded-full border border-slate-300 px-2.5 py-0.5 pr-3.5 flex items-center gap-2 ${config.bgClass} ${config.textClass}`}>
             <div className={`w-6 h-6 rounded-full flex items-center justify-center text-white shrink-0 ${config.iconBgClass}`}>
               <RoleIcon size={13} />
             </div>
@@ -140,7 +140,7 @@ const AppHeader = ({
           <button
             type="button"
             onClick={handleDefaultLogout}
-            className="w-8 h-8 rounded-[8px] border border-slate-200 flex items-center justify-center bg-white text-slate-600 hover:text-red-600 hover:bg-red-50 hover:border-red-200 active:scale-95 transition"
+            className="w-8 h-8 rounded-[8px] border border-slate-300 flex items-center justify-center bg-white text-slate-600 hover:text-red-600 hover:bg-red-50 hover:border-red-200 active:scale-95 transition"
             aria-label="Log out"
           >
             <LogOut size={15} />
@@ -162,7 +162,7 @@ const AppHeader = ({
       </div>
 
       {/* Thin divider line below hero */}
-      <div className="w-full h-[0.5px] bg-slate-200"></div>
+      <div className="w-full h-[1px] bg-slate-300"></div>
 
     </div>
   );

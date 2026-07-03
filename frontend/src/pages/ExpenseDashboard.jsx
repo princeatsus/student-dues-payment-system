@@ -490,22 +490,22 @@ const ExpenseDashboard = () => {
 
             {/* 2x2 Stats Cards Grid */}
             <div className="p-4 grid grid-cols-2 gap-3 bg-slate-50/50">
-              <div className="bg-white border-[0.5px] border-slate-200 rounded-[12px] p-3 flex flex-col justify-between">
+              <div className="bg-white border border-slate-300 rounded-[12px] p-3 flex flex-col justify-between">
                 <span className="text-[10px] text-slate-500 font-semibold">Total requested</span>
                 <span className="text-sm font-bold text-slate-950 mt-1">₵{totalRequestedAmount.toFixed(2)}</span>
                 <span className="text-[9px] text-slate-400 mt-0.5">this semester</span>
               </div>
-              <div className="bg-white border-[0.5px] border-slate-200 rounded-[12px] p-3 flex flex-col justify-between">
+              <div className="bg-white border border-slate-300 rounded-[12px] p-3 flex flex-col justify-between">
                 <span className="text-[10px] text-slate-500 font-semibold">Disbursed</span>
                 <span className="text-sm font-bold text-slate-950 mt-1">₵{disbursedAmount.toFixed(2)}</span>
                 <span className="text-[9px] text-slate-400 mt-0.5">released to rep</span>
               </div>
-              <div className="bg-white border-[0.5px] border-slate-200 rounded-[12px] p-3 flex flex-col justify-between">
+              <div className="bg-white border border-slate-300 rounded-[12px] p-3 flex flex-col justify-between">
                 <span className="text-[10px] text-slate-500 font-semibold">Awaiting HOD</span>
                 <span className="text-sm font-bold text-slate-950 mt-1 text-amber-700">₵{awaitingHodAmount.toFixed(2)}</span>
                 <span className="text-[9px] text-slate-400 mt-0.5">pending HOD</span>
               </div>
-              <div className="bg-white border-[0.5px] border-slate-200 rounded-[12px] p-3 flex flex-col justify-between">
+              <div className="bg-white border border-slate-300 rounded-[12px] p-3 flex flex-col justify-between">
                 <span className="text-[10px] text-slate-500 font-semibold">Awaiting finance</span>
                 <span className="text-sm font-bold text-slate-950 mt-1 text-teal-700">₵{awaitingFinanceAmount.toFixed(2)}</span>
                 <span className="text-[9px] text-slate-400 mt-0.5">approved funds</span>
@@ -570,7 +570,7 @@ const ExpenseDashboard = () => {
                         onClick={() => {
                           if (exp.attachment_url) setPreviewImage(exp.attachment_url);
                         }}
-                        className="bg-white border-[0.5px] border-slate-200 rounded-[12px] p-4 flex flex-col gap-3 hover:border-slate-400 transition cursor-pointer"
+                        className="bg-white border border-slate-300 rounded-[12px] p-4 flex flex-col gap-3 hover:border-slate-400 transition cursor-pointer"
                       >
                         <div className="flex justify-between items-start gap-4">
                           <div className="flex gap-3">

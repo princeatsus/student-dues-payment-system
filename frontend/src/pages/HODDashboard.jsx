@@ -177,7 +177,7 @@ const HODDashboard = () => {
 
   return (
     <div className="w-full min-h-screen bg-slate-50 flex justify-center py-0 md:py-8 font-sans">
-      <div className="w-full max-w-[420px] min-h-screen bg-white flex flex-col border-x border-slate-200 text-slate-700 shadow-none pb-16 relative">
+      <div className="w-full max-w-[420px] min-h-screen bg-white flex flex-col border-x border-slate-300 text-slate-700 shadow-none pb-16 relative">
         
         {/* 1. NAVBAR & 2. TAB BAR (Navy Background #1F3864) */}
         <div className="bg-[#1F3864] text-white shrink-0">
@@ -271,7 +271,7 @@ const HODDashboard = () => {
             {/* 2x2 stats grid */}
             <div className="grid grid-cols-2 gap-3">
               {/* Total Defaulters */}
-              <div className="border-[0.5px] border-slate-200 rounded-[12px] bg-white p-3.5 flex flex-col justify-between h-[115px]">
+              <div className="border border-slate-300 rounded-[12px] bg-white p-3.5 flex flex-col justify-between h-[115px]">
                 <div className="flex items-center justify-between">
                   <div className="w-8 h-8 rounded-[8px] bg-red-50 flex items-center justify-center text-red-600">
                     <AlertTriangle size={16} />
@@ -291,7 +291,7 @@ const HODDashboard = () => {
               </div>
 
               {/* Override Exceptions */}
-              <div className="border-[0.5px] border-slate-200 rounded-[12px] bg-white p-3.5 flex flex-col justify-between h-[115px]">
+              <div className="border border-slate-300 rounded-[12px] bg-white p-3.5 flex flex-col justify-between h-[115px]">
                 <div className="flex items-center justify-between">
                   <div className="w-8 h-8 rounded-[8px] bg-amber-50 flex items-center justify-center text-amber-600">
                     <ShieldCheck size={16} />
@@ -311,7 +311,7 @@ const HODDashboard = () => {
               </div>
 
               {/* Total Enrolled */}
-              <div className="border-[0.5px] border-slate-200 rounded-[12px] bg-white p-3.5 flex flex-col justify-between h-[115px]">
+              <div className="border border-slate-300 rounded-[12px] bg-white p-3.5 flex flex-col justify-between h-[115px]">
                 <div className="flex items-center justify-between">
                   <div className="w-8 h-8 rounded-[8px] bg-blue-50 flex items-center justify-center text-blue-600">
                     <Users size={16} />
@@ -328,7 +328,7 @@ const HODDashboard = () => {
               </div>
 
               {/* Fully Cleared */}
-              <div className="border-[0.5px] border-slate-200 rounded-[12px] bg-white p-3.5 flex flex-col justify-between h-[115px]">
+              <div className="border border-slate-300 rounded-[12px] bg-white p-3.5 flex flex-col justify-between h-[115px]">
                 <div className="flex items-center justify-between">
                   <div className="w-8 h-8 rounded-[8px] bg-green-50 flex items-center justify-center text-green-600">
                     <CheckCircle size={16} />
@@ -346,7 +346,7 @@ const HODDashboard = () => {
             </div>
 
             {/* Collection Efficiency Card */}
-            <div className="border-[0.5px] border-slate-200 rounded-[12px] bg-white p-4 flex flex-col gap-3">
+            <div className="border border-slate-300 rounded-[12px] bg-white p-4 flex flex-col gap-3">
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium text-slate-900">Collection efficiency</span>
                 <span className="text-base font-medium text-blue-600">{stats.collection_efficiency}%</span>
@@ -387,26 +387,26 @@ const HODDashboard = () => {
             </div>
 
             {/* Class Budget Card */}
-            <div className="border-[0.5px] border-slate-200 rounded-[12px] bg-white p-4 flex flex-col gap-3">
+            <div className="border border-slate-300 rounded-[12px] bg-white p-4 flex flex-col gap-3">
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium text-slate-900">Class budget</span>
                 <span className="text-xs font-medium text-slate-400">{stats.spend_ratio || 0}% spent</span>
               </div>
               
               <div className="grid grid-cols-2 gap-2 mt-1">
-                <div className="bg-slate-50 border-[0.5px] border-slate-100 rounded-[8px] p-2.5 flex flex-col gap-0.5">
+                <div className="bg-slate-50 border border-slate-200 rounded-[8px] p-2.5 flex flex-col gap-0.5">
                   <span className="text-[10px] text-slate-400 font-medium">Approved & disbursed</span>
                   <span className="text-xs font-medium text-green-600">₵{stats.total_disbursed.toFixed(2)}</span>
                 </div>
-                <div className="bg-slate-50 border-[0.5px] border-slate-100 rounded-[8px] p-2.5 flex flex-col gap-0.5">
+                <div className="bg-slate-50 border border-slate-200 rounded-[8px] p-2.5 flex flex-col gap-0.5">
                   <span className="text-[10px] text-slate-400 font-medium">Pending HOD/Finance</span>
                   <span className="text-xs font-medium text-amber-600">₵{stats.total_pending.toFixed(2)}</span>
                 </div>
-                <div className="bg-slate-50 border-[0.5px] border-slate-100 rounded-[8px] p-2.5 flex flex-col gap-0.5">
+                <div className="bg-slate-50 border border-slate-200 rounded-[8px] p-2.5 flex flex-col gap-0.5">
                   <span className="text-[10px] text-slate-400 font-medium">Total collected</span>
                   <span className="text-xs font-medium text-blue-600">₵{stats.total_collected.toFixed(2)}</span>
                 </div>
-                <div className="bg-slate-50 border-[0.5px] border-slate-100 rounded-[8px] p-2.5 flex flex-col gap-0.5">
+                <div className="bg-slate-50 border border-slate-200 rounded-[8px] p-2.5 flex flex-col gap-0.5">
                   <span className="text-[10px] text-slate-400 font-medium">Remaining balance</span>
                   <span className="text-xs font-medium text-slate-700">₵{stats.remaining_budget.toFixed(2)}</span>
                 </div>
@@ -428,7 +428,7 @@ const HODDashboard = () => {
               <button 
                 type="button" 
                 onClick={handleExportDefaulters}
-                className="border-[0.5px] border-blue-200 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-[12px] flex items-center gap-1.5 text-xs font-medium hover:bg-blue-100 transition active:scale-95 shrink-0"
+                className="border border-blue-300 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-[12px] flex items-center gap-1.5 text-xs font-medium hover:bg-blue-100 transition active:scale-95 shrink-0"
               >
                 <Download size={13} />
                 <span>Export</span>
@@ -436,7 +436,7 @@ const HODDashboard = () => {
             </div>
 
             {defaulters.length === 0 ? (
-              <div className="border-[0.5px] border-slate-200 rounded-[12px] p-8 text-center bg-white flex flex-col items-center gap-2 mt-4">
+              <div className="border border-slate-300 rounded-[12px] p-8 text-center bg-white flex flex-col items-center gap-2 mt-4">
                 <CheckCircle size={32} className="text-green-600" />
                 <span className="text-sm font-medium text-slate-900">All cleared</span>
                 <span className="text-xs text-slate-500 font-medium">No students are currently owing departmental dues.</span>
@@ -448,7 +448,7 @@ const HODDashboard = () => {
                     ? student.full_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
                     : 'ST';
                   return (
-                    <div key={student.id} className="border-[0.5px] border-slate-200 rounded-[12px] bg-white p-4 flex items-center justify-between">
+                    <div key={student.id} className="border border-slate-300 rounded-[12px] bg-white p-4 flex items-center justify-between">
                       <div className="flex items-center gap-3 min-w-0">
                         {/* Red initials avatar */}
                         <div className="w-10 h-10 rounded-full bg-red-50 text-red-600 flex items-center justify-center font-medium shrink-0">
@@ -479,7 +479,7 @@ const HODDashboard = () => {
                           type="button" 
                           onClick={() => handleOpenModal(student)}
                           title="Grant exam clearance exception"
-                          className="w-8 h-8 rounded-[8px] border border-slate-200 flex items-center justify-center bg-white text-slate-500 hover:text-amber-600 hover:bg-amber-50 hover:border-amber-200 active:scale-95 transition shrink-0"
+                          className="w-8 h-8 rounded-[8px] border border-slate-300 flex items-center justify-center bg-white text-slate-500 hover:text-amber-600 hover:bg-amber-50 hover:border-amber-200 active:scale-95 transition shrink-0"
                         >
                           <ShieldPlus size={15} />
                         </button>
@@ -495,7 +495,7 @@ const HODDashboard = () => {
         {/* 5. EXPENSES TAB content */}
         {activeTab === 'Expenses' && (
           <div className="flex-1 p-4 flex flex-col justify-center items-center py-20">
-            <div className="border-[0.5px] border-slate-200 rounded-[12px] bg-white p-8 text-center flex flex-col items-center gap-2 max-w-[280px]">
+            <div className="border border-slate-300 rounded-[12px] bg-white p-8 text-center flex flex-col items-center gap-2 max-w-[280px]">
               <div className="w-10 h-10 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400">
                 <Receipt size={18} />
               </div>
@@ -510,7 +510,7 @@ const HODDashboard = () => {
         {/* Override Exception Text Area Dialog Modal */}
         {showModal && selectedStudent && (
           <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white border-[0.5px] border-slate-200 rounded-[12px] w-full max-w-[340px] flex flex-col overflow-hidden">
+            <div className="bg-white border border-slate-300 rounded-[12px] w-full max-w-[340px] flex flex-col overflow-hidden text-slate-700">
               <div className="px-4 py-3 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
                 <span className="text-xs font-medium text-slate-900">Grant exam clearance</span>
                 <button 
@@ -524,7 +524,7 @@ const HODDashboard = () => {
               </div>
               
               <div className="p-4 flex flex-col gap-3">
-                <div className="bg-amber-50 border-[0.5px] border-amber-200 rounded-[8px] p-3 text-[11px] text-amber-800 leading-normal font-medium">
+                <div className="bg-amber-50 border border-amber-300 rounded-[8px] p-3 text-[11px] text-amber-800 leading-normal font-medium">
                   You are granting an exam clearance exception to <strong className="text-amber-950 font-medium">{selectedStudent.full_name}</strong> ({selectedStudent.index_number}).
                 </div>
 
@@ -538,7 +538,7 @@ const HODDashboard = () => {
                     value={reason}
                     onChange={(e) => setReason(e.target.value)}
                     placeholder="Enter detailed reason (minimum 10 characters)..."
-                    className="w-full text-xs p-2.5 border border-slate-200 rounded-[8px] focus:outline-none focus:border-blue-500 resize-none font-medium text-slate-700 bg-white"
+                    className="w-full text-xs p-2.5 border border-slate-300 rounded-[8px] focus:outline-none focus:border-blue-500 resize-none font-medium text-slate-700 bg-white"
                   />
                   {reason.length > 0 && reason.length < 10 && (
                     <span className="text-[10px] text-red-600 font-medium">
@@ -552,7 +552,7 @@ const HODDashboard = () => {
                 <button 
                   type="button" 
                   onClick={() => setShowModal(false)}
-                  className="px-3 py-1.5 rounded-[8px] border border-slate-200 bg-white text-slate-700 text-xs font-medium hover:bg-slate-100 transition"
+                  className="px-3 py-1.5 rounded-[8px] border border-slate-300 bg-white text-slate-700 text-xs font-medium hover:bg-slate-100 transition"
                 >
                   Cancel
                 </button>

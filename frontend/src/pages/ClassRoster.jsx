@@ -157,7 +157,7 @@ const ClassRoster = () => {
         />
 
         {/* Main Content Body */}
-        <div className="w-full max-w-7xl mx-auto px-4 py-6 flex-1 flex flex-col gap-6">
+        <div className="w-full px-4 lg:px-8 py-6 flex-1 flex flex-col gap-6">
           {error && <div style={styles.errorBox}>⚠️ {error}</div>}
           {success && <div style={styles.successBox}>✅ {success}</div>}
 
@@ -204,7 +204,7 @@ const ClassRoster = () => {
         </div>
 
         {/* Stats Grid Cards */}
-        <div style={styles.statsGrid}>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 lg:gap-4 mb-6">
           <div style={styles.statCard}>
             <div style={{ ...styles.statIconWrapper, backgroundColor: '#e0e7ff', color: '#6366f1' }}>
               <Users size={22} />
